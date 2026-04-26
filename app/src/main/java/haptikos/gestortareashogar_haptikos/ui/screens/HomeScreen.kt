@@ -44,10 +44,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
-import haptikos.gestortareashogar_haptikos.data.Task
+import haptikos.gestortareashogar_haptikos.data.TaskEntity
 
 @Composable
-fun DashboardScreen() {
+fun HomeScreen() {
     val orangeMain = Color(0xFFFF8A00)
 
     Scaffold(
@@ -85,13 +85,13 @@ fun DashboardScreen() {
             item { SectionTitle("PENDIENTES (2)") }
             items(2) {
                 TaskCard(
-                    Task(
-                        "Limpiar la cocina",
-                        "Lunes",
-                        "Cocina",
-                        Color(0xFFFFCCCC),
-                        15,
-                        listOf(Color.Magenta, Color.Blue)
+                    TaskEntity(
+                        title = "Limpiar la cocina",
+                        date = "Lunes",
+                        room = "Cocina",
+                        points = 15,
+                        members = "Miembro",
+                        state = "Pendiente"
                     )
                 )
             }
@@ -100,8 +100,14 @@ fun DashboardScreen() {
             item { SectionTitle("PAUSADAS (1)", Color(0xFFD4A017)) }
             item {
                 TaskCard(
-                    Task("Lavar la ropa", "Lunes", "Lavandería", Color(0xFFFFF9C4), 10, listOf(Color(0xFFBB86FC))),
-                    isPaused = true
+                    TaskEntity(
+                        title = "Lavar la ropa",
+                        date = "Lunes",
+                        room = "Lavandería",
+                        points = 10,
+                        members = "Miembro",
+                        state = "Pendiente"
+                    )
                 )
             }
 
@@ -226,7 +232,7 @@ fun DaySelector() {
 }
 
 @Composable
-fun TaskCard(task: Task, isPaused: Boolean = false) {
+fun TaskCard(task: TaskEntity, isPaused: Boolean = false) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -261,14 +267,19 @@ fun TaskCard(task: Task, isPaused: Boolean = false) {
                         tint = Color.Gray
                     )
                     Text(" ${task.date} ", fontSize = 12.sp, color = Color.Gray)
-                    Surface(color = task.categoryColor, shape = RoundedCornerShape(4.dp)) {
-                        Text(" ${task.category} ", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Surface(
+                        shape = RoundedCornerShape(4.dp)) {
+                        Text(" ${task.room} ", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
                 Spacer(Modifier.height(8.dp))
                 Row {
                     task.members.forEach { color ->
-                        Box(Modifier.size(20.dp).background(color, CircleShape).border(1.dp, Color.White, CircleShape))
+                        Box(
+                            Modifier
+                                .size(20.dp)
+                                .border(1.dp, Color.White, CircleShape)
+                        )
                     }
                 }
             }
@@ -364,6 +375,6 @@ fun CustomBottomNavigation() {
 
 @Preview(showBackground = true)
 @Composable
-fun DashboardScreenPreview() {
-    DashboardScreen()
+fun HomeScreenPreview() {
+    HomeScreen()
 }
