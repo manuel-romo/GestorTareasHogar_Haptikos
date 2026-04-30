@@ -7,21 +7,28 @@ import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import haptikos.gestortareashogar_haptikos.ui.screens.HomeScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.formTask.NewTaskScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.home.HomeScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.LogInScreen
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
 
 sealed class Screen(val route: String){
     object Login: Screen("login")
     object Home: Screen("home")
-    object AddTask: Screen("addTask")
+    object NewTask: Screen("newTask")
 }
 
 @Composable
 fun AppNavigation(
     authViewModel: AuthViewModel,
-    taskViewModel: TaskViewModel
+    taskViewModel: TaskViewModel,
+    taskInstanceViewModel: TaskInstanceViewModel,
+    roomViewModel: RoomViewModel,
+    memberViewModel: MemberViewModel
 ){
     val navController = rememberNavController()
 
@@ -57,7 +64,23 @@ fun AppNavigation(
 
         composable(Screen.Home.route){
             HomeScreen(
+                taskInstanceViewModel = taskInstanceViewModel,
+                onNewTaskClick = {
+                    navController.navigate(Screen.NewTask.route)
+                }
+            )
+        }
 
+        composable(Screen.NewTask.route){
+            NewTaskScreen(
+                roomViewModel = roomViewModel,
+                taskViewModel = taskViewModel,
+                memberViewModel = memberViewModel,
+                onReturn = {
+                    navController.navigate(Screen.Home.route){
+                        popUpTo(Screen.NewTask.route) { inclusive = true }
+                    }
+                }
             )
         }
 
