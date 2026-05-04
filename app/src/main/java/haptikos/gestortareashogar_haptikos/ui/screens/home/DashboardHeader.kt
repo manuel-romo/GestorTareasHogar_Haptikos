@@ -59,7 +59,8 @@ fun DashboardHeader(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     currentFilter: TaskFilter,
-    onFilterChange: (TaskFilter) -> Unit
+    onFilterChange: (TaskFilter) -> Unit,
+    onRewardsClick: () -> Unit
 ) {
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
@@ -159,7 +160,7 @@ fun DashboardHeader(
                         shape = CircleShape,
                         modifier = Modifier.size(44.dp)
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.clickable{ onRewardsClick() }) {
                             Icon(
                                 painterResource(id = R.drawable.ic_trophy),
                                 contentDescription = "Logros",

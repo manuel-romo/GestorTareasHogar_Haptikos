@@ -10,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import haptikos.gestortareashogar_haptikos.ui.screens.formTask.NewTaskScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.home.HomeScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.LogInScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.rewards.RewardsScreen
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
@@ -20,6 +21,7 @@ sealed class Screen(val route: String){
     object Login: Screen("login")
     object Home: Screen("home")
     object NewTask: Screen("newTask")
+    object Rewards: Screen("rewards")
 }
 
 @Composable
@@ -67,6 +69,9 @@ fun AppNavigation(
                 taskInstanceViewModel = taskInstanceViewModel,
                 onNewTaskClick = {
                     navController.navigate(Screen.NewTask.route)
+                },
+                onRewardsClick = {
+                    navController.navigate(Screen.Rewards.route)
                 }
             )
         }
@@ -81,6 +86,13 @@ fun AppNavigation(
                         popUpTo(Screen.NewTask.route) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        composable(Screen.Rewards.route) {
+            RewardsScreen(
+                taskInstanceViewModel = taskInstanceViewModel,
+                onBackClick = { navController.popBackStack() }
             )
         }
 

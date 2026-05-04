@@ -46,7 +46,8 @@ import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.Dashb
 @Composable
 fun HomeScreen(
     taskInstanceViewModel: TaskInstanceViewModel,
-    onNewTaskClick:() -> Unit
+    onNewTaskClick:() -> Unit,
+    onRewardsClick: () -> Unit
 ){
     val tasksInstanceList by taskInstanceViewModel.tasks.collectAsState()
     val stats by taskInstanceViewModel.stats.collectAsState()
@@ -61,7 +62,8 @@ fun HomeScreen(
         onFilterChange = { nuevoFiltro -> taskInstanceViewModel.updateFilter(nuevoFiltro) },
         searchQuery = searchQuery,
         onSearchQueryChange = { nuevaBusqueda -> taskInstanceViewModel.updateSearchQuery(nuevaBusqueda) },
-        onNewTaskClick = onNewTaskClick
+        onNewTaskClick = onNewTaskClick,
+        onRewardsClick = onRewardsClick
     )
 }
 
@@ -73,7 +75,8 @@ fun HomeContent(
     onFilterChange: (TaskFilter) -> Unit,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    onNewTaskClick:() -> Unit
+    onNewTaskClick:() -> Unit,
+    onRewardsClick: () -> Unit
 ) {
     val tareasPendientes = tasks.filter { it.taskInstance.state == TaskState.PENDING }
     val tareasPausadas = tasks.filter { it.taskInstance.state == TaskState.PAUSED }
@@ -121,7 +124,8 @@ fun HomeContent(
                     searchQuery = searchQuery,
                     onSearchQueryChange = onSearchQueryChange,
                     currentFilter = currentFilter,
-                    onFilterChange = onFilterChange
+                    onFilterChange = onFilterChange,
+                    onRewardsClick = onRewardsClick
                 )
             }
             item {
@@ -246,7 +250,8 @@ fun HomeScreenPreview_Pausada_Pendiente() {
             onFilterChange = {},
             searchQuery = "",
             onSearchQueryChange = {},
-            onNewTaskClick = {}
+            onNewTaskClick = {},
+            onRewardsClick = {}
         )
     }
 }
@@ -288,7 +293,8 @@ fun HomeScreenPreview_Completada() {
             onFilterChange = {},
             searchQuery = "",
             onSearchQueryChange = {},
-            onNewTaskClick = {}
+            onNewTaskClick = {},
+            onRewardsClick = {}
         )
     }
 }
