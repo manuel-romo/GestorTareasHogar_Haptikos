@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import haptikos.gestortareashogar_haptikos.data.entity.RoomEntity
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -26,5 +27,21 @@ interface RoomDao {
 
     @Delete
     suspend fun delete(room: RoomEntity)
+
+    // Funciones nuevas
+    @Query("SELECT * FROM room_table_new ORDER BY name ASC")
+    fun getAllNew(): Flow<List<RoomEntityNew>>
+
+    @Query("SELECT * FROM room_table_new WHERE id = :roomId")
+    suspend fun getByIdNew(roomId: Int): RoomEntityNew?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun addNew(room: RoomEntityNew): Long
+
+    @Update
+    suspend fun updateNew(room: RoomEntityNew)
+
+    @Delete
+    suspend fun deleteNew(room: RoomEntityNew)
 
 }

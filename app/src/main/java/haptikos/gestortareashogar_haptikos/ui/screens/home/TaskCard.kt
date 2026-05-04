@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntity
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.ui.theme.CompletedGreen
 import haptikos.gestortareashogar_haptikos.ui.theme.LightYellow
 import haptikos.gestortareashogar_haptikos.ui.theme.PausedYellow
@@ -42,10 +43,10 @@ import haptikos.gestortareashogar_haptikos.utils.getDayName
 import haptikos.gestortareashogar_haptikos.utils.parseHexColor
 
 @Composable
-fun TaskCard(taskInstance: TaskInstanceEntity) {
+fun TaskCard(taskInstance: TaskInstanceWithDetails) {
 
-    val isPaused = taskInstance.state == TaskState.PAUSED
-    val isCompleted = taskInstance.state == TaskState.COMPLETED
+    val isPaused = taskInstance.taskInstance.state == TaskState.PAUSED
+    val isCompleted = taskInstance.taskInstance.state == TaskState.COMPLETED
 
     Card(
         modifier = Modifier
@@ -120,14 +121,14 @@ fun TaskCard(taskInstance: TaskInstanceEntity) {
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        text =" ${getDayName(taskInstance.dueDate)} ",
+                        text =" ${getDayName(taskInstance.taskInstance.dueDate)} ",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    // Solo pintamos la pastilla si hay una habitación asignada
-                    taskInstance.task.room?.let { room ->
-                        Spacer(Modifier.width(8.dp)) // Espacio entre fecha y pastilla
+                    // Solo se pinta la pastilla si hay una habitación asignada
+                    taskInstance.room?.let { room ->
+                        Spacer(Modifier.width(8.dp))
 
                         val roomBaseColor = parseHexColor(room.colorHex)
                         val roomBgColor = roomBaseColor.copy(alpha = 0.15f)
@@ -162,9 +163,9 @@ fun TaskCard(taskInstance: TaskInstanceEntity) {
                 }
 
                 // Fecha fin de pausa para tarea pausada
-                if (isPaused && taskInstance.pausedUntil != null) {
+                if (isPaused && taskInstance.taskInstance.pausedUntil != null) {
                     Text(
-                        text = "Pausada hasta ${getDateString(taskInstance.pausedUntil)}",
+                        text = "Pausada hasta ${getDateString(taskInstance.taskInstance.pausedUntil)}",
                         color = PausedYellow,
                         fontSize = 12.sp,
                         modifier = Modifier.padding(top = 4.dp)
@@ -175,7 +176,7 @@ fun TaskCard(taskInstance: TaskInstanceEntity) {
 
                 // Fila de Miembros
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    taskInstance.task.members.forEach { member ->
+                    taskInstance.assignedMembers.forEach { member ->
                         val memberColor = parseHexColor(member.colorHex)
 
                         Surface(shape = RoundedCornerShape(12.dp), color = memberColor) {

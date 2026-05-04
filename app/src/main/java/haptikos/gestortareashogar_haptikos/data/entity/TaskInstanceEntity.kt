@@ -11,5 +11,5 @@ data class TaskInstanceEntity(
     val dueDate: Long,
     val assignedMembers: List<MemberEntity>,
     val state: TaskState = TaskState.PENDING,
-    val pausedUntil: Long?
+    val pausedUntil: Long? = null
 )

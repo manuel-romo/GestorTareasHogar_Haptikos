@@ -52,7 +52,12 @@ import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.entity.MemberEntity
 import haptikos.gestortareashogar_haptikos.data.entity.RoomEntity
 import haptikos.gestortareashogar_haptikos.data.entity.TaskEntity
+import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.PriorityLevel
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
 import haptikos.gestortareashogar_haptikos.ui.components.GenericMultiSelectionBottomSheet
 import haptikos.gestortareashogar_haptikos.ui.components.GenericSelectionBottomSheet
 import haptikos.gestortareashogar_haptikos.ui.enums.SuggestedDay
@@ -77,11 +82,11 @@ fun NewTaskScreen(
 
 
     // Se busca si la tarea existe en la BD.
-    var taskToEdit by remember { mutableStateOf<TaskEntity?>(null) }
+    var taskToEdit by remember { mutableStateOf<TaskWithDetails?>(null) }
 
     LaunchedEffect(taskId) {
         if (taskId != null) {
-            taskToEdit = taskViewModel.getById(taskId)
+            taskToEdit = taskViewModel.getByIdNew(taskId)
         }
     }
 
@@ -93,24 +98,25 @@ fun NewTaskScreen(
         onSaveTask = { name, desc, room, day, recurrence, priority, workMode, orderedMembers ->
 
             if (name.isNotBlank()) {
-                val task = TaskEntity(
+                val task = TaskEntityNew(
                     // Si es edición, se conserva el ID que tiene la tarea.
-                    id = taskToEdit?.id ?: 0,
+                    id = taskToEdit?.task?.id ?: 0,
                     title = name,
                     description = desc,
-                    room = room,
+                    roomId = room?.id,
                     points = priority.points,
-                    members = orderedMembers,
                     priority = priority,
                     suggestedDay = day,
                     recurrence = recurrence,
                     workMode = workMode
                 )
 
+                val memberIds = orderedMembers.map { it.id }
+
                 if (taskToEdit == null) {
-                    taskViewModel.addTask(task)
+                    taskViewModel.addTaskNew(task,memberIds)
                 } else {
-                    taskViewModel.updateTask(task)
+                    taskViewModel.updateTaskNew(task, memberIds)
                 }
                 onReturn()
             }
@@ -126,36 +132,36 @@ val LightBg = Color(0xFFF9F9F9)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NewTaskContent(
-    roomList: List<RoomEntity>,
-    memberList: List<MemberEntity>,
-    taskToEdit: TaskEntity? = null,
+    roomList: List<RoomEntityNew>,
+    memberList: List<MemberEntityNew>,
+    taskToEdit: TaskWithDetails? = null,
     onReturn: () -> Unit,
     onSaveTask: (
         String,
         String,
-        RoomEntity?,
+        RoomEntityNew?,
         SuggestedDay,
         RecurrenceType,
         PriorityLevel,
         WorkMode,
-        List<MemberEntity>
+        List<MemberEntityNew>
     ) -> Unit
 ) {
     // Estados inicializados directamente con los datos de taskToEdit (si existe)
-    var taskName by remember(taskToEdit) { mutableStateOf(taskToEdit?.title ?: "") }
-    var taskDescription by remember(taskToEdit) { mutableStateOf(taskToEdit?.description ?: "") }
+    var taskName by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.title ?: "") }
+    var taskDescription by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.description ?: "") }
     var isRoomScope by remember(taskToEdit) { mutableStateOf(taskToEdit?.room != null) }
-    var selectedPriority by remember(taskToEdit) { mutableStateOf(taskToEdit?.priority ?: PriorityLevel.MEDIA) }
-    var selectedDay by remember(taskToEdit) { mutableStateOf(taskToEdit?.suggestedDay ?: SuggestedDay.LUNES) }
-    var selectedRecurrence by remember(taskToEdit) { mutableStateOf(taskToEdit?.recurrence ?: RecurrenceType.DIARIO) }
+    var selectedPriority by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.priority ?: PriorityLevel.MEDIA) }
+    var selectedDay by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.suggestedDay ?: SuggestedDay.LUNES) }
+    var selectedRecurrence by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.recurrence ?: RecurrenceType.DIARIO) }
     var selectedRoom by remember(taskToEdit) { mutableStateOf(taskToEdit?.room) }
     var selectedMembers by remember(taskToEdit) { mutableStateOf(taskToEdit?.members?.toSet() ?: emptySet()) }
 
     // Estados de equipo
-    var selectedWorkMode by remember(taskToEdit) { mutableStateOf(taskToEdit?.workMode ?: WorkMode.TEAM) }
+    var selectedWorkMode by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.workMode ?: WorkMode.TEAM) }
     var selectedTurnMode by remember(taskToEdit) { mutableStateOf(TurnMode.RANDOM) }
 
-    val orderedTurns = remember { mutableStateListOf<MemberEntity>() }
+    val orderedTurns = remember { mutableStateListOf<MemberEntityNew>() }
 
     // Estados de menús
     var showDaySelector by remember { mutableStateOf(false) }
@@ -230,10 +236,23 @@ fun NewTaskContent(
 
     // Menús emergentes
     TaskBottomSheets(
-        showDaySelector = showDaySelector, onDismissDay = { showDaySelector = false }, selectedDay = selectedDay, onDaySelected = { selectedDay = it },
-        showRecurrenceSelector = showRecurrenceSelector, onDismissRecurrence = { showRecurrenceSelector = false }, selectedRecurrence = selectedRecurrence, onRecurrenceSelected = { selectedRecurrence = it },
-        showRoomSelector = showRoomSelector, onDismissRoom = { showRoomSelector = false }, roomList = roomList, selectedRoom = selectedRoom, onRoomSelected = { selectedRoom = it },
-        showMemberSelector = showMemberSelector, onDismissMember = { showMemberSelector = false }, memberList = memberList, selectedMembers = selectedMembers,
+        showDaySelector = showDaySelector,
+        onDismissDay = { showDaySelector = false },
+        selectedDay = selectedDay,
+        onDaySelected = { selectedDay = it },
+        showRecurrenceSelector = showRecurrenceSelector,
+        onDismissRecurrence = { showRecurrenceSelector = false },
+        selectedRecurrence = selectedRecurrence,
+        onRecurrenceSelected = { selectedRecurrence = it },
+        showRoomSelector = showRoomSelector,
+        onDismissRoom = { showRoomSelector = false },
+        roomList = roomList,
+        selectedRoom = selectedRoom,
+        onRoomSelected = { selectedRoom = it },
+        showMemberSelector = showMemberSelector,
+        onDismissMember = { showMemberSelector = false },
+        memberList = memberList,
+        selectedMembers = selectedMembers,
         onMemberToggled = { member ->
             selectedMembers = if (selectedMembers.contains(member)) selectedMembers - member else selectedMembers + member
         }
@@ -315,7 +334,12 @@ fun BasicInfoSection(name: String, onNameChange: (String) -> Unit, desc: String,
 }
 
 @Composable
-fun ScopeSection(isRoomScope: Boolean, onScopeChange: (Boolean) -> Unit, selectedRoom: RoomEntity?, onOpenRoomMenu: () -> Unit) {
+fun ScopeSection(
+    isRoomScope: Boolean,
+    onScopeChange: (Boolean) -> Unit,
+    selectedRoom: RoomEntityNew?,
+    onOpenRoomMenu: () -> Unit) {
+
     SectionTitle("ALCANCE")
     ScopeSelector(isRoomScope = isRoomScope, onScopeChange = onScopeChange)
 
@@ -382,10 +406,24 @@ fun SectionTitle(title: String, paddingBottom: androidx.compose.ui.unit.Dp = 12.
 
 @Composable
 fun TaskBottomSheets(
-    showDaySelector: Boolean, onDismissDay: () -> Unit, selectedDay: SuggestedDay, onDaySelected: (SuggestedDay) -> Unit,
-    showRecurrenceSelector: Boolean, onDismissRecurrence: () -> Unit, selectedRecurrence: RecurrenceType, onRecurrenceSelected: (RecurrenceType) -> Unit,
-    showRoomSelector: Boolean, onDismissRoom: () -> Unit, roomList: List<RoomEntity>, selectedRoom: RoomEntity?, onRoomSelected: (RoomEntity) -> Unit,
-    showMemberSelector: Boolean, onDismissMember: () -> Unit, memberList: List<MemberEntity>, selectedMembers: Set<MemberEntity>, onMemberToggled: (MemberEntity) -> Unit
+    showDaySelector: Boolean,
+    onDismissDay: () -> Unit,
+    selectedDay: SuggestedDay,
+    onDaySelected: (SuggestedDay) -> Unit,
+    showRecurrenceSelector: Boolean,
+    onDismissRecurrence: () -> Unit,
+    selectedRecurrence: RecurrenceType,
+    onRecurrenceSelected: (RecurrenceType) -> Unit,
+    showRoomSelector: Boolean,
+    onDismissRoom: () -> Unit,
+    roomList: List<RoomEntityNew>,
+    selectedRoom: RoomEntityNew?,
+    onRoomSelected: (RoomEntityNew) -> Unit,
+    showMemberSelector: Boolean,
+    onDismissMember: () -> Unit,
+    memberList: List<MemberEntityNew>,
+    selectedMembers: Set<MemberEntityNew>,
+    onMemberToggled: (MemberEntityNew) -> Unit
 ) {
     if (showDaySelector) {
         GenericSelectionBottomSheet(
@@ -467,14 +505,14 @@ fun FormLabel(text: String, iconRes: Int) {
 @Composable
 fun NewTaskScreenPreview_Agregar() {
     val rooms = listOf(
-        RoomEntity(id = 1, name = "Cocina", icon = "🍳", colorHex = "#FF5252"),
-        RoomEntity(id = 2, name = "Sala", icon = "🛋️", colorHex = "#448AFF"),
-        RoomEntity(id = 3, name = "Baños", icon = "🚿", colorHex = "#4CAF50")
+        RoomEntityNew(id = 1, name = "Cocina", icon = "🍳", colorHex = "#FF5252"),
+        RoomEntityNew(id = 2, name = "Sala", icon = "🛋️", colorHex = "#448AFF"),
+        RoomEntityNew(id = 3, name = "Baños", icon = "🚿", colorHex = "#4CAF50")
     )
 
     val members = listOf(
-        MemberEntity(id = 1, name = "María", lastName = "López", colorHex = "#F014A8"),
-        MemberEntity(id = 2, name = "Juan", lastName = "Pérez", colorHex = "#2979FF")
+        MemberEntityNew(id = 1, name = "María", lastName = "López", colorHex = "#F014A8", MemberRole.MEMBER),
+        MemberEntityNew(id = 2, name = "Juan", lastName = "Pérez", colorHex = "#2979FF", MemberRole.MEMBER)
     )
 
     GestorTareasHogar_HaptikosTheme {
@@ -492,33 +530,38 @@ fun NewTaskScreenPreview_Agregar() {
 @Composable
 fun NewTaskScreenPreview_Editar() {
     val rooms = listOf(
-        RoomEntity(id = 1, name = "Cocina", icon = "🍳", colorHex = "#FF5252"),
-        RoomEntity(id = 2, name = "Sala", icon = "🛋️", colorHex = "#448AFF")
+        RoomEntityNew(id = 1, name = "Cocina", icon = "🍳", colorHex = "#FF5252"),
+        RoomEntityNew(id = 2, name = "Sala", icon = "🛋️", colorHex = "#448AFF")
     )
 
     val members = listOf(
-        MemberEntity(id = 1, name = "María", lastName = "López", colorHex = "#F014A8"),
-        MemberEntity(id = 2, name = "Juan", lastName = "Pérez", colorHex = "#2979FF")
+        MemberEntityNew(id = 1, name = "María", lastName = "López", colorHex = "#F014A8", role = MemberRole.MEMBER),
+        MemberEntityNew(id = 2, name = "Juan", lastName = "Pérez", colorHex = "#2979FF", role = MemberRole.MEMBER)
     )
 
-    val tareaExistente = TaskEntity(
+    val tareaBase = TaskEntityNew(
         id = 10,
         title = "Limpiar la cocina a fondo",
         description = "Usar desengrasante en la estufa",
-        room = rooms[0],
+        roomId = 1,
         points = 20,
-        members = members,
         priority = PriorityLevel.ALTA,
         suggestedDay = SuggestedDay.SABADO,
         recurrence = RecurrenceType.SEMANAL,
         workMode = WorkMode.TEAM
     )
 
+    val tareaConDetalles = TaskWithDetails(
+        task = tareaBase,
+        room = rooms[0],
+        members = members
+    )
+
     GestorTareasHogar_HaptikosTheme {
         NewTaskContent(
             roomList = rooms,
             memberList = members,
-            taskToEdit = tareaExistente,
+            taskToEdit = tareaConDetalles,
             onReturn = {},
             onSaveTask = { _, _, _, _, _, _, _, _ -> }
         )

@@ -18,12 +18,37 @@ import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntity
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.PriorityLevel
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskMemberJoin
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceMemberJoin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-@Database(entities = [TaskEntity::class, TaskInstanceEntity::class, MemberEntity::class, RoomEntity::class], version = 1, exportSchema = false)
+@Database(
+    entities = [
+        // Entidades anteriores
+        TaskEntity::class,
+        TaskInstanceEntity::class,
+        MemberEntity::class,
+        RoomEntity::class,
+
+        // Nuevas entidades
+        TaskEntityNew::class,
+        TaskInstanceEntityNew::class,
+        MemberEntityNew::class,
+        RoomEntityNew::class,
+        TaskMemberJoin::class,
+        TaskInstanceMemberJoin::class
+    ],
+    version = 2,
+    exportSchema = false
+)
 @TypeConverters(Converters::class)
-abstract class TaskDatabase: RoomDatabase(){
+abstract class TaskDatabase: RoomDatabase() {
+
     abstract fun taskDao(): TaskDao
     abstract fun memberDao(): MemberDao
     abstract fun roomDao(): RoomDao
@@ -34,13 +59,13 @@ abstract class TaskDatabase: RoomDatabase(){
         private var INSTANCE: TaskDatabase? = null
 
         fun getDatabase(context: Context, scope: CoroutineScope): TaskDatabase {
-
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     TaskDatabase::class.java,
                     "task_database"
                 )
+                    .fallbackToDestructiveMigration()
                     .addCallback(TaskDatabaseCallback(scope))
                     .build()
                 INSTANCE = instance
@@ -55,7 +80,6 @@ abstract class TaskDatabase: RoomDatabase(){
             override fun onCreate(db: SupportSQLiteDatabase) {
                 super.onCreate(db)
 
-                // Inserción de datos de ejemplo
                 INSTANCE?.let { database ->
                     scope.launch {
                         val taskDao = database.taskDao()
@@ -63,99 +87,48 @@ abstract class TaskDatabase: RoomDatabase(){
                         val memberDao = database.memberDao()
                         val roomDao = database.roomDao()
 
-                        // Definición de tiempos
                         val hoy = System.currentTimeMillis()
                         val ayer = hoy - (24 * 60 * 60 * 1000)
                         val mañana = hoy + (24 * 60 * 60 * 1000)
+                        val pasadoMañana = hoy + (2 * 24 * 60 * 60 * 1000)
 
-                        // Insertar Miembros
-                        val m1 = MemberEntity(name = "María", lastName = "Gómez", colorHex = "#F014A8", role = MemberRole.CREATOR)
-                        val m2 = MemberEntity(name = "Juan", lastName = "Pérez", colorHex = "#2979FF",  role = MemberRole.MEMBER)
-                        val m3 = MemberEntity(name = "Ana", lastName = "López", colorHex = "#9C27B0",  role = MemberRole.ADMIN)
-                        memberDao.add(m1)
-                        memberDao.add(m2)
-                        memberDao.add(m3)
+                        // Datos no relacionales
+                        val mOld = MemberEntity(name = "María (Old)", lastName = "Gómez", colorHex = "#F014A8", role = MemberRole.CREATOR)
+                        val rOld = RoomEntity(name = "Cocina Old", colorHex = "#FF5252", icon = "🍳")
+                        memberDao.add(mOld)
+                        roomDao.add(rOld)
+                        val oldTask = TaskEntity(title = "Tarea Antigua", room = rOld, points = 15, members = listOf(mOld), priority = PriorityLevel.ALTA)
+                        taskDao.add(oldTask)
+                        instanceDao.add(TaskInstanceEntity(task = oldTask, dueDate = hoy, assignedMembers = oldTask.members))
 
-                        // Insertar Habitaciones
-                        val r1 = RoomEntity(name = "Cocina", colorHex = "#FF5252", icon = "🍳")
-                        val r2 = RoomEntity(name = "Lavandería", colorHex = "#448AFF", icon = "🧺")
-                        val r3 = RoomEntity(name = "Sala", colorHex = "#FF9800", icon = "營")
-                        roomDao.add(r1)
-                        roomDao.add(r2)
-                        roomDao.add(r3)
+                        // Datos relacionales
+                        // 1 Habitación y 2 Miembros
+                        val newRoomId = roomDao.addNew(RoomEntityNew(name = "Cocina Nueva", colorHex = "#FF5252", icon = "🍳")).toInt()
+                        val idMaria = memberDao.addNew(MemberEntityNew(name = "María", lastName = "Gómez", colorHex = "#F014A8", role = MemberRole.CREATOR)).toInt()
+                        val idJuan = memberDao.addNew(MemberEntityNew(name = "Juan", lastName = "Pérez", colorHex = "#2979FF", role = MemberRole.MEMBER)).toInt()
 
-                        // Crear Tareas
-                        val plantillas = listOf(
-                            TaskEntity(
-                                title = "Limpiar la estufa",
-                                room = r1,
-                                points = 15,
-                                members = listOf(m1, m2),
-                                priority = PriorityLevel.ALTA
-                            ),
-                            TaskEntity(
-                                title = "Doblar ropa limpia",
-                                room = r2,
-                                points = 10,
-                                members = listOf(m3),
-                                priority = PriorityLevel.MEDIA
-                            ),
-                            TaskEntity(
-                                title = "Aspirar alfombra",
-                                room = r3,
-                                points = 20,
-                                members = listOf(m1),
-                                priority = PriorityLevel.BAJA
-                            ),
-                            TaskEntity(
-                                title = "Comprar víveres",
-                                room = null,
-                                points = 30,
-                                members = listOf(m2, m3),
-                                priority = PriorityLevel.ALTA
-                            )
+                        // Tarea Pendiente Limpiar estufa
+                        val task1 = TaskEntityNew(title = "Limpiar la estufa", roomId = newRoomId, points = 15, priority = PriorityLevel.ALTA)
+                        val t1Id = taskDao.addTaskNew(task1).toInt()
+                        val inst1 = TaskInstanceEntityNew(taskId = t1Id, dueDate = hoy, state = TaskState.PENDING)
+                        instanceDao.insertInstanceWithAssignedMembers(inst1, listOf(idMaria))
+
+                        // Tarea Completada Sacar la basura
+                        val task2 = TaskEntityNew(title = "Sacar la basura", roomId = newRoomId, points = 5, priority = PriorityLevel.BAJA)
+                        val t2Id = taskDao.addTaskNew(task2).toInt()
+                        val inst2 = TaskInstanceEntityNew(taskId = t2Id, dueDate = ayer, state = TaskState.COMPLETED)
+                        instanceDao.insertInstanceWithAssignedMembers(inst2, listOf(idJuan))
+
+                        // Tarea Pausada Organizar despensa
+                        val task3 = TaskEntityNew(title = "Organizar despensa", roomId = newRoomId, points = 20, priority = PriorityLevel.MEDIA)
+                        val t3Id = taskDao.addTaskNew(task3).toInt()
+                        val inst3 = TaskInstanceEntityNew(
+                            taskId = t3Id,
+                            dueDate = mañana,
+                            state = TaskState.PAUSED,
+                            pausedUntil = pasadoMañana
                         )
-
-                        plantillas.forEach { taskDao.add(it) }
-
-                        // Crear Instancias de Tarea
-                        val instancias = listOf(
-                            // Tarea Pendiente para Hoy
-                            TaskInstanceEntity(
-                                task = plantillas[0],
-                                dueDate = hoy,
-                                assignedMembers = plantillas[0].members,
-                                state = TaskState.PENDING,
-                                pausedUntil = null
-                            ),
-                            // Tarea Pausada para Hoy
-                            TaskInstanceEntity(
-                                task = plantillas[1],
-                                dueDate = hoy,
-                                assignedMembers = plantillas[1].members,
-                                state = TaskState.PAUSED,
-                                // Pausada por 2 horas
-                                pausedUntil = hoy + (2 * 60 * 60 * 1000)
-                            ),
-                            // Tarea Completada de Ayer
-                            TaskInstanceEntity(
-                                task = plantillas[2],
-                                dueDate = ayer,
-                                assignedMembers = plantillas[2].members,
-                                state = TaskState.COMPLETED,
-                                pausedUntil = null
-                            ),
-                            // Tarea Pendiente para Mañana
-                            TaskInstanceEntity(
-                                task = plantillas[3],
-                                dueDate = mañana,
-                                assignedMembers = plantillas[3].members,
-                                state = TaskState.PENDING,
-                                pausedUntil = null
-                            )
-                        )
-
-                        instancias.forEach { instanceDao.add(it) }
+                        instanceDao.insertInstanceWithAssignedMembers(inst3, listOf(idMaria, idJuan))
                     }
                 }
             }

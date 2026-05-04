@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.entity.TaskEntity
 import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
 import haptikos.gestortareashogar_haptikos.utils.getDayName
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -40,9 +42,37 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
         return repository.getTaskById(taskId)
     }
 
+    // Tarea con datos completos
+    val tasksWithDetails: StateFlow<List<TaskWithDetails>> = repository.allTasksWithDetails
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 
+    // Agregar tarea con miembros
+    fun addTaskNew(task: TaskEntityNew, selectedMemberIds: List<Int>) {
+        viewModelScope.launch {
+            repository.insertTaskNew(task, selectedMemberIds)
+        }
+    }
 
+    // Edición de tarea
+    fun updateTaskNew(task: TaskEntityNew, selectedMemberIds: List<Int>) {
+        viewModelScope.launch {
+            repository.updateTaskNewWithMembers(task, selectedMemberIds)
+        }
+    }
 
+    fun deleteTaskNew(task: TaskEntityNew) {
+        viewModelScope.launch {
+            repository.deleteTaskNew(task)
+        }
+    }
+
+    suspend fun getByIdNew(taskId: Int): TaskWithDetails? {
+        return repository.getTaskWithDetailsById(taskId)
+    }
 
 
 

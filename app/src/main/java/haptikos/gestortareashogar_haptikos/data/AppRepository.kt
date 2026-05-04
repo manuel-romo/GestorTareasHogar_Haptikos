@@ -8,6 +8,13 @@ import haptikos.gestortareashogar_haptikos.data.entity.MemberEntity
 import haptikos.gestortareashogar_haptikos.data.entity.RoomEntity
 import haptikos.gestortareashogar_haptikos.data.entity.TaskEntity
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntity
+import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
 import kotlinx.coroutines.flow.Flow
 
 class AppRepository(
@@ -62,6 +69,71 @@ class AppRepository(
     // Operaciones con habitaciones
     suspend fun insertRoom(room: RoomEntity) {
         roomDao.add(room)
+    }
+
+
+    // Funciones nuevas -----------------------------------------------
+    // Lecturas reactivas
+    val allTasksNew: Flow<List<TaskEntityNew>> = taskDao.getAllNew()
+    val allTasksInstanceNew: Flow<List<TaskInstanceEntityNew>> = taskInstanceDao.getAllNew()
+    val allMembersNew: Flow<List<MemberEntityNew>> = memberDao.getAllNew()
+    val allRoomsNew: Flow<List<RoomEntityNew>> = roomDao.getAllNew()
+
+    val allTasksWithDetails: Flow<List<TaskWithDetails>> = taskDao.getAllTasksWithDetails()
+    val allInstancesWithDetails: Flow<List<TaskInstanceWithDetails>> = taskInstanceDao.getAllInstancesWithDetails()
+
+    // Operaciones de Inserción
+    suspend fun insertTaskNew(task: TaskEntityNew, memberIds: List<Int>) {
+        taskDao.insertTaskWithMembers(task, memberIds)
+    }
+
+    suspend fun insertTaskInstanceNew(taskInstance: TaskInstanceEntityNew, memberIds: List<Int>) {
+        taskInstanceDao.insertInstanceWithAssignedMembers(taskInstance, memberIds)
+    }
+
+    suspend fun getTaskWithDetailsById(taskId: Int): TaskWithDetails? {
+        return taskDao.getTaskWithDetailsById(taskId)
+    }
+
+    // Operaciones de Actualización y Eliminación
+    suspend fun updateTaskNewWithMembers(task: TaskEntityNew, memberIds: List<Int>) {
+        taskDao.updateTaskWithMembers(task, memberIds)
+    }
+
+    suspend fun deleteTaskNew(task: TaskEntityNew) {
+        taskDao.deleteTaskBaseNew(task)
+    }
+
+    suspend fun getFilteredInstances (status: TaskState?,
+                                      searchQuery: String,
+                                      memberName: String?): Flow<List<TaskInstanceWithDetails>>{
+        return taskInstanceDao.getFilteredInstances(status, searchQuery, memberName)
+    }
+
+    // Operaciones con miembros
+    suspend fun insertMemberNew(member: MemberEntityNew) {
+        memberDao.addNew(member)
+    }
+
+    suspend fun updateMemberNew(member: MemberEntityNew) {
+        memberDao.updateNew(member)
+    }
+
+    suspend fun deleteMemberNew(member: MemberEntityNew) {
+        memberDao.deleteNew(member)
+    }
+
+    // Operaciones con habitaciones
+    suspend fun insertRoomNew(room: RoomEntityNew) {
+        roomDao.addNew(room)
+    }
+
+    suspend fun updateRoomNew(room: RoomEntityNew) {
+        roomDao.updateNew(room)
+    }
+
+    suspend fun deleteRoomNew(room: RoomEntityNew) {
+        roomDao.deleteNew(room)
     }
 
 

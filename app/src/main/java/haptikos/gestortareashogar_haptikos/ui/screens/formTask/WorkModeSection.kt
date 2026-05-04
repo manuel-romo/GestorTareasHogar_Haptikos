@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.entity.MemberEntity
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.ui.enums.TurnMode
 import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
 
@@ -47,7 +48,7 @@ import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
 fun WorkModeSection(
     selectedWorkMode: WorkMode, onWorkModeChange: (WorkMode) -> Unit,
     selectedTurnMode: TurnMode, onTurnModeChange: (TurnMode) -> Unit,
-    orderedTurns: List<MemberEntity>, onShuffleTurns: () -> Unit,
+    orderedTurns: List<MemberEntityNew>, onShuffleTurns: () -> Unit,
     onMoveTurn: (Int, Int) -> Unit
 ) {
     SectionTitle("MODO DE TRABAJO")
@@ -139,7 +140,7 @@ fun WorkModeButton(
 @Composable
 fun ReorderableMemberItem(
     index: Int,
-    member: MemberEntity,
+    member: MemberEntityNew,
     itemsCount: Int,
     isManual: Boolean,
     onMove: (Int, Int) -> Unit

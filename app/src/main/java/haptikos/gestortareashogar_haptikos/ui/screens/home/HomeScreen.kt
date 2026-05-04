@@ -23,7 +23,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import haptikos.gestortareashogar_haptikos.R
-import haptikos.gestortareashogar_haptikos.data.entity.TaskEntity
 import haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
@@ -32,9 +31,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import haptikos.gestortareashogar_haptikos.data.entity.MemberEntity
-import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntity
+import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.ui.theme.PausedYellow
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.TaskFilter
@@ -64,7 +67,7 @@ fun HomeScreen(
 
 @Composable
 fun HomeContent(
-    tasks: List<TaskInstanceEntity>,
+    tasks: List<TaskInstanceWithDetails>,
     stats: DashboardStats,
     currentFilter: TaskFilter,
     onFilterChange: (TaskFilter) -> Unit,
@@ -72,9 +75,9 @@ fun HomeContent(
     onSearchQueryChange: (String) -> Unit,
     onNewTaskClick:() -> Unit
 ) {
-    val tareasPendientes = tasks.filter { it.state == TaskState.PENDING }
-    val tareasPausadas = tasks.filter { it.state == TaskState.PAUSED }
-    val tareasCompletadas = tasks.filter { it.state == TaskState.COMPLETED }
+    val tareasPendientes = tasks.filter { it.taskInstance.state == TaskState.PENDING }
+    val tareasPausadas = tasks.filter { it.taskInstance.state == TaskState.PAUSED }
+    val tareasCompletadas = tasks.filter { it.taskInstance.state == TaskState.COMPLETED }
 
     val pendingTasksCount = stats.pendingTasksCount
     val totalTasks = stats.totalTasks
@@ -179,56 +182,67 @@ fun HomeContent(
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
-fun HomeScreenPreview_Pausada_Pendiente(){
+fun HomeScreenPreview_Pausada_Pendiente() {
+    val m1 = MemberEntityNew(
+        id = 1,
+        name = "María",
+        lastName = "Gómez",
+        colorHex = "#F014A8",
+        role = MemberRole.CREATOR
+    )
+    val m2 = MemberEntityNew(
+        id = 2,
+        name = "Juan",
+        lastName = "Pérez",
+        colorHex = "#2979FF",
+        role = MemberRole.MEMBER
+    )
+
     GestorTareasHogar_HaptikosTheme {
         HomeContent(
             tasks = listOf(
-                // Tarea Pendiente
-                TaskInstanceEntity(
-                    id = 1,
-                    task = TaskEntity(
+                // Tarea Pendiente envuelta en WithDetails
+                TaskInstanceWithDetails(
+                    taskInstance = TaskInstanceEntityNew(
+                        id = 1,
+                        taskId = 101,
+                        state = TaskState.PENDING,
+                        dueDate = 1711929600000L
+                    ),
+                    task = TaskEntityNew(
                         id = 101,
                         title = "Limpiar la cocina",
                         points = 15,
-                        members = emptyList(),
-                        room = null
+                        roomId = 1
                     ),
-                    dueDate = 1711929600000L,
-                    assignedMembers = listOf(
-                        MemberEntity(id = 1, name = "María", lastName = "Gómez", colorHex = "#F014A8"),
-                        MemberEntity(id = 2, name = "Juan", lastName = "Pérez", colorHex = "#2979FF")
-                    ),
-                    state = TaskState.PENDING,
-                    pausedUntil = 0L
+                    assignedMembers = listOf(m1, m2),
+                    room = RoomEntityNew(id = 1, name = "Cocina", icon = "🍳", colorHex = "#FF5252")
                 ),
-                // Tarea Pausada
-                TaskInstanceEntity(
-                    id = 2,
-                    task = TaskEntity(
+                // Tarea Pausada envuelta en WithDetails
+                TaskInstanceWithDetails(
+                    taskInstance = TaskInstanceEntityNew(
+                        id = 2,
+                        taskId = 102,
+                        state = TaskState.PAUSED,
+                        dueDate = 1712016000000L,
+                        pausedUntil = 1711929600000L),
+                    task = TaskEntityNew(
                         id = 102,
                         title = "Lavar la ropa",
                         points = 10,
-                        members = emptyList(),
-                        room = null
-                    ),
-                    dueDate = 1712016000000L,
-                    assignedMembers = listOf(
-                        MemberEntity(id = 3, name = "Ana", lastName = "López", colorHex = "#9C27B0")
-                    ),
-                    state = TaskState.PAUSED,
-                    pausedUntil = 1711929600000L
+                        roomId = 1),
+                    assignedMembers = listOf(m1),
+                    room = null
                 )
             ),
-            stats = TaskInstanceViewModel.DashboardStats(
+            stats = DashboardStats(
                 pendingTasksCount = 1,
-                completedTasksCount = 0,
                 totalTasks = 2,
-                dailyProgress = 0f,
-                userPoints = 0
-            ),
-            currentFilter = TaskInstanceViewModel.TaskFilter(),
+                dailyProgress = 0.5f,
+                userPoints = 150),
+            currentFilter = TaskFilter(),
             onFilterChange = {},
             searchQuery = "",
             onSearchQueryChange = {},
@@ -237,37 +251,40 @@ fun HomeScreenPreview_Pausada_Pendiente(){
     }
 }
 
-@Preview
+@Preview(showBackground = true)
 @Composable
-fun HomeScreenPreview_Completada(){
+fun HomeScreenPreview_Completada() {
+    val m1 = MemberEntityNew(
+        id = 1,
+        name = "María",
+        lastName = "Gómez",
+        colorHex = "#F014A8",
+        role = MemberRole.CREATOR)
+
     GestorTareasHogar_HaptikosTheme {
         HomeContent(
             tasks = listOf(
-                TaskInstanceEntity(
-                    id = 3,
-                    task = TaskEntity(
+                TaskInstanceWithDetails(
+                    taskInstance = TaskInstanceEntityNew(
+                        id = 3,
+                        taskId = 103,
+                        state = TaskState.COMPLETED,
+                        dueDate = 1711843200000L),
+                    task = TaskEntityNew(
                         id = 103,
                         title = "Comprar víveres",
                         points = 5,
-                        members = emptyList(),
-                        room = null
-                    ),
-                    dueDate = 1711843200000L,
-                    assignedMembers = listOf(
-                        MemberEntity(id = 1, name = "María", lastName = "Gómez", colorHex = "#F014A8")
-                    ),
-                    state = TaskState.COMPLETED,
-                    pausedUntil = 0L
+                        roomId = 1),
+                    assignedMembers = listOf(m1),
+                    room = null
                 )
             ),
-            stats = TaskInstanceViewModel.DashboardStats(
+            stats = DashboardStats(
                 pendingTasksCount = 0,
-                completedTasksCount = 1,
                 totalTasks = 1,
                 dailyProgress = 1f,
-                userPoints = 5
-            ),
-            currentFilter = TaskInstanceViewModel.TaskFilter(),
+                userPoints = 200),
+            currentFilter = TaskFilter(),
             onFilterChange = {},
             searchQuery = "",
             onSearchQueryChange = {},
