@@ -7,10 +7,12 @@ import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import haptikos.gestortareashogar_haptikos.ui.screens.formHome.FormRoomConfigurationScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.formTask.NewTaskScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.home.HomeScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.LogInScreen
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
@@ -20,6 +22,7 @@ sealed class Screen(val route: String){
     object Login: Screen("login")
     object Home: Screen("home")
     object NewTask: Screen("newTask")
+    object HomeConfiguration: Screen("homeConfiguration")
 }
 
 @Composable
@@ -28,7 +31,8 @@ fun AppNavigation(
     taskViewModel: TaskViewModel,
     taskInstanceViewModel: TaskInstanceViewModel,
     roomViewModel: RoomViewModel,
-    memberViewModel: MemberViewModel
+    memberViewModel: MemberViewModel,
+    homeViewModel: HomeViewModel
 ){
     val navController = rememberNavController()
 
@@ -65,8 +69,12 @@ fun AppNavigation(
         composable(Screen.Home.route){
             HomeScreen(
                 taskInstanceViewModel = taskInstanceViewModel,
+                homeViewModel = homeViewModel,
                 onNewTaskClick = {
                     navController.navigate(Screen.NewTask.route)
+                },
+                onSettingsClick = {
+                    navController.navigate(Screen.HomeConfiguration.route)
                 }
             )
         }
@@ -84,6 +92,16 @@ fun AppNavigation(
             )
         }
 
+
+        composable(Screen.HomeConfiguration.route){
+            FormRoomConfigurationScreen(
+                homeViewModel = homeViewModel,
+                memberViewModel = memberViewModel,
+                roomViewModel = roomViewModel,
+                taskViewModel = taskViewModel,
+                onBack = { navController.popBackStack() }
+            )
+        }
 
     }
 

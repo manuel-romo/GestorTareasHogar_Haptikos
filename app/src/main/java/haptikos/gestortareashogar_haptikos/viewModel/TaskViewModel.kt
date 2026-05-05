@@ -75,6 +75,44 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
     }
 
 
+    // Estados para retroalimentación de tareas
+    data class TaskFeedback(val title: String, val subtitle: String)
 
+    private val _taskFeedback = MutableStateFlow<TaskFeedback?>(null)
+    val taskFeedback = _taskFeedback.asStateFlow()
 
+    private fun showSuccessFeedback(title: String, subtitle: String) {
+        _taskFeedback.value = TaskFeedback(title, subtitle)
+    }
+
+    // Crear aviso
+    fun dismissFeedback() {
+        _taskFeedback.value = null
+    }
+
+    // Eliminación de tarea
+    private val _taskToDelete = MutableStateFlow<TaskEntityNew?>(null)
+    val taskToDelete = _taskToDelete.asStateFlow()
+
+    fun initiateTaskDeletion(task: TaskEntityNew) {
+        _taskToDelete.value = task
+    }
+
+    fun cancelTaskDeletion() {
+        _taskToDelete.value = null
+    }
+
+    fun confirmTaskDeletion() {
+        val task = _taskToDelete.value
+        if (task != null) {
+            viewModelScope.launch {
+
+                // Se elimina la tarea
+                repository.deleteTaskNew(task)
+
+                _taskToDelete.value = null
+                showSuccessFeedback("Actividad eliminada", "La tarea se eliminó correctamente.")
+            }
+        }
+    }
 }

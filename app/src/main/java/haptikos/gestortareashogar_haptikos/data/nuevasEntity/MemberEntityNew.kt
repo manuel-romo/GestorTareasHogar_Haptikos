@@ -12,4 +12,5 @@ data class MemberEntityNew (
     val lastName: String,
     val colorHex: String,
     val role: MemberRole,
+    val homeId: Int
 )

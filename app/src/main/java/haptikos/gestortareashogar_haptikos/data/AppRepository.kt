@@ -1,14 +1,19 @@
 package haptikos.gestortareashogar_haptikos.data
 
+import androidx.room.withTransaction
+import haptikos.gestortareashogar_haptikos.data.dao.HomeDao
 import haptikos.gestortareashogar_haptikos.data.dao.MemberDao
 import haptikos.gestortareashogar_haptikos.data.dao.RoomDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskInstanceDao
+import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
 import haptikos.gestortareashogar_haptikos.data.entity.MemberEntity
 import haptikos.gestortareashogar_haptikos.data.entity.RoomEntity
 import haptikos.gestortareashogar_haptikos.data.entity.TaskEntity
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntity
+import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
@@ -16,12 +21,15 @@ import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityN
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
 import kotlinx.coroutines.flow.Flow
+import java.util.UUID
 
 class AppRepository(
     private val taskDao: TaskDao,
     private val taskInstanceDao: TaskInstanceDao,
     private val memberDao: MemberDao,
-    private val roomDao: RoomDao
+    private val roomDao: RoomDao,
+    private val homeDao: HomeDao,
+    private val appDatabase: TaskDatabase
 ) {
 
     // Lecturas reactivas
@@ -134,6 +142,56 @@ class AppRepository(
 
     suspend fun deleteRoomNew(room: RoomEntityNew) {
         roomDao.deleteNew(room)
+    }
+
+    // Lectura reactiva Hogares
+    val allHomes: Flow<List<HomeEntityNew>> = homeDao.getAllHomes()
+
+    suspend fun getHomeById(homeId: Int): HomeEntityNew? {
+        return homeDao.getHomeById(homeId)
+    }
+
+    suspend fun updateHome(home: HomeEntityNew) {
+        homeDao.updateHome(home)
+    }
+
+    suspend fun deleteHome(home: HomeEntityNew) {
+        homeDao.deleteHome(home)
+    }
+
+    // Creación de nuevo hogar con nuevo código de invitación (Temporal)
+    suspend fun createHomeAndCreator(
+        homeName: String,
+        creatorName: String,
+        creatorLastName: String,
+        creatorColorHex: String
+    ) {
+        // Generación temporal de código de invitación
+        val inviteCode = UUID.randomUUID().toString().take(6).uppercase()
+
+        val newHome = HomeEntityNew(
+            name = homeName,
+            inviteCode = inviteCode
+        )
+
+        // Ejecución como transacción
+        appDatabase.withTransaction {
+
+            val generatedHomeId = homeDao.insertHome(newHome).toInt()
+
+            // Se crea el creador del Hogar
+            val creatorMember = MemberEntityNew(
+                homeId = generatedHomeId,
+                name = creatorName,
+                lastName = creatorLastName,
+                colorHex = creatorColorHex,
+                role = MemberRole.CREATOR
+            )
+
+            memberDao.addNew(creatorMember)
+
+        }
+
     }
 
 

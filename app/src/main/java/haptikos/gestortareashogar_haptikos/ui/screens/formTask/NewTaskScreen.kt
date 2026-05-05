@@ -500,7 +500,7 @@ fun FormLabel(text: String, iconRes: Int) {
     }
 }
 
-
+/**
 @Preview(showBackground = true)
 @Composable
 fun NewTaskScreenPreview_Agregar() {
@@ -569,3 +569,4 @@ fun NewTaskScreenPreview_Editar() {
 }
 
 
+*/

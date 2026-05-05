@@ -44,8 +44,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.PopupProperties
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.TaskFilter
 
 
@@ -59,7 +61,11 @@ fun DashboardHeader(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     currentFilter: TaskFilter,
-    onFilterChange: (TaskFilter) -> Unit
+    onFilterChange: (TaskFilter) -> Unit,
+    onSettingsClick: () -> Unit,
+    currentHomeName: String,
+    homesList: List<HomeEntityNew>,
+    onHomeSelected: (HomeEntityNew) -> Unit,
 ) {
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
@@ -78,20 +84,134 @@ fun DashboardHeader(
             .padding(24.dp)
     ) {
         // Botones superiores
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Surface(
-                color = Color.White.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(painterResource(id = R.drawable.ic_home), contentDescription = "Casa", modifier = Modifier.size(16.dp), tint = Color.White)
-                    Text(" Mi Casa ", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                    Icon(painterResource(id = R.drawable.ic_dropdown), contentDescription = "Expandir", modifier = Modifier.size(16.dp), tint = Color.White)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Selector de Hogares
+            Box {
+                var expanded by remember { mutableStateOf(false) }
+
+                // Botón Naranja (Muestra el nombre del hogar seleccionado)
+                Surface(
+                    color = Color(0xFFFF8A00),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.clickable { expanded = true }
+                ) {
+                    Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(painterResource(id = R.drawable.ic_home), contentDescription = "Casa", modifier = Modifier.size(16.dp), tint = Color.White)
+                        Text(" $currentHomeName ", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Icon(painterResource(id = R.drawable.ic_dropdown), contentDescription = "Expandir", modifier = Modifier.size(16.dp), tint = Color.White)
+                    }
+                }
+
+                // Menú Desplegable
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                    modifier = Modifier
+                        .width(280.dp)
+                        .background(Color.White, RoundedCornerShape(16.dp)),
+                    properties = PopupProperties(focusable = true)
+                ) {
+                    Text(
+                        text = "MIS HOGARES",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
+                    )
+
+                    // Lista de hogares
+                    homesList.forEach { home ->
+                        val isSelected = home.name == currentHomeName
+                        val bgColor = if (isSelected) Color(0xFFFFF3E0) else Color.Transparent
+
+                        DropdownMenuItem(
+                            modifier = Modifier.background(bgColor),
+                            text = {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .background(if (isSelected) Color(0xFFFF8A00) else Color(0xFFE0E0E0), RoundedCornerShape(12.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(painterResource(id = R.drawable.ic_home), contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                                    }
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    Column {
+                                        Text(text = home.name, fontWeight = FontWeight.Bold, color = Color.Black)
+                                        // TODO: Aquí tendrías que cruzar datos con los miembros reales de ese hogar
+                                        Text(text = "Miembros... • Rol...", fontSize = 12.sp, color = Color.Gray)
+                                    }
+                                }
+                            },
+                            trailingIcon = {
+                                if (isSelected) {
+                                    Box(modifier = Modifier.size(8.dp).background(Color(0xFFFF8A00), CircleShape))
+                                }
+                            },
+                            onClick = {
+                                onHomeSelected(home)
+                                expanded = false
+                            }
+                        )
+                    }
+
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFF0F0F0))
+
+                    // Opción Crear Hogar
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(40.dp).background(Color(0xFF00E676), CircleShape), contentAlignment = Alignment.Center) {
+                                    Icon(painterResource(id = R.drawable.ic_plus), contentDescription = null, tint = Color.White)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("Crear hogar", fontWeight = FontWeight.Bold, color = Color.Black)
+                                    Text("Comienza un nuevo hogar", fontSize = 12.sp, color = Color.Gray)
+                                }
+                            }
+                        },
+                        onClick = { expanded = false }
+                    )
+
+                    // Unirse a Hogar
+                    DropdownMenuItem(
+                        text = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.size(40.dp).background(Color(0xFF2979FF), CircleShape), contentAlignment = Alignment.Center) {
+                                    Icon(painterResource(id = R.drawable.ic_arrow_right), contentDescription = null, tint = Color.White)
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column {
+                                    Text("Unirse a un hogar", fontWeight = FontWeight.Bold, color = Color.Black)
+                                    Text("Usa un código de invitación", fontSize = 12.sp, color = Color.Gray)
+                                }
+                            }
+                        },
+                        onClick = { expanded = false }
+                    )
                 }
             }
-            Spacer(Modifier.width(8.dp))
-            Surface(color = Color.White.copy(alpha = 0.2f), shape = RoundedCornerShape(16.dp)) {
-                Icon(painterResource(id = R.drawable.ic_configuration), contentDescription = "Ajustes", modifier = Modifier.padding(8.dp).size(20.dp), tint = Color.White)
+
+            // Configuración de Hogar
+            Surface(
+                color = Color.White.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.clickable { onSettingsClick() }
+            ) {
+                Icon(
+                    painterResource(id = R.drawable.ic_configuration),
+                    contentDescription = "Ajustes",
+                    modifier = Modifier.padding(8.dp).size(20.dp),
+                    tint = Color.White
+                )
             }
         }
 

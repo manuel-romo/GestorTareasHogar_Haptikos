@@ -1,7 +1,5 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.login
 
-import android.content.Context
-import android.content.ContextWrapper
 import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
@@ -262,35 +260,12 @@ fun LogInContent(
                             activity?.let { fragmentActivity ->
                                 authenticateWithBiometric(
                                     context = fragmentActivity,
-                                    onSuccess = {
-                                        onBiometricSuccess()
-                                    },
-                                    onFailed = {
-                                        // Si la huella no es correcta
-                                        onBiometricError("Huella no reconocida. Intenta de nuevo.")
-                                    },
-                                    onError = { errorCode, errString ->
-                                        // Si hubo cancelación no se muestra ningún error
-                                        if (errorCode != BiometricPrompt.ERROR_USER_CANCELED &&
-                                            errorCode != BiometricPrompt.ERROR_NEGATIVE_BUTTON) {
-
-                                            val personalizedMessage = when (errorCode) {
-                                                BiometricPrompt.ERROR_NO_BIOMETRICS ->
-                                                    "No tienes ninguna huella registrada en tu teléfono."
-                                                BiometricPrompt.ERROR_HW_UNAVAILABLE ->
-                                                    "El sensor biométrico no está disponible en este momento."
-                                                BiometricPrompt.ERROR_HW_NOT_PRESENT ->
-                                                    "Tu dispositivo no tiene sensor de huella."
-                                                BiometricPrompt.ERROR_LOCKOUT ->
-                                                    "Demasiados intentos fallidos. Sensor bloqueado temporalmente."
-                                                BiometricPrompt.ERROR_NO_DEVICE_CREDENTIAL ->
-                                                    "Debes configurar un PIN o contraseña en tu teléfono primero."
-                                                else ->
-                                                    "Error de autenticación ($errorCode): $errString"
-                                            }
-
-                                            onBiometricError(personalizedMessage)
-                                        }
+                                    title = "Iniciar sesión",
+                                    subtitle = "Usa tu huella para acceder a tus tareas",
+                                    onSuccess = { onBiometricSuccess() },
+                                    onFailed = { onBiometricError("Huella no reconocida. Intenta de nuevo.") },
+                                    onError = { errorMessage ->
+                                        errorMessage?.let { onBiometricError(it) }
                                     }
                                 )
                             }
@@ -301,8 +276,8 @@ fun LogInContent(
                     ) {
 
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_dactilar),
-                            contentDescription = "Icono de correo",
+                            painter = painterResource(id = R.drawable.ic_fingerprint),
+                            contentDescription = "Icono de huella",
                             modifier = Modifier.size(24.dp)
                         )
 

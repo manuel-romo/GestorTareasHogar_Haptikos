@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 import haptikos.gestortareashogar_haptikos.data.converter.Converters
+import haptikos.gestortareashogar_haptikos.data.dao.HomeDao
 import haptikos.gestortareashogar_haptikos.data.dao.MemberDao
 import haptikos.gestortareashogar_haptikos.data.dao.RoomDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskDao
@@ -18,6 +19,7 @@ import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntity
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.PriorityLevel
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
@@ -41,7 +43,8 @@ import kotlinx.coroutines.launch
         MemberEntityNew::class,
         RoomEntityNew::class,
         TaskMemberJoin::class,
-        TaskInstanceMemberJoin::class
+        TaskInstanceMemberJoin::class,
+        HomeEntityNew::class
     ],
     version = 2,
     exportSchema = false
@@ -53,6 +56,7 @@ abstract class TaskDatabase: RoomDatabase() {
     abstract fun memberDao(): MemberDao
     abstract fun roomDao(): RoomDao
     abstract fun taskInstanceDao(): TaskInstanceDao
+    abstract fun homeDao(): HomeDao
 
     companion object {
         @Volatile
@@ -86,6 +90,7 @@ abstract class TaskDatabase: RoomDatabase() {
                         val instanceDao = database.taskInstanceDao()
                         val memberDao = database.memberDao()
                         val roomDao = database.roomDao()
+                        val homeDao = database.homeDao()
 
                         val hoy = System.currentTimeMillis()
                         val ayer = hoy - (24 * 60 * 60 * 1000)
@@ -102,10 +107,20 @@ abstract class TaskDatabase: RoomDatabase() {
                         instanceDao.add(TaskInstanceEntity(task = oldTask, dueDate = hoy, assignedMembers = oldTask.members))
 
                         // Datos relacionales
-                        // 1 Habitación y 2 Miembros
-                        val newRoomId = roomDao.addNew(RoomEntityNew(name = "Cocina Nueva", colorHex = "#FF5252", icon = "🍳")).toInt()
-                        val idMaria = memberDao.addNew(MemberEntityNew(name = "María", lastName = "Gómez", colorHex = "#F014A8", role = MemberRole.CREATOR)).toInt()
-                        val idJuan = memberDao.addNew(MemberEntityNew(name = "Juan", lastName = "Pérez", colorHex = "#2979FF", role = MemberRole.MEMBER)).toInt()
+                        // Creación de hogar
+                        val inviteCode = java.util.UUID.randomUUID().toString().take(6).uppercase()
+                        val idHome = homeDao.insertHome(
+                            HomeEntityNew(
+                                name = "Mi Casa Principal",
+                                inviteCode = inviteCode
+                            )
+                        ).toInt()
+
+                        // Miembros
+                        val newRoomId = roomDao.addNew(RoomEntityNew(homeId = idHome, name = "Cocina Nueva", colorHex = "#FF5252", icon = "🍳")).toInt()
+
+                        val idMaria = memberDao.addNew(MemberEntityNew(homeId = idHome, name = "María", lastName = "Gómez", colorHex = "#F014A8", role = MemberRole.CREATOR)).toInt()
+                        val idJuan = memberDao.addNew(MemberEntityNew(homeId = idHome, name = "Juan", lastName = "Pérez", colorHex = "#2979FF", role = MemberRole.MEMBER)).toInt()
 
                         // Tarea Pendiente Limpiar estufa
                         val task1 = TaskEntityNew(title = "Limpiar la estufa", roomId = newRoomId, points = 15, priority = PriorityLevel.ALTA)

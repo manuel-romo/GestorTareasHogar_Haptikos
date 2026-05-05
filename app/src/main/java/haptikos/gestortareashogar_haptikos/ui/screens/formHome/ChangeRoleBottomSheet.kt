@@ -1,4 +1,4 @@
-package haptikos.gestortareashogar_haptikos.ui.screens.formRoom
+package haptikos.gestortareashogar_haptikos.ui.screens.formHome
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

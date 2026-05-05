@@ -14,6 +14,7 @@ import haptikos.gestortareashogar_haptikos.navigation.AppNavigation
 import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
 import haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
@@ -37,7 +38,9 @@ class MainActivity : FragmentActivity() {
                 database.taskDao(),
                 database.taskInstanceDao(),
                 database.memberDao(),
-                database.roomDao()
+                database.roomDao(),
+                database.homeDao(),
+                database
             )
         }
 
@@ -46,6 +49,7 @@ class MainActivity : FragmentActivity() {
         val taskInstanceViewModel: TaskInstanceViewModel by viewModels { TaskInstanceViewModelFactory(repository) }
         val roomViewModel: RoomViewModel by viewModels { RoomViewModelFactory(repository) }
         val memberViewModel: MemberViewModel by viewModels { MemberViewModelFactory(repository) }
+        val homeViewModel: HomeViewModel by viewModels { HomeViewModelFactory(repository) }
 
         setContent {
             GestorTareasHogar_HaptikosTheme {
@@ -54,7 +58,8 @@ class MainActivity : FragmentActivity() {
                     taskViewModel = taskViewModel,
                     taskInstanceViewModel = taskInstanceViewModel,
                     memberViewModel = memberViewModel,
-                    roomViewModel = roomViewModel
+                    roomViewModel = roomViewModel,
+                    homeViewModel = homeViewModel
                 )
             }
         }
@@ -82,5 +87,11 @@ class RoomViewModelFactory(private val repository: AppRepository): ViewModelProv
 class MemberViewModelFactory(private val repository: AppRepository): ViewModelProvider.Factory{
     override fun <T: ViewModel> create(modelClass: Class<T>): T{
         return MemberViewModel(repository) as T
+    }
+}
+
+class HomeViewModelFactory(private val repository: AppRepository): ViewModelProvider.Factory{
+    override fun <T: ViewModel> create(modelClass: Class<T>): T{
+        return HomeViewModel(repository) as T
     }
 }

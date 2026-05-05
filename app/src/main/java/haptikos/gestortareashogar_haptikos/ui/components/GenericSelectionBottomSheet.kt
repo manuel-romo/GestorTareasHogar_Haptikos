@@ -40,7 +40,8 @@ fun <T> GenericSelectionBottomSheet(
     selectedItem: T?,
     onItemSelected: (T) -> Unit,
     itemIcon: (T) -> String,
-    itemText: (T) -> String
+    itemText: (T) -> String,
+    itemSubtitle: ((T) -> String)? = null
 ) {
     if (showSheet) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -48,7 +49,7 @@ fun <T> GenericSelectionBottomSheet(
         ModalBottomSheet(
             onDismissRequest = onDismissRequest,
             sheetState = sheetState,
-            containerColor = White,
+            containerColor = Color.White,
             dragHandle = { BottomSheetDefaults.DragHandle() }
         ) {
             Column(
@@ -56,7 +57,7 @@ fun <T> GenericSelectionBottomSheet(
                     .fillMaxWidth()
                     .padding(bottom = 32.dp, start = 24.dp, end = 24.dp)
             ) {
-                // Título y descripción
+                // Título y descripción principal
                 Text(text = title, fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.Black)
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(text = description, color = Color.Gray, fontSize = 14.sp)
@@ -82,13 +83,23 @@ fun <T> GenericSelectionBottomSheet(
                     ) {
                         Text(text = itemIcon(item), fontSize = 20.sp)
                         Spacer(modifier = Modifier.width(16.dp))
-                        Text(
-                            text = itemText(item),
-                            fontSize = 16.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (isSelected) Color(0xFFF54927) else Color.Black,
-                            modifier = Modifier.weight(1f)
-                        )
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = itemText(item),
+                                fontSize = 16.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (isSelected) Color(0xFFF54927) else Color.Black
+                            )
+                            if (itemSubtitle != null) {
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = itemSubtitle(item),
+                                    fontSize = 12.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
 
                         if (isSelected) {
                             Icon(

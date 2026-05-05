@@ -31,14 +31,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.ui.theme.PausedYellow
+import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.TaskFilter
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.DashboardStats
@@ -46,13 +43,19 @@ import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.Dashb
 @Composable
 fun HomeScreen(
     taskInstanceViewModel: TaskInstanceViewModel,
-    onNewTaskClick:() -> Unit
+    homeViewModel: HomeViewModel,
+    onNewTaskClick:() -> Unit,
+    onSettingsClick: () -> Unit
 ){
+    // Estados de tareas
     val tasksInstanceList by taskInstanceViewModel.tasks.collectAsState()
     val stats by taskInstanceViewModel.stats.collectAsState()
     val currentFilter by taskInstanceViewModel.currentFilter.collectAsState()
-
     val searchQuery by taskInstanceViewModel.searchQuery.collectAsState()
+
+    // Estados de hogar
+    val homesList by homeViewModel.allHomes.collectAsState()
+    val selectedHome by homeViewModel.selectedHome.collectAsState()
 
     HomeContent(
         tasks = tasksInstanceList,
@@ -60,8 +63,12 @@ fun HomeScreen(
         currentFilter = currentFilter,
         onFilterChange = { nuevoFiltro -> taskInstanceViewModel.updateFilter(nuevoFiltro) },
         searchQuery = searchQuery,
+        homesList = homesList,
+        selectedHome = selectedHome,
+        onHomeSelected = { home -> homeViewModel.selectHome(home) },
         onSearchQueryChange = { nuevaBusqueda -> taskInstanceViewModel.updateSearchQuery(nuevaBusqueda) },
-        onNewTaskClick = onNewTaskClick
+        onNewTaskClick = onNewTaskClick,
+        onSettingsClick = onSettingsClick
     )
 }
 
@@ -73,7 +80,11 @@ fun HomeContent(
     onFilterChange: (TaskFilter) -> Unit,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    onNewTaskClick:() -> Unit
+    onNewTaskClick:() -> Unit,
+    onSettingsClick: () -> Unit,
+    homesList: List<HomeEntityNew>,
+    selectedHome: HomeEntityNew?,
+    onHomeSelected: (HomeEntityNew) -> Unit,
 ) {
     val tareasPendientes = tasks.filter { it.taskInstance.state == TaskState.PENDING }
     val tareasPausadas = tasks.filter { it.taskInstance.state == TaskState.PAUSED }
@@ -121,7 +132,11 @@ fun HomeContent(
                     searchQuery = searchQuery,
                     onSearchQueryChange = onSearchQueryChange,
                     currentFilter = currentFilter,
-                    onFilterChange = onFilterChange
+                    onFilterChange = onFilterChange,
+                    currentHomeName = selectedHome?.name ?: "Sin Hogar",
+                    homesList = homesList,
+                    onHomeSelected = onHomeSelected,
+                    onSettingsClick = onSettingsClick
                 )
             }
             item {
@@ -182,6 +197,7 @@ fun HomeContent(
     }
 }
 
+/*
 @Preview(showBackground = true)
 @Composable
 fun HomeScreenPreview_Pausada_Pendiente() {
@@ -246,7 +262,8 @@ fun HomeScreenPreview_Pausada_Pendiente() {
             onFilterChange = {},
             searchQuery = "",
             onSearchQueryChange = {},
-            onNewTaskClick = {}
+            onNewTaskClick = {},
+            onSettingsClick = {}
         )
     }
 }
@@ -288,7 +305,10 @@ fun HomeScreenPreview_Completada() {
             onFilterChange = {},
             searchQuery = "",
             onSearchQueryChange = {},
-            onNewTaskClick = {}
+            onNewTaskClick = {},
+            onSettingsClick = {}
         )
     }
 }
+
+ */
