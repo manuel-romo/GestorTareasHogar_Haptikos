@@ -41,6 +41,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.text.style.TextAlign
 
 @Composable
 fun RewardsScreen(
@@ -49,6 +51,9 @@ fun RewardsScreen(
 ) {
     val stats by taskInstanceViewModel.stats.collectAsState()
     val tasks by taskInstanceViewModel.tasks.collectAsState()
+
+    // Variable para controlar la pestaña seleccionada
+    var selectedTab by remember { mutableStateOf("Resumen") }
 
     //Filtro para las tareas completadas para la sección de "Puntos recientes"
     val completedTasks = tasks.filter { it.taskInstance.state == TaskState.COMPLETED }
@@ -66,58 +71,66 @@ fun RewardsScreen(
             onBackClick = onBackClick
         )
 
-        //Selector de secciones (estático de mientras)
-        RewardsTabSelector()
+        //Selector de secciones (Ahora funcional)
+        RewardsTabSelector(
+            selectedTab = selectedTab,
+            onTabSelected = { selectedTab = it }
+        )
 
         Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-            InfoCard(title = "¿Cómo ganar puntos?", iconId = R.drawable.ic_bolt) {
-                RewardEarningRow(
-                    "Tarea completada",
-                    "+10 pts",
-                    Color(0xFFE8F5E9),
-                    Color(0xFF4CAF50)
-                )
-                RewardEarningRow(
-                    "Tarea de alta prioridad",
-                    "+5 pts",
-                    Color(0xFFFFF3E0),
-                    Color(0xFFFF9800)
-                )
-                RewardEarningRow(
-                    "Completar el día entero",
-                    "+25 pts",
-                    Color(0xFFFFF9C4),
-                    Color(0xFFFBC02D)
-                )
-                RewardEarningRow(
-                    "Racha semanal (7 días)",
-                    "+25 pts",
-                    Color(0xFFFFEBEE),
-                    Color(0xFFE91E63)
-                )
-                RewardEarningRow(
-                    "Invitar un miembro",
-                    "+15 pts",
-                    Color(0xFFE3F2FD),
-                    Color(0xFF2196F3)
-                )
-            }
+            if (selectedTab == "Resumen") {
+                InfoCard(title = "¿Cómo ganar puntos?", iconId = R.drawable.ic_bolt) {
+                    RewardEarningRow(
+                        "Tarea completada",
+                        "+10 pts",
+                        Color(0xFFE8F5E9),
+                        Color(0xFF4CAF50)
+                    )
+                    RewardEarningRow(
+                        "Tarea de alta prioridad",
+                        "+5 pts",
+                        Color(0xFFFFF3E0),
+                        Color(0xFFFF9800)
+                    )
+                    RewardEarningRow(
+                        "Completar el día entero",
+                        "+25 pts",
+                        Color(0xFFFFF9C4),
+                        Color(0xFFFBC02D)
+                    )
+                    RewardEarningRow(
+                        "Racha semanal (7 días)",
+                        "+25 pts",
+                        Color(0xFFFFEBEE),
+                        Color(0xFFE91E63)
+                    )
+                    RewardEarningRow(
+                        "Invitar un miembro",
+                        "+15 pts",
+                        Color(0xFFE3F2FD),
+                        Color(0xFF2196F3)
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-            //Sección del historial
-            InfoCard(title = "Puntos recientes", iconId = R.drawable.ic_star) {
-                if (completedTasks.isEmpty()) {
-                    Text("Aún no has completado tareas hoy", color = Color.Gray, fontSize = 14.sp)
-                } else {
-                    completedTasks.take(5).forEach { taskWithDetails ->
-                        RecentPointRow(
-                            title = taskWithDetails.task.title,
-                            points = "+${taskWithDetails.task.points}",
-                            iconId = R.drawable.ic_check_circle
-                        )
+                //Sección del historial
+                InfoCard(title = "Puntos recientes", iconId = R.drawable.ic_star) {
+                    if (completedTasks.isEmpty()) {
+                        Text("Aún no has completado tareas hoy", color = Color.Gray, fontSize = 14.sp)
+                    } else {
+                        completedTasks.take(5).forEach { taskWithDetails ->
+                            RecentPointRow(
+                                title = taskWithDetails.task.title,
+                                points = "+${taskWithDetails.task.points}",
+                                iconId = R.drawable.ic_check_circle
+                            )
+                        }
                     }
                 }
+            } else if (selectedTab == "Insignias") {
+                // Sección de Insignias integrada
+                BadgesContent()
             }
         }
         Spacer(modifier = Modifier.height(32.dp))
@@ -192,9 +205,11 @@ fun InfoCard(
 
 //Función composable para el selector de pestañas
 @Composable
-fun RewardsTabSelector() {
+fun RewardsTabSelector(
+    selectedTab: String,
+    onTabSelected: (String) -> Unit
+) {
     val tabs = listOf("Resumen", "Insignias", "Ranking", "Retos")
-    var selectedTab by remember { mutableStateOf("Resumen") }
 
     LazyRow(
         modifier = Modifier
@@ -207,7 +222,7 @@ fun RewardsTabSelector() {
             val isSelected = tab == selectedTab
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable() { selectedTab = tab }
+                modifier = Modifier.clickable() { onTabSelected(tab) }
             ) {
                 Text(
                     text = tab,
@@ -245,6 +260,138 @@ fun RecentPointRow(title: String, points: String, iconId: Int) {
     }
 }
 
+//Sección para las insignias
+@Composable
+fun BadgesContent() {
+    Column {
+        //Contador de progreso
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🏆", fontSize = 18.sp)
+                Spacer(Modifier.width(8.dp))
+                Text("4 de 9 desbloqueadas", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF2D3142))
+            }
+            Text("🔥🏆🌟👑", fontSize = 14.sp)
+        }
+
+        SectionBadgeTitle("DESBLOQUEADAS")
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            BadgeCard(
+                "Racha Ardiente",
+                "15 mar",
+                "🔥",
+                true, Modifier.weight(1f)
+            )
+            BadgeCard(
+                "Primer Hogar",
+                "1 ene",
+                "🏆",
+                true,
+                Modifier.weight(1f)
+            )
+            BadgeCard(
+                "Centenario",
+                "20 feb",
+                "🌟",
+                true,
+                Modifier.weight(1f)
+            )
+        }
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            BadgeCard(
+                "Líder del Mes",
+                "28 mar",
+                "👑",
+                true,
+                Modifier.weight(1f)
+            )
+            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        SectionBadgeTitle("POR DESBLOQUEAR")
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            BadgeCard(
+                "Turbo",
+                null,
+                "",
+                false,
+                Modifier.weight(1f)
+            )
+            BadgeCard(
+                "Mano Verde",
+                null,
+                "",
+                false,
+                Modifier.weight(1f)
+            )
+            BadgeCard(
+                "Puntual",
+                null,
+                "",
+                false,
+                Modifier.weight(1f)
+            )
+        }
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            BadgeCard(
+                "Social",
+                null,
+                "",
+                false,
+                Modifier.weight(1f)
+            )
+            BadgeCard(
+                "Diamante",
+                null,
+                "",
+                false,
+                Modifier.weight(1f)
+            )
+            Spacer(Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+fun BadgeCard(name: String, date: String?, icon: String, isUnlocked: Boolean, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.height(135.dp),
+        color = if (isUnlocked) Color.White else Color.White.copy(alpha = 0.6f),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, Color(0xFFF0F0F0))
+    ) {
+        Column(Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(Modifier
+                .size(46.dp)
+                .background(if (isUnlocked) Color(0xFFFFF3E0) else Color(0xFFF5F5F5),
+                    CircleShape), contentAlignment = Alignment.Center)
+            {
+                if (isUnlocked) Text(icon, fontSize = 22.sp) else Icon(painterResource(R.drawable.ic_clock), null, tint = Color.LightGray, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.height(12.dp))
+            Text(name, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, lineHeight = 14.sp)
+            date?.let { Text(it, fontSize = 10.sp, color = Color.LightGray) }
+        }
+    }
+}
+
+@Composable
+fun SectionBadgeTitle(title: String) {
+    Text(title, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.LightGray, letterSpacing = 1.sp, modifier = Modifier.padding(vertical = 12.dp))
+}
+
 //Preview de la pantalla de recompensas (todo esto es de prueba)
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
@@ -275,7 +422,7 @@ fun RewardsScreenPreview() {
                     onBackClick = {}
                 )
 
-                RewardsTabSelector()
+                RewardsTabSelector(selectedTab = "Resumen", onTabSelected = {})
 
                 Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                     InfoCard(title = "¿Cómo ganar puntos?", iconId = R.drawable.ic_bolt) {
