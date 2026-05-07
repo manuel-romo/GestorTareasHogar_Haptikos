@@ -20,25 +20,21 @@ import kotlinx.coroutines.launch
 class TaskViewModel(private val repository: AppRepository) : ViewModel() {
 
     // Escritura
-    fun addTask(task: TaskEntity) {
+    fun addTask(task: TaskEntityNew, memberIds: List<Int>) {
         viewModelScope.launch {
-            repository.insertTask(task)
+            repository.insertTaskNew(task, memberIds)
         }
     }
 
-    fun updateTask(task: TaskEntity) {
+
+
+    fun deleteTask(task: TaskEntityNew) {
         viewModelScope.launch {
-            repository.updateTask(task)
+            repository.deleteTaskNew(task)
         }
     }
 
-    fun deleteTask(task: TaskEntity) {
-        viewModelScope.launch {
-            repository.deleteTask(task)
-        }
-    }
-
-    suspend fun getById(taskId: Int): TaskEntity?{
+    suspend fun getById(taskId: Int): TaskEntityNew?{
         return repository.getTaskById(taskId)
     }
 

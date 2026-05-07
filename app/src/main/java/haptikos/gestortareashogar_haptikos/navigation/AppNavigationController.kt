@@ -13,6 +13,7 @@ import haptikos.gestortareashogar_haptikos.ui.screens.formHome.FormHomeConfigura
 import haptikos.gestortareashogar_haptikos.ui.screens.formTask.FormTaskScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.home.HomeScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.LogInScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.taskDetail.TaskDetailScreen
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
@@ -28,6 +29,7 @@ sealed class Screen(val route: String){
     object EditTask: Screen("editTask")
     object EditPredeterminedTask: Screen("editPredeterminedTask")
     object HomeConfiguration: Screen("homeConfiguration")
+    object TaskDetail: Screen("taskDetail")
 }
 
 @Composable
@@ -72,15 +74,20 @@ fun AppNavigation(
             )
         }
 
-        composable(Screen.Home.route){
+        composable(Screen.Home.route) {
             HomeScreen(
                 taskInstanceViewModel = taskInstanceViewModel,
                 homeViewModel = homeViewModel,
-                onNewTaskClick = {
-                    navController.navigate(Screen.NewTask.route)
+                onNewTaskClick = { navController.navigate(Screen.NewTask.route) },
+                onSettingsClick = { navController.navigate(Screen.HomeConfiguration.route) },
+                onTaskClick = { instanceId ->
+                    navController.navigate("${Screen.TaskDetail.route}/$instanceId")
                 },
-                onSettingsClick = {
-                    navController.navigate(Screen.HomeConfiguration.route)
+                onStatusClick = { taskInstance ->
+                    taskInstanceViewModel.markTaskAsCompleted(taskInstance)
+                },
+                onDeleteClick = { taskInstance ->
+                    taskInstanceViewModel.deleteTaskInstance(taskInstance)
                 }
             )
         }
@@ -165,6 +172,19 @@ fun AppNavigation(
                 onNavigateToNewPredeterminedTask = { roomId ->
                     navController.navigate("${Screen.NewPredeterminedTask.route}/$roomId")
                 }
+            )
+        }
+
+        composable(
+            route = "${Screen.TaskDetail.route}/{instanceId}",
+            arguments = listOf(navArgument("instanceId") { type = NavType.IntType })
+        ) { backStackEntry ->
+            val instanceId = backStackEntry.arguments?.getInt("instanceId") ?: return@composable
+
+            TaskDetailScreen(
+                instanceId = instanceId,
+                viewModel = taskInstanceViewModel,
+                onBack = { navController.popBackStack() }
             )
         }
     }

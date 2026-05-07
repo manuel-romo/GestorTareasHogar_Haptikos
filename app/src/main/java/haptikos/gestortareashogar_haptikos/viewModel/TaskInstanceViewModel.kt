@@ -3,8 +3,8 @@ package haptikos.gestortareashogar_haptikos.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
-import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntity
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.utils.getDayName
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,24 +26,21 @@ class TaskInstanceViewModel(private val repository: AppRepository) : ViewModel()
         val selectedDay: String = "Todos"
     )
 
+    // TODO obtener de Auth
     private val currentUser = "María"
 
     private val _currentFilter = MutableStateFlow(TaskFilter())
     val currentFilter = _currentFilter.asStateFlow()
 
-    // Búsqueda combinada
+    private fun updateTask(taskInstance: TaskInstanceEntityNew) {
+        viewModelScope.launch {
+            repository.updateTaskInstance(taskInstance)
+        }
+    }
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery = _searchQuery.asStateFlow()
 
-    fun updateSearchQuery(query: String) {
-        _searchQuery.value = query
-    }
-
-    fun updateFilter(newFilter: TaskFilter) {
-        _currentFilter.value = newFilter
-    }
-
-    // Clase que agrupa las características
     data class DashboardStats(
         val pendingTasksCount: Int = 0,
         val completedTasksCount: Int = 0,
@@ -52,21 +49,18 @@ class TaskInstanceViewModel(private val repository: AppRepository) : ViewModel()
         val userPoints: Int = 0
     )
 
-    fun updateTask(taskInstance: TaskInstanceEntity) {
+    fun updateSearchQuery(query: String) { _searchQuery.value = query }
+    fun updateFilter(newFilter: TaskFilter) { _currentFilter.value = newFilter }
+
+    // Acciones
+    fun markTaskAsCompleted(taskInstance: TaskInstanceEntityNew) {
         viewModelScope.launch {
-            repository.updateTaskInstance(taskInstance)
+            val completedTask = taskInstance.copy(state = TaskState.COMPLETED)
+            repository.updateTaskInstance(completedTask)
         }
     }
 
-    fun markTaskAsCompleted(taskInstance: TaskInstanceEntity) {
-        val completedTask = taskInstance.copy(state = TaskState.COMPLETED)
-        updateTask(completedTask)
-    }
-
-    suspend fun getById(taskInstanceId: Int): TaskInstanceEntity? {
-        return repository.getTaskInstanceById(taskInstanceId)
-    }
-
+    // Datos reactivos
     @OptIn(ExperimentalCoroutinesApi::class)
     val tasks: StateFlow<List<TaskInstanceWithDetails>> = combine(
         _currentFilter,
@@ -74,36 +68,31 @@ class TaskInstanceViewModel(private val repository: AppRepository) : ViewModel()
     ) { filter, query ->
         Pair(filter, query)
     }.flatMapLatest { (filter, query) ->
-        // Filtro de miembro
         val ownerName = if (filter.showOnlyMine) currentUser else null
 
-        // Consulta a base de datos
         repository.getFilteredInstances(
             status = filter.status,
             searchQuery = query,
             memberName = ownerName
         ).map { dbResults ->
-            // Filtrado de dia en memoria
-            dbResults.filter { instanceWithDetails ->
+            dbResults.filter { instance ->
                 if (filter.selectedDay != "Todos") {
-                    getDayName(instanceWithDetails.taskInstance.dueDate) == filter.selectedDay
-                } else {
-                    true
-                }
+                    getDayName(instance.taskInstance.dueDate) == filter.selectedDay
+                } else true
             }
         }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = emptyList()
-    )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // Se escuchan todas las tareas directas de la base de datos para hacer los cálculos
-    val stats: StateFlow<DashboardStats> = repository.allTasksInstance.map { allTasks ->
-        val total = allTasks.size
-        val completed = allTasks.count { it.state == TaskState.COMPLETED }
-        val pending = allTasks.count { it.state == TaskState.PENDING }
-        val points = allTasks.filter { it.state == TaskState.COMPLETED }.sumOf { it.task.points }
+
+    val stats: StateFlow<DashboardStats> = repository.allInstancesWithDetails.map { allInstances ->
+        val total = allInstances.size
+        val completed = allInstances.count { it.taskInstance.state == TaskState.COMPLETED }
+        val pending = allInstances.count { it.taskInstance.state == TaskState.PENDING }
+
+        val points = allInstances
+            .filter { it.taskInstance.state == TaskState.COMPLETED }
+            .sumOf { it.task.points + it.task.priority.points }
+
         val progress = if (total > 0) completed.toFloat() / total.toFloat() else 0f
 
         DashboardStats(
@@ -113,10 +102,32 @@ class TaskInstanceViewModel(private val repository: AppRepository) : ViewModel()
             dailyProgress = progress,
             userPoints = points
         )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = DashboardStats()
-    )
+    // Consultas únicas
+    suspend fun getInstanceWithDetailsById(instanceId: Int): TaskInstanceWithDetails? {
+        return repository.getTaskInstanceWithDetailsById(instanceId)
+    }
+
+    // Alternar entre Pausado y Pendiente
+    fun toggleTaskPause(taskInstance: TaskInstanceEntityNew) {
+        val newState = if (taskInstance.state == TaskState.PAUSED) TaskState.PENDING else TaskState.PAUSED
+        val updatedTask = taskInstance.copy(state = newState)
+        updateTask(updatedTask)
+    }
+
+    // Reactivar una tarea completada
+    fun markTaskAsPending(taskInstance: TaskInstanceEntityNew) {
+        val updatedTask = taskInstance.copy(state = TaskState.PENDING)
+        updateTask(updatedTask)
+    }
+
+    // Eliminar la instancia de la tarea
+    fun deleteTaskInstance(taskInstance: TaskInstanceEntityNew) {
+        viewModelScope.launch {
+            // Asegúrate de que se llame así tu método en el AppRepository
+            repository.deleteTaskInstance(taskInstance)
+        }
+    }
+
 }

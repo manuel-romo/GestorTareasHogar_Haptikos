@@ -2,6 +2,7 @@ package haptikos.gestortareashogar_haptikos.ui.screens.home
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,12 +18,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color.Companion.LightGray
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -43,7 +46,12 @@ import haptikos.gestortareashogar_haptikos.utils.getDayName
 import haptikos.gestortareashogar_haptikos.utils.parseHexColor
 
 @Composable
-fun TaskCard(taskInstance: TaskInstanceWithDetails) {
+fun TaskCard(
+    taskInstance: TaskInstanceWithDetails,
+    onClick: () -> Unit,
+    onStatusClick: () -> Unit,
+    onDeleteClick: () -> Unit
+) {
 
     val isPaused = taskInstance.taskInstance.state == TaskState.PAUSED
     val isCompleted = taskInstance.taskInstance.state == TaskState.COMPLETED
@@ -51,10 +59,9 @@ fun TaskCard(taskInstance: TaskInstanceWithDetails) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = White
-        ),
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .clickable { onClick() },
+        colors = CardDefaults.cardColors(containerColor = White),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(if (isCompleted) 0.dp else 2.dp),
         border = if (isPaused) BorderStroke(1.5.dp, PausedYellow) else null
@@ -69,6 +76,8 @@ fun TaskCard(taskInstance: TaskInstanceWithDetails) {
                 modifier = Modifier
                     .padding(top = 2.dp)
                     .size(28.dp)
+                    .clip(CircleShape)
+                    .clickable { onStatusClick() }
                     .border(
                         width = 2.dp,
                         color = when {
@@ -200,6 +209,7 @@ fun TaskCard(taskInstance: TaskInstanceWithDetails) {
                 modifier = Modifier.padding(top = 2.dp)
             ) {
                 if (!isCompleted) {
+                    // Badge de puntos
                     Surface(color = LightYellow, shape = RoundedCornerShape(8.dp)) {
                         Text(
                             text = " ⭐ +${taskInstance.task.points} ",
@@ -212,17 +222,19 @@ fun TaskCard(taskInstance: TaskInstanceWithDetails) {
                     Spacer(Modifier.width(8.dp))
                     Icon(
                         painterResource(id = R.drawable.ic_arrow_right),
-                        contentDescription = "Detalles",
+                        contentDescription = null,
                         modifier = Modifier.size(20.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
-                    Icon(
-                        painterResource(id = R.drawable.ic_trash),
-                        contentDescription = "Eliminar",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    IconButton(onClick = { onDeleteClick() }) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_trash),
+                            contentDescription = "Eliminar",
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

@@ -33,6 +33,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.ui.theme.PausedYellow
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
@@ -45,7 +46,10 @@ fun HomeScreen(
     taskInstanceViewModel: TaskInstanceViewModel,
     homeViewModel: HomeViewModel,
     onNewTaskClick:() -> Unit,
-    onSettingsClick: () -> Unit
+    onSettingsClick: () -> Unit,
+    onTaskClick: (Int) -> Unit,
+    onStatusClick: (TaskInstanceEntityNew) -> Unit,
+    onDeleteClick: (TaskInstanceEntityNew) -> Unit
 ){
     // Estados de tareas
     val tasksInstanceList by taskInstanceViewModel.tasks.collectAsState()
@@ -68,7 +72,10 @@ fun HomeScreen(
         onHomeSelected = { home -> homeViewModel.selectHome(home) },
         onSearchQueryChange = { nuevaBusqueda -> taskInstanceViewModel.updateSearchQuery(nuevaBusqueda) },
         onNewTaskClick = onNewTaskClick,
-        onSettingsClick = onSettingsClick
+        onSettingsClick = onSettingsClick,
+        onTaskClick = onTaskClick,
+        onStatusClick = onStatusClick,
+        onDeleteClick = onDeleteClick
     )
 }
 
@@ -85,6 +92,9 @@ fun HomeContent(
     homesList: List<HomeEntityNew>,
     selectedHome: HomeEntityNew?,
     onHomeSelected: (HomeEntityNew) -> Unit,
+    onTaskClick: (Int) -> Unit,
+    onStatusClick: (TaskInstanceEntityNew) -> Unit,
+    onDeleteClick: (TaskInstanceEntityNew) -> Unit
 ) {
     val tareasPendientes = tasks.filter { it.taskInstance.state == TaskState.PENDING }
     val tareasPausadas = tasks.filter { it.taskInstance.state == TaskState.PAUSED }
@@ -153,7 +163,12 @@ fun HomeContent(
             item { SectionTitle("PENDIENTES (${tareasPendientes.size})") }
 
             items(tareasPendientes) { task ->
-                TaskCard(taskInstance = task)
+                TaskCard(
+                    taskInstance = task,
+                    onClick = { onTaskClick(task.taskInstance.id) },
+                    onStatusClick = { onStatusClick(task.taskInstance) },
+                    onDeleteClick = {onDeleteClick(task.taskInstance) }
+                )
             }
 
             // Tareas pausadas
@@ -165,7 +180,12 @@ fun HomeContent(
                     )
                 }
                 items(tareasPausadas) { task ->
-                    TaskCard(taskInstance = task)
+                    TaskCard(
+                        taskInstance = task,
+                        onClick = { onTaskClick(task.taskInstance.id) },
+                        onStatusClick = { onStatusClick(task.taskInstance) },
+                        onDeleteClick = {onDeleteClick(task.taskInstance) }
+                    )
                 }
             }
 
@@ -189,7 +209,12 @@ fun HomeContent(
                     }
                 }
                 items(tareasCompletadas) { task ->
-                    TaskCard(taskInstance = task)
+                    TaskCard(
+                        taskInstance = task,
+                        onClick = { onTaskClick(task.taskInstance.id) },
+                        onStatusClick = { onStatusClick(task.taskInstance) },
+                        onDeleteClick = {onDeleteClick(task.taskInstance) }
+                    )
                 }
             }
 

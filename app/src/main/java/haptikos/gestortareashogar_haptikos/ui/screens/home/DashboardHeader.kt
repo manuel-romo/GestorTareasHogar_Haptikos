@@ -94,7 +94,7 @@ fun DashboardHeader(
             Box {
                 var expanded by remember { mutableStateOf(false) }
 
-                // Botón Naranja (Muestra el nombre del hogar seleccionado)
+                // Botón que muestra el nombre del hogar seleccionado
                 Surface(
                     color = Color(0xFFFF8A00),
                     shape = RoundedCornerShape(16.dp),
@@ -146,7 +146,7 @@ fun DashboardHeader(
 
                                     Column {
                                         Text(text = home.name, fontWeight = FontWeight.Bold, color = Color.Black)
-                                        // TODO: Aquí tendrías que cruzar datos con los miembros reales de ese hogar
+                                        // TODO: Cruzar datos con miembros reales de hogar
                                         Text(text = "Miembros... • Rol...", fontSize = 12.sp, color = Color.Gray)
                                     }
                                 }
@@ -170,7 +170,12 @@ fun DashboardHeader(
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).background(Color(0xFF00E676), CircleShape), contentAlignment = Alignment.Center) {
-                                    Icon(painterResource(id = R.drawable.ic_plus), contentDescription = null, tint = Color.White)
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_plus),
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
@@ -187,7 +192,12 @@ fun DashboardHeader(
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(modifier = Modifier.size(40.dp).background(Color(0xFF2979FF), CircleShape), contentAlignment = Alignment.Center) {
-                                    Icon(painterResource(id = R.drawable.ic_arrow_right), contentDescription = null, tint = Color.White)
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_arrow_right),
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
+                                    )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {

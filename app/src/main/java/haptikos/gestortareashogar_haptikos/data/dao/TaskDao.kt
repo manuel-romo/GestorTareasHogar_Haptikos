@@ -19,8 +19,7 @@ interface TaskDao {
     @Query("SELECT * FROM task_table ORDER BY suggestedDay ASC")
     fun getAll(): Flow<List<TaskEntity>>
 
-    @Query("SELECT * FROM task_table WHERE id = :taskId")
-    suspend fun getById(taskId: Int): TaskEntity?
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun add(task: TaskEntity)
@@ -33,7 +32,10 @@ interface TaskDao {
 
 
     // Nuevas funciones
-    @Query("SELECT * FROM task_table ORDER BY suggestedDay ASC")
+    @Query("SELECT * FROM task_table_new WHERE id = :taskId")
+    suspend fun getById(taskId: Int): TaskEntityNew?
+
+    @Query("SELECT * FROM task_table_new ORDER BY suggestedDay ASC")
     fun getAllNew(): Flow<List<TaskEntityNew>>
 
     @Transaction

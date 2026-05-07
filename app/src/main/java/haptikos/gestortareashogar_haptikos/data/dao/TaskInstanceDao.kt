@@ -20,22 +20,25 @@ interface TaskInstanceDao {
     @Query("SELECT * FROM task_instance_table ORDER BY dueDate ASC")
     fun getAll(): Flow<List<TaskInstanceEntity>>
 
-    @Query("SELECT * FROM task_instance_table WHERE id = :taskInstanceId")
-    suspend fun getById(taskInstanceId: Int): TaskInstanceEntity?
+
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun add(taskInstance: TaskInstanceEntity)
 
-    @Update
-    suspend fun update(task: TaskInstanceEntity)
-
-    @Delete
-    suspend fun delete(task: TaskInstanceEntity)
 
     // Funciones nuevas
 
+    @Query("SELECT * FROM task_instance_table_new WHERE id = :taskInstanceId")
+    suspend fun getById(taskInstanceId: Int): TaskInstanceEntityNew?
+
     @Query("SELECT * FROM task_instance_table_new ORDER BY dueDate ASC")
     fun getAllNew(): Flow<List<TaskInstanceEntityNew>>
+
+    @Update
+    suspend fun update(task: TaskInstanceEntityNew)
+
+    @Delete
+    suspend fun delete(task: TaskInstanceEntityNew)
 
     @Transaction
     @Query("SELECT * FROM task_instance_table_new ORDER BY dueDate ASC")
@@ -77,6 +80,10 @@ interface TaskInstanceDao {
         searchQuery: String,
         memberName: String?
     ): Flow<List<TaskInstanceWithDetails>>
+
+    @Transaction
+    @Query("SELECT * FROM task_instance_table_new WHERE id = :instanceId")
+    suspend fun getInstanceWithDetailsById(instanceId: Int): TaskInstanceWithDetails?
 
 
 }
