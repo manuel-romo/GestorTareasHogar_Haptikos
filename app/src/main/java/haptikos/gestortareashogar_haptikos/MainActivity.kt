@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.room.Room
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import haptikos.gestortareashogar_haptikos.data.AppRepository
+import haptikos.gestortareashogar_haptikos.data.AuthRepository
 import haptikos.gestortareashogar_haptikos.navigation.AppNavigation
 import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
 import haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme
@@ -44,7 +45,9 @@ class MainActivity : FragmentActivity() {
             )
         }
 
-        val authViewModel = AuthViewModel(DataStoreManager(this))
+        val authRepository by lazy { AuthRepository() }
+
+        val authViewModel: AuthViewModel by viewModels { AuthViewModelFactory(authRepository, DataStoreManager(this)) }
         val taskViewModel: TaskViewModel by viewModels { TaskViewModelFactory(repository) }
         val taskInstanceViewModel: TaskInstanceViewModel by viewModels { TaskInstanceViewModelFactory(repository) }
         val roomViewModel: RoomViewModel by viewModels { RoomViewModelFactory(repository) }
@@ -63,6 +66,15 @@ class MainActivity : FragmentActivity() {
                 )
             }
         }
+    }
+}
+
+class AuthViewModelFactory(
+    private val authRepository: AuthRepository,
+    private val dataStore: DataStoreManager
+): ViewModelProvider.Factory {
+    override fun <T: ViewModel> create(modelClass: Class<T>): T {
+        return AuthViewModel(authRepository, dataStore) as T
     }
 }
 

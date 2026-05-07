@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "792873130736",
+    "project_id": "hometasks-haptikos",
+    "storage_bucket": "hometasks-haptikos.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:792873130736:android:d6697ddef1684e0c160035",
+        "android_client_info": {
+          "package_name": "haptikos.gestortareashogar_haptikos"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDuljnuZBJGRxxRvGClSFKANMY-Mq0Bgfg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

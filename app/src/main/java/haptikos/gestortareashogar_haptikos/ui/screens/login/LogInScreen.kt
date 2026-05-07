@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -67,6 +68,7 @@ fun LogInScreen(
     }
 
     LogInContent(
+        isLoading = authViewModel.isLoading,
         errorMessage = authViewModel.errorMessage,
         onLoginClick = { email, password ->
             authViewModel.login(email, password)
@@ -85,6 +87,7 @@ fun LogInScreen(
 
 @Composable
 fun LogInContent(
+    isLoading: Boolean,
     errorMessage: String?,
     onLoginClick:(email: String, password: String) -> Unit,
     onResetError: () -> Unit,
@@ -224,7 +227,10 @@ fun LogInContent(
 
                     Button(
                         onClick = {
-                            onLoginClick(email, password)
+                            // Se valida si está cargando para evitar eniar clics dobles.
+                            if (!isLoading) {
+                                onLoginClick(email, password)
+                            }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -232,9 +238,19 @@ fun LogInContent(
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         ),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+
+                        enabled = !isLoading
                     ) {
-                        Text("Ingresar", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Ingresar", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
 
                     // Divisor
@@ -309,6 +325,7 @@ fun LogInContent(
 fun LogInScreenPreview_Normal() {
     GestorTareasHogar_HaptikosTheme {
         LogInContent(
+            isLoading = false,
             errorMessage = null,
             onLoginClick = { _, _ -> },
             onResetError = {},
@@ -323,6 +340,7 @@ fun LogInScreenPreview_Normal() {
 fun LogInScreenPreview_Error() {
     GestorTareasHogar_HaptikosTheme {
         LogInContent(
+            isLoading = false,
             errorMessage = "Credenciales inválidas",
             onLoginClick = { _, _ -> },
             onResetError = {},

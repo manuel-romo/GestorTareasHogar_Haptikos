@@ -1,5 +1,9 @@
 package haptikos.gestortareashogar_haptikos.viewModel
 
+import androidx.compose.remote.creation.first
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
@@ -8,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -50,4 +55,74 @@ class HomeViewModel(private val repository: AppRepository) : ViewModel() {
             }
         }
     }
+
+    // Actualización
+    fun updateHome(home: HomeEntityNew) {
+        viewModelScope.launch {
+            try {
+                repository.updateHome(home)
+                _selectedHome.value = home
+            } catch (e: Exception) {
+                // TODO Manejar error
+            }
+        }
+    }
+
+    fun updateNotificationSettings(
+        reminders: Boolean? = null,
+        completed: Boolean? = null,
+        members: Boolean? = null,
+        all: Boolean? = null,
+        force: Boolean? = null
+    ) {
+        val currentHome = _selectedHome.value ?: return
+
+        // Copia del hogar actual con nuevos valores
+        val updatedHome = currentHome.copy(
+            notifyTaskReminders = reminders ?: currentHome.notifyTaskReminders,
+            notifyTaskCompleted = completed ?: currentHome.notifyTaskCompleted,
+            notifyNewMembers = members ?: currentHome.notifyNewMembers,
+            notifyAllMembers = all ?: currentHome.notifyAllMembers,
+            forceSettings = force ?: currentHome.forceSettings
+        )
+
+        updateHome(updatedHome)
+    }
+
+    // Estados para controlar la eliminación del hogar
+    private val _isDeletingHome = MutableStateFlow(false)
+    val isDeletingHome = _isDeletingHome.asStateFlow()
+
+    private val _showSuccessFeedback = MutableStateFlow(false)
+    val showSuccessFeedback = _showSuccessFeedback.asStateFlow()
+
+    private val _biometricError = MutableStateFlow<String?>(null)
+    val biometricError = _biometricError.asStateFlow()
+
+    // Funciones de control
+    fun initiateHomeDeletion() { _isDeletingHome.value = true }
+    fun cancelDeletion() { _isDeletingHome.value = false }
+
+    fun confirmDeletion() {
+        val homeToDelete = _selectedHome.value ?: return
+        viewModelScope.launch {
+            try {
+                repository.deleteHome(homeToDelete)
+                _selectedHome.value = null
+
+                // Se selecciona el siguiente hogar existente
+                val otherHomes = repository.allHomes.first()
+                _selectedHome.value = otherHomes.firstOrNull()
+
+                _isDeletingHome.value = false
+                _showSuccessFeedback.value = true
+            } catch (e: Exception) {
+                _biometricError.value = "Error al eliminar"
+            }
+        }
+    }
+
+    fun dismissSuccessFeedback() { _showSuccessFeedback.value = false }
+    fun dismissBiometricError() { _biometricError.value = null }
+    fun showBiometricError(msg: String) { _biometricError.value = msg }
 }

@@ -62,7 +62,9 @@ import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
 @Composable
 fun RoomsTasksSection(
     roomViewModel: RoomViewModel,
-    taskViewModel: TaskViewModel
+    taskViewModel: TaskViewModel,
+    onNavigateToEditPredeterminedTask: (taskId: Int) -> Unit,
+    onNavigateToNewPredeterminedTask: (roomId: Int) -> Unit
 ) {
 
     val context = LocalContext.current
@@ -122,6 +124,12 @@ fun RoomsTasksSection(
                 onEditClick = { roomViewModel.initiateEdit(room) },
                 onDeleteTaskClick = { task ->
                     taskViewModel.initiateTaskDeletion(task)
+                },
+                onEditPredeterminedTask = { task ->
+                    onNavigateToEditPredeterminedTask(task.id)
+                },
+                onAddPredeterminedTask = {
+                    onNavigateToNewPredeterminedTask(room.id)
                 }
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -250,8 +258,10 @@ fun RoomExpandableCard(
     tasks: List<TaskWithDetails>,
     isInitiallyExpanded: Boolean = false,
     onDeleteClick:() -> Unit,
-    onEditClick: () -> Unit,
-    onDeleteTaskClick: (TaskEntityNew) -> Unit
+    onEditClick:() -> Unit,
+    onDeleteTaskClick:(TaskEntityNew) -> Unit,
+    onEditPredeterminedTask:(TaskEntityNew) -> Unit,
+    onAddPredeterminedTask: () -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(isInitiallyExpanded) }
 
@@ -331,14 +341,15 @@ fun RoomExpandableCard(
                             isTeam = isTeamTask,
                             members = uiMembers,
                             membersNamesText = membersNamesText,
-                            onDeleteClick = { onDeleteTaskClick(task) }
+                            onDeleteClick = { onDeleteTaskClick(task) },
+                            onEditClick = { onEditPredeterminedTask(task) }
                         )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
                     OutlinedButton(
-                        onClick = { /* Agregar tarea */ },
+                        onClick = { onAddPredeterminedTask() },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, Color(0xFFFF8A00)),
@@ -362,6 +373,7 @@ fun DefaultTaskItem(
     isTeam: Boolean,
     members: List<Pair<String, Color>>,
     onDeleteClick: () -> Unit,
+    onEditClick:() -> Unit,
     membersNamesText: String
 ) {
     Row(
@@ -418,7 +430,7 @@ fun DefaultTaskItem(
         // Tareas
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(
-                modifier = Modifier.size(32.dp).background(Color(0xFFF5F5F5), CircleShape).clickable { },
+                modifier = Modifier.size(32.dp).background(Color(0xFFF5F5F5), CircleShape).clickable { onEditClick() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(painterResource(id= R.drawable.ic_pencil), contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))

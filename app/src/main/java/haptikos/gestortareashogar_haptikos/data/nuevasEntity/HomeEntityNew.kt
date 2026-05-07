@@ -10,8 +10,11 @@ data class HomeEntityNew(
     val name: String,
     val inviteCode: String,
     val createdAt: Long = System.currentTimeMillis(),
+
     val notifyTaskReminders: Boolean = true,
     val notifyTaskCompleted: Boolean = true,
     val notifyNewMembers: Boolean = true,
-    val notifyAllMembers: Boolean = false
+
+    val notifyAllMembers: Boolean = true,
+    val forceSettings: Boolean = false
 )

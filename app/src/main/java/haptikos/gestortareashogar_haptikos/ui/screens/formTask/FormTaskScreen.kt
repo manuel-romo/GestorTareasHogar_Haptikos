@@ -45,14 +45,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
-import haptikos.gestortareashogar_haptikos.data.entity.MemberEntity
-import haptikos.gestortareashogar_haptikos.data.entity.RoomEntity
-import haptikos.gestortareashogar_haptikos.data.entity.TaskEntity
-import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.PriorityLevel
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
@@ -64,14 +59,15 @@ import haptikos.gestortareashogar_haptikos.ui.enums.SuggestedDay
 import haptikos.gestortareashogar_haptikos.ui.enums.RecurrenceType
 import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
 import haptikos.gestortareashogar_haptikos.ui.enums.TurnMode
-import haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
 
 @Composable
-fun NewTaskScreen(
+fun FormTaskScreen(
     taskId: Int? = null,
+    roomId: Int? = null,
+    isPredetermined: Boolean = false,
     roomViewModel: RoomViewModel,
     taskViewModel: TaskViewModel,
     memberViewModel: MemberViewModel,
@@ -83,17 +79,29 @@ fun NewTaskScreen(
 
     // Se busca si la tarea existe en la BD.
     var taskToEdit by remember { mutableStateOf<TaskWithDetails?>(null) }
+    // Se busca la habitación seleccionada si se envió.
+    var preselectedRoom by remember { mutableStateOf<RoomEntityNew?>(null) }
 
+    // Búsqueda de tarea recibida
     LaunchedEffect(taskId) {
         if (taskId != null) {
             taskToEdit = taskViewModel.getByIdNew(taskId)
         }
     }
 
-    NewTaskContent(
+    // Búsqueda de habitación recibida
+    LaunchedEffect(roomId, roomList) {
+        if (roomId != null && roomList.isNotEmpty()) {
+            preselectedRoom = roomList.find { it.id == roomId }
+        }
+    }
+
+    FormatTaskContent(
         roomList = roomList,
         memberList = memberList,
         taskToEdit = taskToEdit,
+        preselectedRoom = preselectedRoom,
+        isPredetermined = isPredetermined,
         onReturn = onReturn,
         onSaveTask = { name, desc, room, day, recurrence, priority, workMode, orderedMembers ->
 
@@ -131,10 +139,12 @@ val LightBg = Color(0xFFF9F9F9)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NewTaskContent(
+fun FormatTaskContent(
     roomList: List<RoomEntityNew>,
     memberList: List<MemberEntityNew>,
     taskToEdit: TaskWithDetails? = null,
+    preselectedRoom: RoomEntityNew? = null,
+    isPredetermined: Boolean = false,
     onReturn: () -> Unit,
     onSaveTask: (
         String,
@@ -150,12 +160,14 @@ fun NewTaskContent(
     // Estados inicializados directamente con los datos de taskToEdit (si existe)
     var taskName by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.title ?: "") }
     var taskDescription by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.description ?: "") }
-    var isRoomScope by remember(taskToEdit) { mutableStateOf(taskToEdit?.room != null) }
     var selectedPriority by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.priority ?: PriorityLevel.MEDIA) }
     var selectedDay by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.suggestedDay ?: SuggestedDay.LUNES) }
     var selectedRecurrence by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.recurrence ?: RecurrenceType.DIARIO) }
-    var selectedRoom by remember(taskToEdit) { mutableStateOf(taskToEdit?.room) }
     var selectedMembers by remember(taskToEdit) { mutableStateOf(taskToEdit?.members?.toSet() ?: emptySet()) }
+
+    // Definición de habitación de tarea a editar, o la preseleccionada.
+    var selectedRoom by remember(taskToEdit, preselectedRoom) { mutableStateOf(taskToEdit?.room ?: preselectedRoom) }
+    var isRoomScope by remember(taskToEdit, preselectedRoom) { mutableStateOf(taskToEdit?.room != null || preselectedRoom != null) }
 
     // Estados de equipo
     var selectedWorkMode by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.workMode ?: WorkMode.TEAM) }
@@ -177,7 +189,14 @@ fun NewTaskContent(
 
     // Estructura principal
     Scaffold(
-        topBar = { TaskTopAppBar(isEditing = taskToEdit != null, onReturn = onReturn) },
+        topBar = {
+            // Se le envía la información al encabezado sólo si la tarea es predeterminada.
+            TaskTopAppBar(
+                isEditing = taskToEdit != null,
+                roomInfo = if (isPredetermined) selectedRoom else null,
+                onReturn = onReturn
+            )
+        },
         bottomBar = {
             TaskBottomBar(
                 isEditing = taskToEdit != null,
@@ -209,7 +228,12 @@ fun NewTaskContent(
 
             BasicInfoSection(taskName, { taskName = it }, taskDescription, { taskDescription = it })
 
-            ScopeSection(isRoomScope, { isRoomScope = it }, selectedRoom) { showRoomSelector = true }
+            // Se oculta el selector de habitación si es predeterminada
+            if (!isPredetermined) {
+                ScopeSection(isRoomScope, { isRoomScope = it }, selectedRoom) { showRoomSelector = true }
+            } else {
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             ScheduleSection(selectedDay, selectedRecurrence, { showDaySelector = true }) { showRecurrenceSelector = true }
 
@@ -263,40 +287,121 @@ fun NewTaskContent(
 @Composable
 fun TaskTopAppBar(
     isEditing: Boolean = false,
+    roomInfo: RoomEntityNew? = null,
     onReturn:() -> Unit
 ) {
-    TopAppBar(
-        title = {
-            Text(
-                text = if (isEditing) "Editar tarea" else "Nueva tarea",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp
-            )
-        },
-        navigationIcon = {
-            IconButton(
-                onClick = { onReturn() },
-                modifier = Modifier
-                    .padding(start = 30.dp, end = 20.dp)
-                    .size(20.dp)
-                    .background(Color.White.copy(alpha = 0.2f), shape = CircleShape)
+    if (roomInfo != null) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(OrangeMain)
+                .padding(top = 16.dp, bottom = 24.dp)
+        ) {
+            // Fila de navegación
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 16.dp)
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_back),
-                    contentDescription = "Atrás",
-                    tint = Color.White,
-                    modifier = Modifier.size(15.dp)
+                IconButton(
+                    onClick = { onReturn() },
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(Color.White.copy(alpha = 0.2f), shape = CircleShape)
+                ) {
+                    Icon(painterResource(id = R.drawable.ic_back), "Atrás", tint = Color.White, modifier = Modifier.size(16.dp))
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = if (isEditing) "Editar tarea" else "Nueva tarea",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
                 )
             }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = OrangeMain,
-            titleContentColor = Color.White,
-            navigationIconContentColor = Color.White
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Información de habitación
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                shape = RoundedCornerShape(16.dp),
+                color = Color.White.copy(alpha = 0.2f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Icono de la habitación
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = roomInfo.icon, fontSize = 20.sp)
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // Textos
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Habitación", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                        Text(roomInfo.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+
+                    // Etiqueta "Predeterminada"
+                    Surface(
+                        color = Color.White.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Text(
+                            text = "Predeterminada",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        TopAppBar(
+            title = {
+                Text(
+                    text = if (isEditing) "Editar tarea" else "Nueva tarea",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 20.sp
+                )
+            },
+            navigationIcon = {
+                IconButton(
+                    onClick = { onReturn() },
+                    modifier = Modifier
+                        .padding(start = 20.dp)
+                        .size(32.dp)
+                        .background(Color.White.copy(alpha = 0.2f), shape = CircleShape)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_back),
+                        contentDescription = "Atrás",
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = OrangeMain,
+                titleContentColor = Color.White,
+                navigationIconContentColor = Color.White
+            )
         )
-    )
+    }
 }
+
 @Composable
 fun TaskBottomBar(
     isEditing: Boolean = false,

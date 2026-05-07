@@ -5,12 +5,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import haptikos.gestortareashogar_haptikos.data.AuthRepository
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class AuthViewModel(private val dataStore: DataStoreManager) : ViewModel() {
+class AuthViewModel(
+    private val authRepository: AuthRepository,
+    private val dataStore: DataStoreManager
+) : ViewModel() {
 
     var isLoading by mutableStateOf(false)
         private set
@@ -33,17 +37,30 @@ class AuthViewModel(private val dataStore: DataStoreManager) : ViewModel() {
         ""
     )
 
-    fun login(user: String, pass: String) {
+    // Consulta a Firebase
+    fun login(email: String, pass: String) {
+        if (email.isBlank() || pass.isBlank()) {
+            errorMessage = "Llena todos los campos"
+            return
+        }
 
-        isLoading = true
-        errorMessage = null
+        viewModelScope.launch {
+            isLoading = true
+            errorMessage = null
 
-        if (user == "admin" && pass == "1234") {
+            // Llamada a Firebase
+            val success = authRepository.login(email, pass)
+
+            if (success) {
+                // Si la autenticación es válida, se guarda en datastore.
+                val username = email.substringBefore("@")
+                dataStore.saveSession(username)
+
+                isSuccess = true
+            } else {
+                errorMessage = "Correo o contraseña incorrectos"
+            }
             isLoading = false
-            isSuccess = true
-        } else {
-            isLoading = false
-            errorMessage = "Credenciales inválidas"
         }
     }
 

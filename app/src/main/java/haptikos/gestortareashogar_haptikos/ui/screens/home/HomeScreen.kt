@@ -133,7 +133,8 @@ fun HomeContent(
                     onSearchQueryChange = onSearchQueryChange,
                     currentFilter = currentFilter,
                     onFilterChange = onFilterChange,
-                    currentHomeName = selectedHome?.name ?: "Sin Hogar",
+                    isHomeSelected = selectedHome != null,
+                    currentHomeName = selectedHome?.name ?: "Seleccionar hogar",
                     homesList = homesList,
                     onHomeSelected = onHomeSelected,
                     onSettingsClick = onSettingsClick

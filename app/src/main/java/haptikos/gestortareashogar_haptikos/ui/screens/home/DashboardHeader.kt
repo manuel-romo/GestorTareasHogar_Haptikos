@@ -64,8 +64,9 @@ fun DashboardHeader(
     onFilterChange: (TaskFilter) -> Unit,
     onSettingsClick: () -> Unit,
     currentHomeName: String,
+    isHomeSelected: Boolean,
     homesList: List<HomeEntityNew>,
-    onHomeSelected: (HomeEntityNew) -> Unit,
+    onHomeSelected: (HomeEntityNew) -> Unit
 ) {
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
@@ -201,16 +202,18 @@ fun DashboardHeader(
             }
 
             // Configuración de Hogar
+            val canAccessSettings = homesList.isNotEmpty() && isHomeSelected
+
             Surface(
-                color = Color.White.copy(alpha = 0.2f),
+                color = if (canAccessSettings) Color.White.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f),
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.clickable { onSettingsClick() }
+                modifier = Modifier.clickable(enabled = canAccessSettings) { onSettingsClick() }
             ) {
                 Icon(
                     painterResource(id = R.drawable.ic_configuration),
                     contentDescription = "Ajustes",
                     modifier = Modifier.padding(8.dp).size(20.dp),
-                    tint = Color.White
+                    tint = if (canAccessSettings) Color.White else Color.White.copy(alpha = 0.4f)
                 )
             }
         }

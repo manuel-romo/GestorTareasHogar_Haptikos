@@ -4,11 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import haptikos.gestortareashogar_haptikos.ui.screens.formHome.FormRoomConfigurationScreen
-import haptikos.gestortareashogar_haptikos.ui.screens.formTask.NewTaskScreen
+import androidx.navigation.navArgument
+import haptikos.gestortareashogar_haptikos.ui.screens.formHome.FormHomeConfigurationScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.formTask.FormTaskScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.home.HomeScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.LogInScreen
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
@@ -22,6 +24,9 @@ sealed class Screen(val route: String){
     object Login: Screen("login")
     object Home: Screen("home")
     object NewTask: Screen("newTask")
+    object NewPredeterminedTask: Screen("newPredeterminedTask")
+    object EditTask: Screen("editTask")
+    object EditPredeterminedTask: Screen("editPredeterminedTask")
     object HomeConfiguration: Screen("homeConfiguration")
 }
 
@@ -55,6 +60,7 @@ fun AppNavigation(
     }
 
     NavHost(navController = navController, startDestination = if(isLoggedIn) Screen.Home.route else Screen.Login.route){
+
         composable(Screen.Login.route){
             LogInScreen(
                 onNavigateToHome = {
@@ -80,29 +86,86 @@ fun AppNavigation(
         }
 
         composable(Screen.NewTask.route){
-            NewTaskScreen(
+            FormTaskScreen(
                 roomViewModel = roomViewModel,
                 taskViewModel = taskViewModel,
                 memberViewModel = memberViewModel,
                 onReturn = {
-                    navController.navigate(Screen.Home.route){
-                        popUpTo(Screen.NewTask.route) { inclusive = true }
-                    }
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = "${Screen.EditTask.route}/{taskId}",
+            arguments = listOf(navArgument("taskId") { type = NavType.IntType })
+        ){ backStackEntry ->
+            val taskId = backStackEntry.arguments?.getInt("taskId") ?: return@composable
+
+            FormTaskScreen(
+                taskId = taskId,
+                roomViewModel = roomViewModel,
+                taskViewModel = taskViewModel,
+                memberViewModel = memberViewModel,
+                onReturn = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = "${Screen.NewPredeterminedTask.route}/{roomId}",
+            arguments = listOf(navArgument("roomId") { type = NavType.IntType })
+        ){ backStackEntry ->
+            val roomId = backStackEntry.arguments?.getInt("roomId") ?: return@composable
+
+            FormTaskScreen(
+                roomId = roomId,
+                isPredetermined = true,
+                roomViewModel = roomViewModel,
+                taskViewModel = taskViewModel,
+                memberViewModel = memberViewModel,
+                onReturn = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = "${Screen.EditPredeterminedTask.route}/{taskId}",
+            arguments = listOf(navArgument("taskId") { type = NavType.IntType })
+        ){ backStackEntry ->
+            val taskId = backStackEntry.arguments?.getInt("taskId") ?: return@composable
+
+            FormTaskScreen(
+                taskId = taskId,
+                isPredetermined = true,
+                roomViewModel = roomViewModel,
+                taskViewModel = taskViewModel,
+                memberViewModel = memberViewModel,
+                onReturn = {
+                    navController.popBackStack()
                 }
             )
         }
 
 
         composable(Screen.HomeConfiguration.route){
-            FormRoomConfigurationScreen(
+            FormHomeConfigurationScreen(
                 homeViewModel = homeViewModel,
                 memberViewModel = memberViewModel,
                 roomViewModel = roomViewModel,
                 taskViewModel = taskViewModel,
-                onBack = { navController.popBackStack() }
+                onBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToEditPredeterminedTask = { taskId ->
+                    navController.navigate("${Screen.EditPredeterminedTask.route}/$taskId")
+                },
+                onNavigateToNewPredeterminedTask = { roomId ->
+                    navController.navigate("${Screen.NewPredeterminedTask.route}/$roomId")
+                }
             )
         }
-
     }
-
 }
