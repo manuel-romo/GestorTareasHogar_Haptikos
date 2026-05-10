@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.ui.screens.rewards.InfoCard
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
-import haptikos.gestortareashogar_haptikos.ui.screens.home.CustomBottomNavigation
+import haptikos.gestortareashogar_haptikos.ui.components.CustomBottomNavigation
 
 //Algunos modelos
 data class HomeStatsItem(
@@ -100,7 +100,6 @@ fun UserStatsScreen(
     val selectedRange by viewModel.selectedTimeRange.collectAsState()
 
     Scaffold(
-        bottomBar = { CustomBottomNavigation() },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { /*Agregar hogar*/ },
@@ -534,7 +533,6 @@ fun UserStatsScreenPreview() {
     )
     haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
         Scaffold(
-            bottomBar = { CustomBottomNavigation() },
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = {},
@@ -704,7 +702,6 @@ fun UserStatsScreenMonthPreview() {
 
     haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
         Scaffold(
-            bottomBar = { CustomBottomNavigation() },
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = {},
@@ -837,7 +834,6 @@ fun UserStatsScreenWeekPreview() {
 
     haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
         Scaffold(
-            bottomBar = { CustomBottomNavigation() },
             floatingActionButton = {
                 FloatingActionButton(
                     onClick = {},

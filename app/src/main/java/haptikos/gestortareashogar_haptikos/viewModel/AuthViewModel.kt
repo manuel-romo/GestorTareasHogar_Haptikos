@@ -1,9 +1,6 @@
 package haptikos.gestortareashogar_haptikos.viewModel
 
 import android.util.Patterns
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AuthRepository
@@ -15,8 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import kotlin.onSuccess
 
 class AuthViewModel(
     private val authRepository: AuthRepository,
@@ -44,6 +43,12 @@ class AuthViewModel(
         ""
     )
 
+    val userId = dataStore.userIdFlow.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        ""
+    )
+
     // Registro
     fun signUp(name: String, gender: UserGender, dob: String, email: String, pass: String, confirmPass: String) {
 
@@ -60,7 +65,7 @@ class AuthViewModel(
 
         // Fecha de nacimiento
         try {
-            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
             val parsedDate = sdf.parse(dob)
 
             if (parsedDate != null) {
@@ -102,20 +107,26 @@ class AuthViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
-            try {
-                val response = authRepository.signUp(name, gender, dob, email, pass)
 
-                if (response.isSuccessful) {
-                    dataStore.saveSession(name)
+            val userId = java.util.UUID.randomUUID().toString()
+            val result = authRepository.signUp(userId, name, gender, dob, email, pass)
+
+            result.onSuccess { response ->
+                val token = response.token
+                val confirmedId = response.id ?: userId
+
+                if (!token.isNullOrEmpty()) {
+                    dataStore.saveSession(confirmedId, name, token)
                     _isSuccess.value = true
                 } else {
-                    _errorMessage.value = "Error al crear la cuenta"
+                    _errorMessage.value = "Registro exitoso, pero no se recibió token de acceso"
                 }
-            } catch (e: Exception) {
-                _errorMessage.value = "Error de conexión"
-            } finally {
-                _isLoading.value = false
+            }.onFailure { error ->
+                _errorMessage.value = "Error al crear la cuenta o de conexión"
+                error.printStackTrace()
             }
+
+            _isLoading.value = false
         }
     }
 
@@ -126,7 +137,7 @@ class AuthViewModel(
             return
         }
 
-        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+        if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             _errorMessage.value = "Por favor, ingresa un correo válido"
             return
         }
@@ -135,28 +146,21 @@ class AuthViewModel(
             _isLoading.value = true
             _errorMessage.value = null
 
-            try {
-                // Llamada al servidor
-                val response = authRepository.login(email, pass)
+            val result = authRepository.login(email, pass)
 
-                if (response.isSuccessful) {
-                    // Datos recibidos
-                    val loginResponse = response.body()
+            result.onSuccess { loginResponse ->
+                val userId = loginResponse.id ?: ""
+                val username = loginResponse.name ?: email.substringBefore("@")
+                val token = loginResponse.token ?: ""
 
-                    val username = loginResponse?.name ?: email.substringBefore("@")
-
-                    dataStore.saveSession(username)
-                    _isSuccess.value = true
-                } else {
-                    // Si la respuesta es 401, o no autorizado
-                    _errorMessage.value = "Correo o contraseña incorrectos"
-                }
-            } catch (e: Exception) {
-                _errorMessage.value = "Error de conexión al servidor"
-                e.printStackTrace()
-            } finally {
-                _isLoading.value = false
+                dataStore.saveSession(userId, username, token)
+                _isSuccess.value = true
+            }.onFailure { error ->
+                _errorMessage.value = "Correo o contraseña incorrectos o error de red"
+                error.printStackTrace()
             }
+
+            _isLoading.value = false
         }
     }
 
@@ -171,8 +175,14 @@ class AuthViewModel(
     }
 
     fun loginWithBiometrics() {
-        _errorMessage.value = null
-        _isSuccess.value = true
+        // Se verifica si hay una sesión guardada en el dispositivo
+        if (isLoggedIn.value) {
+            _errorMessage.value = null
+            _isSuccess.value = true
+        } else {
+            _errorMessage.value = "Inicia sesión con correo y contraseña la primera vez."
+            _isSuccess.value = false
+        }
     }
 
     fun showBiometricError(error: String) {

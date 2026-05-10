@@ -94,7 +94,7 @@ fun CreateHomeStep2Screen(
     userFullName: String,
     homeViewModel: HomeViewModel,
     onBack: () -> Unit,
-    onSuccess: () -> Unit
+    onSuccess: (String, String?) -> Unit
 ) {
     val suggestedUsers by homeViewModel.suggestedUsers.collectAsState()
     val searchQuery by homeViewModel.searchQuery.collectAsState()
@@ -128,9 +128,12 @@ fun CreateHomeStep2Screen(
                 userName = firstName,
                 userLastName = lastName,
                 userColor = "#$colorHex",
-                invitedUsers = invitedUsers
+                invitedUsers = invitedUsers,
+                onComplete = { generatedCode ->
+                    onSuccess(homeName, generatedCode)
+                }
             )
-            onSuccess()
+
         }
     )
 }

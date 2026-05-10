@@ -25,6 +25,9 @@ interface MemberDao {
     @Update
     suspend fun updateNew(member: MemberEntityNew)
 
+    @Query("UPDATE member_table_new SET isSynced = 1 WHERE homeId = :homeId")
+    suspend fun markMembersAsSynced(homeId: String)
+
     @Delete
     suspend fun deleteNew(member: MemberEntityNew)
 

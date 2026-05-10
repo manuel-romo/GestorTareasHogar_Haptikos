@@ -34,6 +34,8 @@ class MainActivity : FragmentActivity() {
 
         val database by lazy{ TaskDatabase.getDatabase(this, applicationScope)}
 
+        val dataStoreManager = DataStoreManager(this)
+
         val repository by lazy{
             AppRepository(
                 database.taskDao(),
@@ -42,18 +44,19 @@ class MainActivity : FragmentActivity() {
                 database.roomDao(),
                 database.homeDao(),
                 database,
-                homeApi = RetrofitClient.homeApi
+                dataStore = dataStoreManager
+
             )
         }
 
         val authRepository by lazy { AuthRepository() }
 
-        val authViewModel: AuthViewModel by viewModels { AuthViewModelFactory(authRepository, DataStoreManager(this)) }
+        val authViewModel: AuthViewModel by viewModels { AuthViewModelFactory(authRepository, dataStoreManager) }
         val taskViewModel: TaskViewModel by viewModels { TaskViewModelFactory(repository) }
         val taskInstanceViewModel: TaskInstanceViewModel by viewModels { TaskInstanceViewModelFactory(repository) }
         val roomViewModel: RoomViewModel by viewModels { RoomViewModelFactory(repository) }
         val memberViewModel: MemberViewModel by viewModels { MemberViewModelFactory(repository) }
-        val homeViewModel: HomeViewModel by viewModels { HomeViewModelFactory(repository) }
+        val homeViewModel: HomeViewModel by viewModels { HomeViewModelFactory(repository, dataStoreManager) }
 
         setContent {
             GestorTareasHogar_HaptikosTheme {
@@ -103,8 +106,11 @@ class MemberViewModelFactory(private val repository: AppRepository): ViewModelPr
     }
 }
 
-class HomeViewModelFactory(private val repository: AppRepository): ViewModelProvider.Factory{
+class HomeViewModelFactory(
+    private val repository: AppRepository,
+    private val dataStore: DataStoreManager
+): ViewModelProvider.Factory{
     override fun <T: ViewModel> create(modelClass: Class<T>): T{
-        return HomeViewModel(repository) as T
+        return HomeViewModel(repository, dataStore) as T
     }
 }

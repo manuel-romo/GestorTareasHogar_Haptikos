@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
+import haptikos.gestortareashogar_haptikos.data.enumerators.MemberStatus
 import java.util.UUID
 
 @Entity(
@@ -27,7 +28,8 @@ data class MemberEntityNew (
     val role: MemberRole,
 
     val homeId: String,
-    
+    val status: MemberStatus,
+
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false
 )

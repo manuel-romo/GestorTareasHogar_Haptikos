@@ -20,21 +20,21 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import haptikos.gestortareashogar_haptikos.R
-import haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
+import haptikos.gestortareashogar_haptikos.ui.components.CustomBottomNavigation
 import haptikos.gestortareashogar_haptikos.ui.theme.PausedYellow
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
@@ -45,12 +45,12 @@ import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.Dashb
 fun HomeScreen(
     taskInstanceViewModel: TaskInstanceViewModel,
     homeViewModel: HomeViewModel,
-    onNewTaskClick:() -> Unit,
     onSettingsClick:() -> Unit,
     onTaskClick: (String) -> Unit,
     onStatusClick: (TaskInstanceEntityNew) -> Unit,
     onDeleteClick: (TaskInstanceEntityNew) -> Unit,
     onNavigateToCreateHome:() -> Unit,
+    onNavigateToJoinHome: () -> Unit,
 ){
     // Estados de tareas
     val tasksInstanceList by taskInstanceViewModel.tasks.collectAsState()
@@ -72,12 +72,12 @@ fun HomeScreen(
         selectedHome = selectedHome,
         onHomeSelected = { home -> homeViewModel.selectHome(home) },
         onSearchQueryChange = { nuevaBusqueda -> taskInstanceViewModel.updateSearchQuery(nuevaBusqueda) },
-        onNewTaskClick = onNewTaskClick,
         onSettingsClick = onSettingsClick,
         onTaskClick = onTaskClick,
         onStatusClick = onStatusClick,
         onDeleteClick = onDeleteClick,
-        onNavigateToCreateHome = onNavigateToCreateHome
+        onNavigateToCreateHome = onNavigateToCreateHome,
+        onNavigateToJoinHome = onNavigateToJoinHome
     )
 }
 
@@ -89,7 +89,6 @@ fun HomeContent(
     onFilterChange: (TaskFilter) -> Unit,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
-    onNewTaskClick:() -> Unit,
     onSettingsClick: () -> Unit,
     homesList: List<HomeEntityNew>,
     selectedHome: HomeEntityNew?,
@@ -97,7 +96,8 @@ fun HomeContent(
     onTaskClick: (String) -> Unit,
     onStatusClick: (TaskInstanceEntityNew) -> Unit,
     onDeleteClick: (TaskInstanceEntityNew) -> Unit,
-    onNavigateToCreateHome:() -> Unit
+    onNavigateToCreateHome:() -> Unit,
+    onNavigateToJoinHome: () -> Unit,
 ) {
     val tareasPendientes = tasks.filter { it.taskInstance.state == TaskState.PENDING }
     val tareasPausadas = tasks.filter { it.taskInstance.state == TaskState.PAUSED }
@@ -108,65 +108,61 @@ fun HomeContent(
     val dailyProgress = stats.dailyProgress
     val userPoints = stats.userPoints
 
-    Scaffold(
-        bottomBar = { CustomBottomNavigation() },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    onNewTaskClick()
-                },
-                containerColor = MaterialTheme.colorScheme.primary,
-                shape = CircleShape,
-                modifier = Modifier.size(64.dp).offset(y = 50.dp)
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_plus),
-                    contentDescription = "Agregar",
-                    modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.onPrimary
-                )
-            }
-        },
-        floatingActionButtonPosition = FabPosition.Center,
-    ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .background(MaterialTheme.colorScheme.background)
-        ) {
-            item {
-                DashboardHeader(
-                    userName = "María",
-                    pendingTasksCount = pendingTasksCount,
-                    hasNotifications = false,
-                    userPoints = userPoints,
-                    dailyProgress = dailyProgress,
-                    searchQuery = searchQuery,
-                    onSearchQueryChange = onSearchQueryChange,
-                    currentFilter = currentFilter,
-                    onFilterChange = onFilterChange,
-                    isHomeSelected = selectedHome != null,
-                    currentHomeName = selectedHome?.name ?: "Seleccionar hogar",
-                    homesList = homesList,
-                    onHomeSelected = onHomeSelected,
-                    onSettingsClick = onSettingsClick,
-                    onNavigateToCreateHome = onNavigateToCreateHome
-                )
-            }
-            item {
-                DaySelector(
-                    selectedDay = currentFilter.selectedDay,
-                    onDaySelected = { dia ->
-                        onFilterChange(currentFilter.copy(selectedDay = dia))
-                    }
-                )
-            }
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
+        item {
+            DashboardHeader(
+                userName = "María",
+                pendingTasksCount = pendingTasksCount,
+                hasNotifications = false,
+                userPoints = userPoints,
+                dailyProgress = dailyProgress,
+                searchQuery = searchQuery,
+                onSearchQueryChange = onSearchQueryChange,
+                currentFilter = currentFilter,
+                onFilterChange = onFilterChange,
+                isHomeSelected = selectedHome != null,
+                currentHomeName = selectedHome?.name ?: "Seleccionar hogar",
+                homesList = homesList,
+                onHomeSelected = onHomeSelected,
+                onSettingsClick = onSettingsClick,
+                onNavigateToCreateHome = onNavigateToCreateHome,
+                onNavigateToJoinHome = onNavigateToJoinHome
+            )
+        }
+        item {
+            DaySelector(
+                selectedDay = currentFilter.selectedDay,
+                onDaySelected = { dia ->
+                    onFilterChange(currentFilter.copy(selectedDay = dia))
+                }
+            )
+        }
 
-            // Tareas pendientes
-            item { SectionTitle("PENDIENTES (${tareasPendientes.size})") }
+        // Tareas pendientes
+        item { SectionTitle("PENDIENTES (${tareasPendientes.size})") }
 
-            items(tareasPendientes) { task ->
+        items(tareasPendientes) { task ->
+            TaskCard(
+                taskInstance = task,
+                onClick = { onTaskClick(task.taskInstance.id) },
+                onStatusClick = { onStatusClick(task.taskInstance) },
+                onDeleteClick = {onDeleteClick(task.taskInstance) }
+            )
+        }
+
+        // Tareas pausadas
+        if (tareasPausadas.isNotEmpty()) {
+            item {
+                SectionTitle(
+                    title = "PAUSADAS (${tareasPausadas.size})",
+                    color = PausedYellow
+                )
+            }
+            items(tareasPausadas) { task ->
                 TaskCard(
                     taskInstance = task,
                     onClick = { onTaskClick(task.taskInstance.id) },
@@ -174,56 +170,38 @@ fun HomeContent(
                     onDeleteClick = {onDeleteClick(task.taskInstance) }
                 )
             }
-
-            // Tareas pausadas
-            if (tareasPausadas.isNotEmpty()) {
-                item {
-                    SectionTitle(
-                        title = "PAUSADAS (${tareasPausadas.size})",
-                        color = PausedYellow
-                    )
-                }
-                items(tareasPausadas) { task ->
-                    TaskCard(
-                        taskInstance = task,
-                        onClick = { onTaskClick(task.taskInstance.id) },
-                        onStatusClick = { onStatusClick(task.taskInstance) },
-                        onDeleteClick = {onDeleteClick(task.taskInstance) }
-                    )
-                }
-            }
-
-            // Tareas completadas
-            if (tareasCompletadas.isNotEmpty()) {
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(end = 24.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        SectionTitle(
-                            title = "COMPLETADAS (${tareasCompletadas.size})"
-                        )
-                        Text(
-                            text = "Ver historial >",
-                            color = MaterialTheme.colorScheme.primary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-                items(tareasCompletadas) { task ->
-                    TaskCard(
-                        taskInstance = task,
-                        onClick = { onTaskClick(task.taskInstance.id) },
-                        onStatusClick = { onStatusClick(task.taskInstance) },
-                        onDeleteClick = {onDeleteClick(task.taskInstance) }
-                    )
-                }
-            }
-
-            item { Spacer(modifier = Modifier.height(100.dp)) }
         }
+
+        // Tareas completadas
+        if (tareasCompletadas.isNotEmpty()) {
+            item {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(end = 24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SectionTitle(
+                        title = "COMPLETADAS (${tareasCompletadas.size})"
+                    )
+                    Text(
+                        text = "Ver historial >",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            items(tareasCompletadas) { task ->
+                TaskCard(
+                    taskInstance = task,
+                    onClick = { onTaskClick(task.taskInstance.id) },
+                    onStatusClick = { onStatusClick(task.taskInstance) },
+                    onDeleteClick = {onDeleteClick(task.taskInstance) }
+                )
+            }
+        }
+
+        item { Spacer(modifier = Modifier.height(100.dp)) }
     }
 }
 

@@ -6,25 +6,34 @@ import retrofit2.http.POST
 
 interface HomeApi {
 
-    // Modelos de Request
+    // Dto de envío
     data class CreateHomeRequest(
-        val homeId: String,
-        val homeName: String,
-        val homeDescription: String?,
+        val id: String,
+        val name: String,
+        val description: String?,
         val isPrivate: Boolean,
         val creatorId: String,
         val creatorName: String,
         val creatorLastName: String,
-        val creatorColorHex: String
+        val creatorColorHex: String,
+        val invitedUsers: List<InvitedUserDto>
     )
 
-    // Modelos de Response
+    // Dto de usuario invitado
+    data class InvitedUserDto(
+        val id: String,
+        val title: String,
+        val subtitle: String
+    )
+
+    // Dto de respuesta
     data class CreateHomeResponse(
+        val message: String,
         val inviteCode: String,
-        val message: String
+        val homeId: String
     )
 
     // Endpoint
-    @POST("/api/homes/create")
+    @POST("/api/homes")
     suspend fun createHome(@Body request: CreateHomeRequest): Response<CreateHomeResponse>
 }

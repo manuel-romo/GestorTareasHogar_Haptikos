@@ -1,4 +1,4 @@
-package haptikos.gestortareashogar_haptikos.ui.screens.home
+package haptikos.gestortareashogar_haptikos.ui.components
 
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
@@ -11,14 +11,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import haptikos.gestortareashogar_haptikos.R
+import haptikos.gestortareashogar_haptikos.navigation.Screen
 
 @Composable
-fun CustomBottomNavigation() {
+fun CustomBottomNavigation(
+    navController: NavController,
+    currentRoute: String?,
+    hasCenterFab: Boolean
+) {
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp
     ) {
+        // INICIO
         NavigationBarItem(
             icon = {
                 Icon(
@@ -28,10 +36,17 @@ fun CustomBottomNavigation() {
                 )
             },
             label = { Text("Inicio") },
-            selected = true,
-            onClick = {}
+            selected = currentRoute == Screen.Home.route,
+            onClick = {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
         )
 
+        // HOGAR (Aún no tienes esta pantalla en Screen, la dejamos pendiente)
         NavigationBarItem(
             icon = {
                 Icon(
@@ -41,12 +56,15 @@ fun CustomBottomNavigation() {
                 )
             },
             label = { Text("Hogar") },
-            selected = false,
-            onClick = {}
+            selected = false, // Cambiar cuando tengas la ruta
+            onClick = { /* TODO: Navegar a la pantalla del Hogar */ }
         )
 
-        Spacer(Modifier.weight(1f))
+        if (hasCenterFab) {
+            Spacer(Modifier.weight(1f))
+        }
 
+        // STATS
         NavigationBarItem(
             icon = {
                 Icon(
@@ -56,10 +74,17 @@ fun CustomBottomNavigation() {
                 )
             },
             label = { Text("Stats") },
-            selected = false,
-            onClick = {}
+            selected = currentRoute == Screen.Stats.route,
+            onClick = {
+                navController.navigate(Screen.Stats.route) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
         )
 
+        // PERFIL
         NavigationBarItem(
             icon = {
                 Icon(
@@ -69,8 +94,15 @@ fun CustomBottomNavigation() {
                 )
             },
             label = { Text("Perfil") },
-            selected = false,
-            onClick = {}
+            selected = currentRoute == Screen.Profile.route,
+            onClick = {
+                navController.navigate(Screen.Profile.route) {
+                    // Esta configuración evita que se abran muchas pantallas iguales al dar varios clics
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
         )
     }
 }

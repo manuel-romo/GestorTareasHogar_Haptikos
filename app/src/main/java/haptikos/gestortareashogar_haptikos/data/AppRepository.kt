@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.data
 
+import android.util.Log
 import androidx.room.withTransaction
 import haptikos.gestortareashogar_haptikos.data.dao.HomeDao
 import haptikos.gestortareashogar_haptikos.data.dao.MemberDao
@@ -8,6 +9,7 @@ import haptikos.gestortareashogar_haptikos.data.dao.TaskDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskInstanceDao
 import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
+import haptikos.gestortareashogar_haptikos.data.enumerators.MemberStatus
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
@@ -17,8 +19,12 @@ import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityN
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
 import haptikos.gestortareashogar_haptikos.network.HomeApi
+import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import kotlinx.coroutines.flow.Flow
-import java.util.UUID
+import java.io.File
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.asRequestBody
 
 class AppRepository(
     private val taskDao: TaskDao,
@@ -27,7 +33,7 @@ class AppRepository(
     private val roomDao: RoomDao,
     private val homeDao: HomeDao,
     private val appDatabase: TaskDatabase,
-    private val homeApi: HomeApi
+    private val dataStore: DataStoreManager
 ) {
 
     // Lecturas reactivas
@@ -82,21 +88,21 @@ class AppRepository(
     suspend fun deleteHome(home: HomeEntityNew) = homeDao.deleteHome(home)
 
 
-    suspend fun createHomeAndCreator(
+    suspend fun createHomeWithSync(
+        homeId: String,
+        creatorId: String,
         homeName: String,
         homeDescription: String?,
         isPrivate: Boolean,
         creatorName: String,
         creatorLastName: String,
-        creatorColorHex: String
-    ) {
-
-        // Generación de UUIDs
-        val newHomeId = UUID.randomUUID().toString()
-        val newCreatorId = UUID.randomUUID().toString()
-
+        creatorColorHex: String,
+        invitedUsers: List<HomeApi.InvitedUserDto> = emptyList(),
+        defaultInviteColor: String
+    ): String? {
+        // Preparación de entidades locales
         val newHome = HomeEntityNew(
-            id = newHomeId,
+            id = homeId,
             name = homeName,
             description = homeDescription,
             isPrivate = isPrivate,
@@ -105,54 +111,101 @@ class AppRepository(
         )
 
         val creatorMember = MemberEntityNew(
-            id = newCreatorId,
-            homeId = newHomeId,
+            id = creatorId,
+            homeId = homeId,
             name = creatorName,
             lastName = creatorLastName,
             colorHex = creatorColorHex,
             role = MemberRole.CREATOR,
+            status = MemberStatus.ACCEPTED,
             isSynced = false
         )
+
+        val invitedMembers = invitedUsers.map { invite ->
+            MemberEntityNew(
+                id = invite.id,
+                homeId = homeId,
+                name = invite.title,
+                lastName = invite.subtitle,
+                colorHex = defaultInviteColor,
+                role = MemberRole.MEMBER,
+                status = MemberStatus.PENDING,
+                isSynced = false
+            )
+        }
 
         // Guardado local
         appDatabase.withTransaction {
             homeDao.insertHome(newHome)
             memberDao.addNew(creatorMember)
+            invitedMembers.forEach { memberDao.addNew(it) }
         }
 
         // Intento de sincronización
-        try {
-            // Creación de modelo para Request
-            val requestBody = HomeApi.CreateHomeRequest(
-                homeId = newHomeId,
-                homeName = homeName,
-                homeDescription = homeDescription,
+        return try {
+            val request = HomeApi.CreateHomeRequest(
+                id = homeId,
+                name = homeName,
+                description = homeDescription,
                 isPrivate = isPrivate,
-                creatorId = newCreatorId,
+                creatorId = creatorId,
                 creatorName = creatorName,
                 creatorLastName = creatorLastName,
-                creatorColorHex = creatorColorHex
+                creatorColorHex = creatorColorHex,
+                invitedUsers = invitedUsers
             )
 
-            val response = homeApi.createHome(requestBody)
+            val response = RetrofitClient.getHomeApi(dataStore).createHome(request)
 
-            if (response.isSuccessful) {
-                val serverData = response.body()
+            if (response.isSuccessful && response.body() != null) {
+                val inviteCode = response.body()!!.inviteCode
 
-                // Actualización local
-                val syncedHome = newHome.copy(
-                    inviteCode = serverData?.inviteCode,
-                    isSynced = true
-                )
-                val syncedMember = creatorMember.copy(isSynced = true)
+                updateHomeSyncStatus(homeId, inviteCode, isSynced = true)
 
-                appDatabase.withTransaction {
-                    homeDao.updateHome(syncedHome)
-                    memberDao.updateNew(syncedMember)
-                }
+                inviteCode
+            } else {
+                null
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            null
+        }
+    }
+
+    suspend fun updateHomeSyncStatus(homeId: String, inviteCode: String?, isSynced: Boolean) {
+        appDatabase.withTransaction {
+            homeDao.updateInviteCodeAndSync(homeId, inviteCode, isSynced)
+            if (isSynced) {
+                memberDao.markMembersAsSynced(homeId)
+            }
+        }
+    }
+
+
+    // Actualziación de foto de usuario ------------------------------
+    suspend fun uploadProfilePicture(userId: String, imageFile: File): String? {
+        return try {
+            // Se convierte el archivon File a MultipartBody.Part
+            val requestFile = imageFile.asRequestBody("image/*".toMediaTypeOrNull())
+            val body = MultipartBody.Part.createFormData("file", imageFile.name, requestFile)
+
+            val response = RetrofitClient.getUserApi(dataStore).uploadProfilePicture(userId, body)
+
+            if (response.isSuccessful && response.body() != null) {
+
+                val newUrl = response.body()?.get("profilePicUrl")
+
+                // Guardado local de URL de imagen obtenida
+                if (newUrl != null) {
+                    dataStore.saveProfilePicUrl(newUrl)
+                }
+                newUrl
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 }

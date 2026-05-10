@@ -24,6 +24,11 @@ interface HomeDao {
     @Update
     suspend fun updateHome(home: HomeEntityNew)
 
+    @Query("UPDATE home_table_new SET inviteCode = :inviteCode, isSynced = :isSynced WHERE id = :homeId")
+    suspend fun updateInviteCodeAndSync(homeId: String, inviteCode: String?, isSynced: Boolean)
+
+
     @Delete
     suspend fun deleteHome(home: HomeEntityNew)
+
 }

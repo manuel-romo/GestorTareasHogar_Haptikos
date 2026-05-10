@@ -67,7 +67,8 @@ fun DashboardHeader(
     isHomeSelected: Boolean,
     homesList: List<HomeEntityNew>,
     onHomeSelected: (HomeEntityNew) -> Unit,
-    onNavigateToCreateHome: () -> Unit
+    onNavigateToCreateHome: () -> Unit,
+    onNavigateToJoinHome: () -> Unit
 ) {
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
@@ -215,7 +216,10 @@ fun DashboardHeader(
                                 }
                             }
                         },
-                        onClick = { expanded = false }
+                        onClick = {
+                            expanded = false
+                            onNavigateToJoinHome()
+                        }
                     )
                 }
             }

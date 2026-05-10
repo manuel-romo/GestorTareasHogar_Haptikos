@@ -12,6 +12,7 @@ import haptikos.gestortareashogar_haptikos.data.dao.RoomDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskInstanceDao
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
+import haptikos.gestortareashogar_haptikos.data.enumerators.MemberStatus
 import haptikos.gestortareashogar_haptikos.data.enumerators.PriorityLevel
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
@@ -101,8 +102,8 @@ abstract class TaskDatabase: RoomDatabase() {
                         val newRoomId = newRoom.id
 
                         // Miembros
-                        val maria = MemberEntityNew(homeId = idHome, name = "María", lastName = "Gómez", colorHex = "#F014A8", role = MemberRole.CREATOR)
-                        val juan = MemberEntityNew(homeId = idHome, name = "Juan", lastName = "Pérez", colorHex = "#2979FF", role = MemberRole.MEMBER)
+                        val maria = MemberEntityNew(homeId = idHome, name = "María", lastName = "Gómez", colorHex = "#F014A8", role = MemberRole.CREATOR, status = MemberStatus.ACCEPTED)
+                        val juan = MemberEntityNew(homeId = idHome, name = "Juan", lastName = "Pérez", colorHex = "#2979FF", role = MemberRole.MEMBER, status = MemberStatus.ACCEPTED)
 
                         memberDao.addNew(maria)
                         memberDao.addNew(juan)

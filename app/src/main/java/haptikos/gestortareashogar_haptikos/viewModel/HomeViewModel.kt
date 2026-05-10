@@ -8,9 +8,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
+import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import haptikos.gestortareashogar_haptikos.data.helpers.UserSuggestion
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.network.HomeApi
+import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import haptikos.gestortareashogar_haptikos.ui.screens.createHome.InvitedUser
+import haptikos.gestortareashogar_haptikos.utils.generateUniqueId
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +24,30 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class HomeViewModel(private val repository: AppRepository) : ViewModel() {
+class HomeViewModel(
+    private val repository: AppRepository,
+    private val dataStore: DataStoreManager
+) : ViewModel() {
+
+    // Modelo para la vista previa del hogar
+    data class HomePreviewInfo(
+        val id: String,
+        val name: String,
+        val creatorName: String,
+        val memberCount: Int,
+        val taskCount: Int,
+        val pendingCount: Int
+    )
+
+    // Estados de pantalla de unión a un hogar
+    sealed class JoinHomeState {
+        object Input : JoinHomeState()
+        object Searching : JoinHomeState()
+        data class Error(val message: String) : JoinHomeState()
+        data class Found(val home: HomePreviewInfo) : JoinHomeState()
+        object Joining : JoinHomeState()
+        data class Success(val homeName: String, val totalMembers: Int) : JoinHomeState()
+    }
 
     // Lista de todos los hogares del usuario
     val allHomes: StateFlow<List<HomeEntityNew>> = repository.allHomes
@@ -37,7 +65,6 @@ class HomeViewModel(private val repository: AppRepository) : ViewModel() {
         _selectedHome.value = home
     }
 
-    // Creación de hogar
     fun createNewHome(
         name: String,
         description: String,
@@ -45,30 +72,49 @@ class HomeViewModel(private val repository: AppRepository) : ViewModel() {
         userName: String,
         userLastName: String,
         userColor: String,
-        invitedUsers: List<InvitedUser> = emptyList()
+        invitedUsers: List<InvitedUser> = emptyList(),
+        onComplete: (String?) -> Unit
     ) {
         val finalDescription = description.takeIf { it.isNotBlank() }
 
         viewModelScope.launch {
             try {
-                // Creación de hogar
-                repository.createHomeAndCreator(
+                // Generación de ID local
+                val generatedHomeId = generateUniqueId()
+
+                val userId = dataStore.userIdFlow.first()
+
+                if (userId == null) {
+                    onComplete(null)
+                }
+
+                val invitedUsersWithIds = invitedUsers.map { user ->
+                    HomeApi.InvitedUserDto(
+                        id = generateUniqueId(),
+                        title = user.title,
+                        subtitle = user.subtitle
+                    )
+                }
+
+                val inviteCode = repository.createHomeWithSync(
+                    homeId = generatedHomeId,
+                    creatorId = userId,
                     homeName = name,
                     homeDescription = finalDescription,
                     isPrivate = isPrivate,
                     creatorName = userName,
                     creatorLastName = userLastName,
-                    creatorColorHex = userColor
+                    creatorColorHex = userColor,
+                    invitedUsers = invitedUsersWithIds,
+                    defaultInviteColor = "#9E9E9E"
                 )
 
-                // TODO envio de invitaciones
-                if (invitedUsers.isNotEmpty()) {
-                    // repository.sendInvitations(invitedUsers.map { it.id })
-                }
+                // Se envía el código obtenido o null si no se generó
+                onComplete(inviteCode)
 
-                // TODO mensaje de confirmación
             } catch (e: Exception) {
-                // TODO manejar error
+                e.printStackTrace()
+                onComplete(null)
             }
         }
     }
@@ -192,4 +238,72 @@ class HomeViewModel(private val repository: AppRepository) : ViewModel() {
         }
     }
 
+    // Flujo para unirse a un hogar -------------------------------------------------------------- -
+
+    private val _joinState = MutableStateFlow<JoinHomeState>(JoinHomeState.Input)
+    val joinState = _joinState.asStateFlow()
+
+    private val _joinCode = MutableStateFlow("")
+    val joinCode = _joinCode.asStateFlow()
+
+    fun updateJoinCode(code: String) {
+        // Limitar a 9 caracteres alfanuméricos
+        val cleanCode = code.filter { it.isLetterOrDigit() }.take(9).uppercase()
+        _joinCode.value = cleanCode
+
+        // Si el usuario empieza a escribir se quita el error
+        if (_joinState.value is JoinHomeState.Error) {
+            _joinState.value = JoinHomeState.Input
+        }
+    }
+
+    fun searchHomeByCode() {
+        val currentCode = _joinCode.value
+        if (currentCode.length < 8) return
+
+        viewModelScope.launch {
+            _joinState.value = JoinHomeState.Searching
+
+            // TODO: Cambiar por llamada real a Repositorio
+            delay(1500)
+
+            // Simulación de lógica de búsqueda
+            if (currentCode == "APART5W6" || currentCode.startsWith("APART")) {
+                _joinState.value = JoinHomeState.Found(
+                    HomePreviewInfo(
+                        id = "123",
+                        name = "Apartamento Playa",
+                        creatorName = "Carlos Ruiz",
+                        memberCount = 3,
+                        taskCount = 18,
+                        pendingCount = 5
+                    )
+                )
+            } else {
+                _joinState.value = JoinHomeState.Error("No encontramos ningún hogar con ese código. Verifica con el creador del hogar.")
+            }
+        }
+    }
+
+    fun joinFoundHome() {
+        val currentState = _joinState.value
+        if (currentState !is JoinHomeState.Found) return
+
+        viewModelScope.launch {
+            _joinState.value = JoinHomeState.Joining
+
+            // TODO: Cambiar por llamada real a tu API/Repositorio para unirse
+            delay(2000) // Simulación de red
+
+            _joinState.value = JoinHomeState.Success(
+                homeName = currentState.home.name,
+                totalMembers = currentState.home.memberCount + 1
+            )
+        }
+    }
+
+    fun resetJoinFlow() {
+        _joinCode.value = ""
+        _joinState.value = JoinHomeState.Input
+    }
 }

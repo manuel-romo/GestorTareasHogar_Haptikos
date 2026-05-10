@@ -9,6 +9,7 @@ interface AuthApi {
 
     // Modelos de Request
     data class RegisterRequest(
+        val id: String,
         val name: String,
         val email: String,
         val password: String,
@@ -17,13 +18,16 @@ interface AuthApi {
     )
     data class LoginRequest(val email: String, val password: String)
 
-    // Modelos de Response
-    data class LoginResponse(val token: String, val name: String)
-    data class MessageResponse(val message: String)
+    data class AuthResponse(
+        val message: String?,
+        val token: String?,
+        val name: String?,
+        val id: String?
+    )
 
     @POST("/api/auth/register")
-    suspend fun register(@Body request: RegisterRequest): Response<MessageResponse>
+    suspend fun register(@Body request: RegisterRequest): Response<AuthResponse>
 
     @POST("/api/auth/login")
-    suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+    suspend fun login(@Body request: LoginRequest): Response<AuthResponse>
 }

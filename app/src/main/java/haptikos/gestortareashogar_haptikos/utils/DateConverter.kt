@@ -1,8 +1,6 @@
 package haptikos.gestortareashogar_haptikos.utils
 
 
-import android.graphics.Color.parseColor
-import androidx.compose.ui.graphics.Color
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
