@@ -7,7 +7,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import haptikos.gestortareashogar_haptikos.data.entity.TaskEntity
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskMemberJoin
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
@@ -16,24 +15,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TaskDao {
 
-    @Query("SELECT * FROM task_table ORDER BY suggestedDay ASC")
-    fun getAll(): Flow<List<TaskEntity>>
-
-
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun add(task: TaskEntity)
-
-    @Update
-    suspend fun update(task: TaskEntity)
-
-    @Delete
-    suspend fun delete(task: TaskEntity)
-
-
-    // Nuevas funciones
     @Query("SELECT * FROM task_table_new WHERE id = :taskId")
-    suspend fun getById(taskId: Int): TaskEntityNew?
+    suspend fun getById(taskId: String): TaskEntityNew?
 
     @Query("SELECT * FROM task_table_new ORDER BY suggestedDay ASC")
     fun getAllNew(): Flow<List<TaskEntityNew>>
@@ -44,7 +27,7 @@ interface TaskDao {
 
     @Transaction
     @Query("SELECT * FROM task_table_new WHERE id = :taskId")
-    suspend fun getTaskWithDetailsById(taskId: Int): TaskWithDetails?
+    suspend fun getTaskWithDetailsById(taskId: String): TaskWithDetails?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addTaskNew(task: TaskEntityNew): Long
@@ -54,11 +37,16 @@ interface TaskDao {
 
     // Guarda la tarea con sus miembros
     @Transaction
-    suspend fun insertTaskWithMembers(task: TaskEntityNew, memberIds: List<Int>) {
-        val newTaskId = addTaskNew(task)
+    suspend fun insertTaskWithMembers(task: TaskEntityNew, memberIds: List<String>) {
+        addTaskNew(task)
         val joins = memberIds.map { memberId ->
-            TaskMemberJoin(taskId = newTaskId.toInt(), memberId = memberId)
+            TaskMemberJoin(
+                taskId = task.id,
+                memberId = memberId
+            )
         }
+
+        // 3. Insertas las relaciones
         addTaskMemberJoin(joins)
     }
 
@@ -67,13 +55,13 @@ interface TaskDao {
     suspend fun updateTaskBaseNew(task: TaskEntityNew)
 
     @Query("DELETE FROM task_member_join WHERE taskId = :taskId")
-    suspend fun deleteMembersForTask(taskId: Int)
+    suspend fun deleteMembersForTask(taskId: String)
 
     @Delete
     suspend fun deleteTaskBaseNew(task: TaskEntityNew)
 
     @Transaction
-    suspend fun updateTaskWithMembers(task: TaskEntityNew, memberIds: List<Int>) {
+    suspend fun updateTaskWithMembers(task: TaskEntityNew, memberIds: List<String>) {
         updateTaskBaseNew(task)
         deleteMembersForTask(task.id)
         val newJoins = memberIds.map { memberId ->

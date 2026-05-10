@@ -16,6 +16,7 @@ import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
+import haptikos.gestortareashogar_haptikos.network.HomeApi
 import kotlinx.coroutines.flow.Flow
 import java.util.UUID
 
@@ -25,7 +26,8 @@ class AppRepository(
     private val memberDao: MemberDao,
     private val roomDao: RoomDao,
     private val homeDao: HomeDao,
-    private val appDatabase: TaskDatabase
+    private val appDatabase: TaskDatabase,
+    private val homeApi: HomeApi
 ) {
 
     // Lecturas reactivas
@@ -33,24 +35,32 @@ class AppRepository(
     val allTasksInstanceNew: Flow<List<TaskInstanceEntityNew>> = taskInstanceDao.getAllNew()
     val allMembersNew: Flow<List<MemberEntityNew>> = memberDao.getAllNew()
     val allRoomsNew: Flow<List<RoomEntityNew>> = roomDao.getAllNew()
-
     val allInstancesWithDetails: Flow<List<TaskInstanceWithDetails>> = taskInstanceDao.getAllInstancesWithDetails()
     val allTasksWithDetails: Flow<List<TaskWithDetails>> = taskDao.getAllTasksWithDetails()
+    val allHomes: Flow<List<HomeEntityNew>> = homeDao.getAllHomes()
 
     // Operaciones de tareas
-    suspend fun getTaskById(taskId: Int): TaskEntityNew? = taskDao.getById(taskId)
-    suspend fun insertTaskNew(task: TaskEntityNew, memberIds: List<Int>) = taskDao.insertTaskWithMembers(task, memberIds)
-    suspend fun updateTaskNewWithMembers(task: TaskEntityNew, memberIds: List<Int>) = taskDao.updateTaskWithMembers(task, memberIds)
-    suspend fun deleteTaskNew(task: TaskEntityNew) = taskDao.deleteTaskBaseNew(task)
-    suspend fun getTaskWithDetailsById(taskId: Int) = taskDao.getTaskWithDetailsById(taskId)
+    suspend fun getTaskById(taskId: String): TaskEntityNew? = taskDao.getById(taskId)
 
-    // Operaciones de instancias de tarea
+    suspend fun insertTaskNew(task: TaskEntityNew, memberIds: List<String>) = taskDao.insertTaskWithMembers(task, memberIds)
+
+    suspend fun updateTaskNewWithMembers(task: TaskEntityNew, memberIds: List<String>) = taskDao.updateTaskWithMembers(task, memberIds)
+
+    suspend fun deleteTaskNew(task: TaskEntityNew) = taskDao.deleteTaskBaseNew(task)
+
+    suspend fun getTaskWithDetailsById(taskId: String) = taskDao.getTaskWithDetailsById(taskId)
+
+    // Operaciones de instancias
     suspend fun updateTaskInstance(taskInstance: TaskInstanceEntityNew) = taskInstanceDao.update(taskInstance)
+
     suspend fun deleteTaskInstance(taskInstance: TaskInstanceEntityNew) = taskInstanceDao.delete(taskInstance)
-    suspend fun getTaskInstanceById(instanceId: Int): TaskInstanceEntityNew? = taskInstanceDao.getById(instanceId)
-    suspend fun getTaskInstanceWithDetailsById(instanceId: Int): TaskInstanceWithDetails? {
+
+    suspend fun getTaskInstanceById(instanceId: String): TaskInstanceEntityNew? = taskInstanceDao.getById(instanceId)
+
+    suspend fun getTaskInstanceWithDetailsById(instanceId: String): TaskInstanceWithDetails? {
         return taskInstanceDao.getInstanceWithDetailsById(instanceId)
     }
+
     suspend fun getFilteredInstances(
         status: TaskState?,
         searchQuery: String,
@@ -59,6 +69,7 @@ class AppRepository(
         return taskInstanceDao.getFilteredInstances(status, searchQuery, memberName)
     }
 
+    // Operaciones básicas
     suspend fun insertMemberNew(member: MemberEntityNew) = memberDao.addNew(member)
     suspend fun updateMemberNew(member: MemberEntityNew) = memberDao.updateNew(member)
     suspend fun deleteMemberNew(member: MemberEntityNew) = memberDao.deleteNew(member)
@@ -67,46 +78,81 @@ class AppRepository(
     suspend fun updateRoomNew(room: RoomEntityNew) = roomDao.updateNew(room)
     suspend fun deleteRoomNew(room: RoomEntityNew) = roomDao.deleteNew(room)
 
-    val allHomes: Flow<List<HomeEntityNew>> = homeDao.getAllHomes()
     suspend fun updateHome(home: HomeEntityNew) = homeDao.updateHome(home)
     suspend fun deleteHome(home: HomeEntityNew) = homeDao.deleteHome(home)
 
 
-    // Creación de nuevo hogar con nuevo código de invitación
-    // TODO corregir
     suspend fun createHomeAndCreator(
         homeName: String,
+        homeDescription: String?,
+        isPrivate: Boolean,
         creatorName: String,
         creatorLastName: String,
         creatorColorHex: String
     ) {
-        // Generación temporal de código de invitación
-        val inviteCode = UUID.randomUUID().toString().take(6).uppercase()
+
+        // Generación de UUIDs
+        val newHomeId = UUID.randomUUID().toString()
+        val newCreatorId = UUID.randomUUID().toString()
 
         val newHome = HomeEntityNew(
+            id = newHomeId,
             name = homeName,
-            inviteCode = inviteCode
+            description = homeDescription,
+            isPrivate = isPrivate,
+            inviteCode = null,
+            isSynced = false
         )
 
-        // Ejecución como transacción
+        val creatorMember = MemberEntityNew(
+            id = newCreatorId,
+            homeId = newHomeId,
+            name = creatorName,
+            lastName = creatorLastName,
+            colorHex = creatorColorHex,
+            role = MemberRole.CREATOR,
+            isSynced = false
+        )
+
+        // Guardado local
         appDatabase.withTransaction {
-
-            val generatedHomeId = homeDao.insertHome(newHome).toInt()
-
-            // Se crea el creador del Hogar
-            val creatorMember = MemberEntityNew(
-                homeId = generatedHomeId,
-                name = creatorName,
-                lastName = creatorLastName,
-                colorHex = creatorColorHex,
-                role = MemberRole.CREATOR
-            )
-
+            homeDao.insertHome(newHome)
             memberDao.addNew(creatorMember)
-
         }
 
+        // Intento de sincronización
+        try {
+            // Creación de modelo para Request
+            val requestBody = HomeApi.CreateHomeRequest(
+                homeId = newHomeId,
+                homeName = homeName,
+                homeDescription = homeDescription,
+                isPrivate = isPrivate,
+                creatorId = newCreatorId,
+                creatorName = creatorName,
+                creatorLastName = creatorLastName,
+                creatorColorHex = creatorColorHex
+            )
+
+            val response = homeApi.createHome(requestBody)
+
+            if (response.isSuccessful) {
+                val serverData = response.body()
+
+                // Actualización local
+                val syncedHome = newHome.copy(
+                    inviteCode = serverData?.inviteCode,
+                    isSynced = true
+                )
+                val syncedMember = creatorMember.copy(isSynced = true)
+
+                appDatabase.withTransaction {
+                    homeDao.updateHome(syncedHome)
+                    memberDao.updateNew(syncedMember)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
-
-
 }

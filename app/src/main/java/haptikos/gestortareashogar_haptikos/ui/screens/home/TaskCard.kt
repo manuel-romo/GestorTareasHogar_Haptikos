@@ -33,7 +33,6 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
-import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntity
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.ui.theme.CompletedGreen
@@ -112,7 +111,7 @@ fun TaskCard(
             Column(Modifier.weight(1f)) {
                 // Título
                 Text(
-                    text = taskInstance.task.title,
+                    text = taskInstance.taskDetails.task.title,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     color = if (isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
@@ -136,7 +135,7 @@ fun TaskCard(
                     )
 
                     // Solo se pinta la pastilla si hay una habitación asignada
-                    taskInstance.room?.let { room ->
+                    taskInstance.taskDetails.room?.let { room ->
                         Spacer(Modifier.width(8.dp))
 
                         val roomBaseColor = parseHexColor(room.colorHex)
@@ -212,7 +211,7 @@ fun TaskCard(
                     // Badge de puntos
                     Surface(color = LightYellow, shape = RoundedCornerShape(8.dp)) {
                         Text(
-                            text = " ⭐ +${taskInstance.task.points} ",
+                            text = " ⭐ +${taskInstance.taskDetails.task.points} ",
                             color = Yellow,
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,

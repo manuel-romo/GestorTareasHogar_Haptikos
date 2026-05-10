@@ -46,10 +46,11 @@ fun HomeScreen(
     taskInstanceViewModel: TaskInstanceViewModel,
     homeViewModel: HomeViewModel,
     onNewTaskClick:() -> Unit,
-    onSettingsClick: () -> Unit,
-    onTaskClick: (Int) -> Unit,
+    onSettingsClick:() -> Unit,
+    onTaskClick: (String) -> Unit,
     onStatusClick: (TaskInstanceEntityNew) -> Unit,
-    onDeleteClick: (TaskInstanceEntityNew) -> Unit
+    onDeleteClick: (TaskInstanceEntityNew) -> Unit,
+    onNavigateToCreateHome:() -> Unit,
 ){
     // Estados de tareas
     val tasksInstanceList by taskInstanceViewModel.tasks.collectAsState()
@@ -75,7 +76,8 @@ fun HomeScreen(
         onSettingsClick = onSettingsClick,
         onTaskClick = onTaskClick,
         onStatusClick = onStatusClick,
-        onDeleteClick = onDeleteClick
+        onDeleteClick = onDeleteClick,
+        onNavigateToCreateHome = onNavigateToCreateHome
     )
 }
 
@@ -92,9 +94,10 @@ fun HomeContent(
     homesList: List<HomeEntityNew>,
     selectedHome: HomeEntityNew?,
     onHomeSelected: (HomeEntityNew) -> Unit,
-    onTaskClick: (Int) -> Unit,
+    onTaskClick: (String) -> Unit,
     onStatusClick: (TaskInstanceEntityNew) -> Unit,
-    onDeleteClick: (TaskInstanceEntityNew) -> Unit
+    onDeleteClick: (TaskInstanceEntityNew) -> Unit,
+    onNavigateToCreateHome:() -> Unit
 ) {
     val tareasPendientes = tasks.filter { it.taskInstance.state == TaskState.PENDING }
     val tareasPausadas = tasks.filter { it.taskInstance.state == TaskState.PAUSED }
@@ -147,7 +150,8 @@ fun HomeContent(
                     currentHomeName = selectedHome?.name ?: "Seleccionar hogar",
                     homesList = homesList,
                     onHomeSelected = onHomeSelected,
-                    onSettingsClick = onSettingsClick
+                    onSettingsClick = onSettingsClick,
+                    onNavigateToCreateHome = onNavigateToCreateHome
                 )
             }
             item {

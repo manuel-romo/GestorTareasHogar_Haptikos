@@ -91,7 +91,7 @@ class TaskInstanceViewModel(private val repository: AppRepository) : ViewModel()
 
         val points = allInstances
             .filter { it.taskInstance.state == TaskState.COMPLETED }
-            .sumOf { it.task.points + it.task.priority.points }
+            .sumOf { it.taskDetails.task.points + it.taskDetails.task.priority.points }
 
         val progress = if (total > 0) completed.toFloat() / total.toFloat() else 0f
 
@@ -105,7 +105,7 @@ class TaskInstanceViewModel(private val repository: AppRepository) : ViewModel()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 
     // Consultas únicas
-    suspend fun getInstanceWithDetailsById(instanceId: Int): TaskInstanceWithDetails? {
+    suspend fun getInstanceWithDetailsById(instanceId: String): TaskInstanceWithDetails? {
         return repository.getTaskInstanceWithDetailsById(instanceId)
     }
 

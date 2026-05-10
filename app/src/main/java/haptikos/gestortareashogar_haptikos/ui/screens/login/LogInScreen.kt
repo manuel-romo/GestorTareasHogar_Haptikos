@@ -1,6 +1,5 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.login
 
-import androidx.biometric.BiometricPrompt
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -32,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,16 +60,23 @@ import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 @Composable
 fun LogInScreen(
     authViewModel: AuthViewModel,
-    onNavigateToHome: () -> Unit
+    onNavigateToHome: () -> Unit,
+    onNavigateToSignUp: () -> Unit
 ) {
 
-    LaunchedEffect(authViewModel.isSuccess) {
-        if (authViewModel.isSuccess) onNavigateToHome()
+    val isSuccess by authViewModel.isSuccess.collectAsState()
+    val isLoading by authViewModel.isLoading.collectAsState()
+    val errorMessage by authViewModel.errorMessage.collectAsState()
+
+    LaunchedEffect(isSuccess) {
+        if (isSuccess) {
+            onNavigateToHome()
+        }
     }
 
     LogInContent(
-        isLoading = authViewModel.isLoading,
-        errorMessage = authViewModel.errorMessage,
+        isLoading = isLoading,
+        errorMessage = errorMessage,
         onLoginClick = { email, password ->
             authViewModel.login(email, password)
         },
@@ -79,9 +86,10 @@ fun LogInScreen(
         onBiometricSuccess = {
             authViewModel.loginWithBiometrics()
         },
-        onBiometricError = { errorMessage ->
-            authViewModel.showBiometricError(errorMessage)
-        }
+        onBiometricError = { errorMsg ->
+            authViewModel.showBiometricError(errorMsg)
+        },
+        onNavigateToSignUp = onNavigateToSignUp
     )
 }
 
@@ -92,11 +100,16 @@ fun LogInContent(
     onLoginClick:(email: String, password: String) -> Unit,
     onResetError: () -> Unit,
     onBiometricSuccess:() -> Unit,
-    onBiometricError:(errorMessage: String) -> Unit
+    onBiometricError:(errorMessage: String) -> Unit,
+    onNavigateToSignUp: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val hasAuthError = errorMessage == "Correo o contraseña incorrectos" ||
+            errorMessage == "Llena todos los campos" ||
+            errorMessage == "Por favor, ingresa un correo válido"
 
     val context = LocalContext.current
     val activity = context.findFragmentActivity()
@@ -152,7 +165,7 @@ fun LogInContent(
                         },
                         label = "Tu correo",
                         placeholder = "correo@ejemplo.com",
-                        isError = errorMessage != null,
+                        isError = hasAuthError,
                         leadingIcon = {
                             Icon(
                                 imageVector = ImageVector.vectorResource(id = R.drawable.ic_email),
@@ -172,7 +185,7 @@ fun LogInContent(
                         },
                         label = "Tu contraseña",
                         placeholder = "********",
-                        isError = errorMessage != null,
+                        isError = hasAuthError,
                         leadingIcon = {
                             Icon(
                                 imageVector = ImageVector.vectorResource(id = R.drawable.ic_padlock),
@@ -310,7 +323,10 @@ fun LogInContent(
                             text = "Crear cuenta gratis",
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.clickable { }
+                            modifier = Modifier.clickable {
+                                onResetError()
+                                onNavigateToSignUp()
+                            }
                         )
                     }
                 }
@@ -330,7 +346,8 @@ fun LogInScreenPreview_Normal() {
             onLoginClick = { _, _ -> },
             onResetError = {},
             onBiometricSuccess = {},
-            onBiometricError = {}
+            onBiometricError = {},
+            onNavigateToSignUp = {}
         )
     }
 }
@@ -345,7 +362,8 @@ fun LogInScreenPreview_Error() {
             onLoginClick = { _, _ -> },
             onResetError = {},
             onBiometricSuccess = {},
-            onBiometricError = {}
+            onBiometricError = {},
+            onNavigateToSignUp = {}
         )
     }
 }

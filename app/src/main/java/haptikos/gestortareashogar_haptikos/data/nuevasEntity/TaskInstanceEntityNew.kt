@@ -4,6 +4,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import java.util.UUID
 
 @Entity(
     tableName = "task_instance_table_new",
@@ -16,11 +17,13 @@ import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
         )
     ]
 )
-
 data class TaskInstanceEntityNew(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
-    val taskId: Int,
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val taskId: String,
     val dueDate: Long,
     val state: TaskState = TaskState.PENDING,
-    val pausedUntil: Long? = null
+    val pausedUntil: Long? = null,
+
+    val isSynced: Boolean = false,
+    val isDeleted: Boolean = false
 )

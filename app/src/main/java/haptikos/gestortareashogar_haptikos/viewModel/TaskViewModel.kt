@@ -2,7 +2,6 @@ package haptikos.gestortareashogar_haptikos.viewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import haptikos.gestortareashogar_haptikos.data.entity.TaskEntity
 import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
@@ -20,7 +19,7 @@ import kotlinx.coroutines.launch
 class TaskViewModel(private val repository: AppRepository) : ViewModel() {
 
     // Escritura
-    fun addTask(task: TaskEntityNew, memberIds: List<Int>) {
+    fun addTask(task: TaskEntityNew, memberIds: List<String>) {
         viewModelScope.launch {
             repository.insertTaskNew(task, memberIds)
         }
@@ -34,7 +33,7 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
         }
     }
 
-    suspend fun getById(taskId: Int): TaskEntityNew?{
+    suspend fun getById(taskId: String): TaskEntityNew?{
         return repository.getTaskById(taskId)
     }
 
@@ -47,14 +46,14 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
         )
 
     // Agregar tarea con miembros
-    fun addTaskNew(task: TaskEntityNew, selectedMemberIds: List<Int>) {
+    fun addTaskNew(task: TaskEntityNew, selectedMemberIds: List<String>) {
         viewModelScope.launch {
             repository.insertTaskNew(task, selectedMemberIds)
         }
     }
 
     // Edición de tarea
-    fun updateTaskNew(task: TaskEntityNew, selectedMemberIds: List<Int>) {
+    fun updateTaskNew(task: TaskEntityNew, selectedMemberIds: List<String>) {
         viewModelScope.launch {
             repository.updateTaskNewWithMembers(task, selectedMemberIds)
         }
@@ -66,7 +65,7 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
         }
     }
 
-    suspend fun getByIdNew(taskId: Int): TaskWithDetails? {
+    suspend fun getByIdNew(taskId: String): TaskWithDetails? {
         return repository.getTaskWithDetailsById(taskId)
     }
 

@@ -1,16 +1,33 @@
 package haptikos.gestortareashogar_haptikos.data.nuevasEntity
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
+import java.util.UUID
 
-@Entity(tableName = "member_table_new")
-
+@Entity(
+    tableName = "member_table_new",
+    foreignKeys = [
+        ForeignKey(
+            entity = HomeEntityNew::class,
+            parentColumns = ["id"],
+            childColumns = ["homeId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ]
+)
 data class MemberEntityNew (
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey
+    val id: String = UUID.randomUUID().toString(),
+
     val name: String,
     val lastName: String,
     val colorHex: String,
     val role: MemberRole,
-    val homeId: Int
+
+    val homeId: String,
+    
+    val isSynced: Boolean = false,
+    val isDeleted: Boolean = false
 )

@@ -7,7 +7,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntity
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceMemberJoin
@@ -17,19 +16,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TaskInstanceDao {
 
-    @Query("SELECT * FROM task_instance_table ORDER BY dueDate ASC")
-    fun getAll(): Flow<List<TaskInstanceEntity>>
-
-
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun add(taskInstance: TaskInstanceEntity)
-
-
-    // Funciones nuevas
-
     @Query("SELECT * FROM task_instance_table_new WHERE id = :taskInstanceId")
-    suspend fun getById(taskInstanceId: Int): TaskInstanceEntityNew?
+    suspend fun getById(taskInstanceId: String): TaskInstanceEntityNew?
 
     @Query("SELECT * FROM task_instance_table_new ORDER BY dueDate ASC")
     fun getAllNew(): Flow<List<TaskInstanceEntityNew>>
@@ -56,10 +44,10 @@ interface TaskInstanceDao {
 
     // Función para guardar una lista de miembros en la instancia de la tarea.
     @Transaction
-    suspend fun insertInstanceWithAssignedMembers(instance: TaskInstanceEntityNew, memberIds: List<Int>) {
-        val newInstanceId = addTaskInstanceNew(instance)
+    suspend fun insertInstanceWithAssignedMembers(instance: TaskInstanceEntityNew, memberIds: List<String>) {
+        addTaskInstanceNew(instance)
         val joins = memberIds.map { memberId ->
-            TaskInstanceMemberJoin(taskInstanceId = newInstanceId.toInt(), memberId = memberId)
+            TaskInstanceMemberJoin(taskInstanceId = instance.id, memberId = memberId)
         }
         addTaskInstanceMemberJoin(joins)
     }
@@ -69,10 +57,10 @@ interface TaskInstanceDao {
         SELECT DISTINCT task_instance_table_new.* FROM task_instance_table_new
         INNER JOIN task_table_new ON task_instance_table_new.taskId = task_table_new.id
         LEFT JOIN task_instance_member_join ON task_instance_table_new.id = task_instance_member_join.taskInstanceId
-        LEFT JOIN member_table ON task_instance_member_join.memberId = member_table.id
+        LEFT JOIN member_table_new ON task_instance_member_join.memberId = member_table_new.id
         WHERE (:status IS NULL OR task_instance_table_new.state = :status)
         AND task_table_new.title LIKE '%' || :searchQuery || '%'
-        AND (:memberName IS NULL OR member_table.name = :memberName)
+        AND (:memberName IS NULL OR member_table_new.name = :memberName)
         ORDER BY task_instance_table_new.dueDate ASC
     """)
     fun getFilteredInstances(
@@ -83,7 +71,7 @@ interface TaskInstanceDao {
 
     @Transaction
     @Query("SELECT * FROM task_instance_table_new WHERE id = :instanceId")
-    suspend fun getInstanceWithDetailsById(instanceId: Int): TaskInstanceWithDetails?
+    suspend fun getInstanceWithDetailsById(instanceId: String): TaskInstanceWithDetails?
 
 
 }

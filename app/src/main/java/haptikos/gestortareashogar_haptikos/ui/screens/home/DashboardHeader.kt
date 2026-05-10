@@ -66,7 +66,8 @@ fun DashboardHeader(
     currentHomeName: String,
     isHomeSelected: Boolean,
     homesList: List<HomeEntityNew>,
-    onHomeSelected: (HomeEntityNew) -> Unit
+    onHomeSelected: (HomeEntityNew) -> Unit,
+    onNavigateToCreateHome: () -> Unit
 ) {
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
@@ -169,7 +170,12 @@ fun DashboardHeader(
                     DropdownMenuItem(
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).background(Color(0xFF00E676), CircleShape), contentAlignment = Alignment.Center) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(Color(0xFF00E676), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.ic_plus),
                                         contentDescription = null,
@@ -184,7 +190,10 @@ fun DashboardHeader(
                                 }
                             }
                         },
-                        onClick = { expanded = false }
+                        onClick = {
+                            expanded = false
+                            onNavigateToCreateHome()
+                        }
                     )
 
                     // Unirse a Hogar

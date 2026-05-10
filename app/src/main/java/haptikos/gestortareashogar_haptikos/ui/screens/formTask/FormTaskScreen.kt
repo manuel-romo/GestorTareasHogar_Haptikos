@@ -62,11 +62,12 @@ import haptikos.gestortareashogar_haptikos.ui.enums.TurnMode
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
+import java.util.UUID
 
 @Composable
 fun FormTaskScreen(
-    taskId: Int? = null,
-    roomId: Int? = null,
+    taskId: String? = null,
+    roomId: String? = null,
     isPredetermined: Boolean = false,
     roomViewModel: RoomViewModel,
     taskViewModel: TaskViewModel,
@@ -108,7 +109,7 @@ fun FormTaskScreen(
             if (name.isNotBlank()) {
                 val task = TaskEntityNew(
                     // Si es edición, se conserva el ID que tiene la tarea.
-                    id = taskToEdit?.task?.id ?: 0,
+                    id = taskToEdit?.task?.id?: UUID.randomUUID().toString(),
                     title = name,
                     description = desc,
                     roomId = room?.id,

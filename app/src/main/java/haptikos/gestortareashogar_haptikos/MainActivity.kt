@@ -7,12 +7,12 @@ import androidx.activity.viewModels
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.room.Room
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.AuthRepository
 import haptikos.gestortareashogar_haptikos.navigation.AppNavigation
 import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
+import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
@@ -41,7 +41,8 @@ class MainActivity : FragmentActivity() {
                 database.memberDao(),
                 database.roomDao(),
                 database.homeDao(),
-                database
+                database,
+                homeApi = RetrofitClient.homeApi
             )
         }
 

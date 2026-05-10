@@ -4,10 +4,13 @@ import androidx.compose.remote.creation.first
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
+import haptikos.gestortareashogar_haptikos.data.helpers.UserSuggestion
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.ui.screens.createHome.InvitedUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -37,18 +40,32 @@ class HomeViewModel(private val repository: AppRepository) : ViewModel() {
     // Creación de hogar
     fun createNewHome(
         name: String,
+        description: String,
+        isPrivate: Boolean,
         userName: String,
         userLastName: String,
-        userColor: String
+        userColor: String,
+        invitedUsers: List<InvitedUser> = emptyList()
     ) {
+        val finalDescription = description.takeIf { it.isNotBlank() }
+
         viewModelScope.launch {
             try {
+                // Creación de hogar
                 repository.createHomeAndCreator(
                     homeName = name,
+                    homeDescription = finalDescription,
+                    isPrivate = isPrivate,
                     creatorName = userName,
                     creatorLastName = userLastName,
                     creatorColorHex = userColor
                 )
+
+                // TODO envio de invitaciones
+                if (invitedUsers.isNotEmpty()) {
+                    // repository.sendInvitations(invitedUsers.map { it.id })
+                }
+
                 // TODO mensaje de confirmación
             } catch (e: Exception) {
                 // TODO manejar error
@@ -125,4 +142,54 @@ class HomeViewModel(private val repository: AppRepository) : ViewModel() {
     fun dismissSuccessFeedback() { _showSuccessFeedback.value = false }
     fun dismissBiometricError() { _biometricError.value = null }
     fun showBiometricError(msg: String) { _biometricError.value = msg }
+
+
+    // Sugerencia y Búsqueda de usuarios
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
+
+    private val _suggestedUsers = MutableStateFlow<List<UserSuggestion>>(emptyList())
+    val suggestedUsers = _suggestedUsers.asStateFlow()
+
+    init {
+        loadSuggestedUsers()
+    }
+
+    private var allSuggestedUsers: List<UserSuggestion> = emptyList()
+
+    private fun loadSuggestedUsers() {
+        viewModelScope.launch {
+            try {
+                // Simulamos carga de datos
+                val users = listOf(
+                    UserSuggestion("1", "Juan Pérez", "@juan.perez", "#2962FF"),
+                    UserSuggestion("2", "Ana Gómez", "@ana.gomez", "#AA00FF"),
+                    UserSuggestion("3", "Pedro Ramírez", "@pedro.r", "#00C853"),
+                    UserSuggestion("4", "Sofía Torres", "@sofi.torres", "#E91E63")
+                )
+                allSuggestedUsers = users
+                _suggestedUsers.value = users
+            } catch (e: Exception) { }
+        }
+    }
+
+    fun onSearchQueryChanged(query: String) {
+        _searchQuery.value = query
+
+        if (query.isBlank()) {
+            _suggestedUsers.value = allSuggestedUsers
+            return
+        }
+
+        // Búsqueda lógica
+        viewModelScope.launch {
+            val filteredList = allSuggestedUsers.filter {
+                it.fullName.contains(query, ignoreCase = true) ||
+                        it.username.contains(query, ignoreCase = true)
+            }
+            _suggestedUsers.value = filteredList
+        }
+    }
+
 }

@@ -26,7 +26,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
-import haptikos.gestortareashogar_haptikos.data.entity.MemberEntity
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
 import kotlin.collections.forEach
 

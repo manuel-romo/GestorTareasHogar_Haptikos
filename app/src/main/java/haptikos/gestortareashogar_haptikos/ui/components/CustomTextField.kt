@@ -29,9 +29,11 @@ fun CustomTextField(
     isPassword: Boolean = false,
     passwordVisible: Boolean = false,
     trailingIcon: @Composable (() -> Unit)? = null,
-    isError: Boolean = false
+    isError: Boolean = false,
+    readOnly: Boolean = false,
+    modifier: Modifier = Modifier,
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label,
             color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
@@ -44,6 +46,7 @@ fun CustomTextField(
             onValueChange = onValueChange,
             singleLine = true,
             isError = isError,
+            readOnly = readOnly,
             placeholder = {
                 Text(
                     text = placeholder,

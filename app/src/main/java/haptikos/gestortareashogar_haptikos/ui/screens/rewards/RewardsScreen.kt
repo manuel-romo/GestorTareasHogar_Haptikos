@@ -125,8 +125,8 @@ fun RewardsScreen(
                     } else {
                         completedTasks.take(5).forEach { taskWithDetails ->
                             RecentPointRow(
-                                title = taskWithDetails.task.title,
-                                points = "+${taskWithDetails.task.points}",
+                                title = taskWithDetails.taskDetails.task.title,
+                                points = "+${taskWithDetails.taskDetails.task.points}",
                                 iconId = R.drawable.ic_check_circle
                             )
                         }

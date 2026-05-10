@@ -63,8 +63,8 @@ import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
 fun RoomsTasksSection(
     roomViewModel: RoomViewModel,
     taskViewModel: TaskViewModel,
-    onNavigateToEditPredeterminedTask: (taskId: Int) -> Unit,
-    onNavigateToNewPredeterminedTask: (roomId: Int) -> Unit
+    onNavigateToEditPredeterminedTask: (taskId: String) -> Unit,
+    onNavigateToNewPredeterminedTask: (roomId: String) -> Unit
 ) {
 
     val context = LocalContext.current

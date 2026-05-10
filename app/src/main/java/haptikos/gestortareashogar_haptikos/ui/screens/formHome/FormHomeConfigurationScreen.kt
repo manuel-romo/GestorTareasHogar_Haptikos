@@ -37,8 +37,8 @@ fun FormHomeConfigurationScreen(
     roomViewModel: RoomViewModel,
     taskViewModel: TaskViewModel,
     onBack: () -> Unit,
-    onNavigateToEditPredeterminedTask: (taskId: Int) -> Unit,
-    onNavigateToNewPredeterminedTask: (roomId: Int) -> Unit
+    onNavigateToEditPredeterminedTask: (taskId: String) -> Unit,
+    onNavigateToNewPredeterminedTask: (roomId: String) -> Unit
 ) {
     val selectedHome by homeViewModel.selectedHome.collectAsState()
     val members by memberViewModel.members.collectAsState()
@@ -83,7 +83,7 @@ fun FormHomeConfigurationScreen(
             ) {
                 HomeConfigurationHeader(
                     homeName = home.name,
-                    inviteCode = home.inviteCode,
+                    inviteCode = home.inviteCode ?: "Pendiente...",
                     onBack = onBack
                 )
 

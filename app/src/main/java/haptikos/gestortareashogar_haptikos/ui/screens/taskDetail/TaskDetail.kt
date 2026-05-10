@@ -50,7 +50,7 @@ import haptikos.gestortareashogar_haptikos.ui.theme.CompletedGreen
 
 @Composable
 fun TaskDetailScreen(
-    instanceId: Int,
+    instanceId: String,
     viewModel: TaskInstanceViewModel,
     onBack: () -> Unit
 ) {
@@ -219,15 +219,15 @@ fun TaskDetailScreen(
                     Spacer(Modifier.height(12.dp))
 
                     Text(
-                        text = details.task.title,
+                        text = details.taskDetails.task.title,
                         style = MaterialTheme.typography.headlineMedium,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                     // Descripción
-                    if (details.task.description.isNotEmpty()) {
+                    if (details.taskDetails.task.description.isNotEmpty()) {
                         Text(
-                            text = details.task.description,
+                            text = details.taskDetails.task.description,
                             color = Color.White.copy(alpha = 0.8f),
                             fontSize = 14.sp,
                             modifier = Modifier.padding(top = 4.dp)
@@ -243,14 +243,14 @@ fun TaskDetailScreen(
                         modifier = Modifier.weight(1f),
                         iconId = R.drawable.ic_calendar,
                         label = "Día sugerido",
-                        value = details.task.suggestedDay.name.lowercase().replaceFirstChar { it.uppercase() },
+                        value = details.taskDetails.task.suggestedDay.name.lowercase().replaceFirstChar { it.uppercase() },
                         iconColor = Color(0xFFFF8A00)
                     )
                     InfoCard(
                         modifier = Modifier.weight(1f),
                         iconId = R.drawable.ic_location,
                         label = "Habitación",
-                        value = details.room?.name ?: "General",
+                        value = details.taskDetails.room?.name ?: "General",
                         iconColor = Color(0xFF4285F4)
                     )
                 }
@@ -260,7 +260,7 @@ fun TaskDetailScreen(
                         modifier = Modifier.weight(1f),
                         iconId = R.drawable.ic_refresh,
                         label = "Recurrencia",
-                        value = "${details.task.recurrence.icon} ${details.task.recurrence.displayName}",
+                        value = "${details.taskDetails.task.recurrence.icon} ${details.taskDetails.task.recurrence.displayName}",
                         iconColor = Color(0xFF9C27B0)
                     )
                     InfoCard(
@@ -280,9 +280,9 @@ fun TaskDetailScreen(
 
                 // Puntos
                 RewardSection(
-                    basePoints = details.task.points,
-                    priorityBonus = details.task.priority.points,
-                    priorityName = details.task.priority.title.lowercase()
+                    basePoints = details.taskDetails.task.points,
+                    priorityBonus = details.taskDetails.task.priority.points,
+                    priorityName = details.taskDetails.task.priority.title.lowercase()
                 )
 
                 Spacer(Modifier.height(24.dp))
@@ -293,7 +293,7 @@ fun TaskDetailScreen(
                 Spacer(Modifier.height(24.dp))
 
                 // Descripción
-                DescriptionSection(details.task.description)
+                DescriptionSection(details.taskDetails.task.description)
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
