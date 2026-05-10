@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import haptikos.gestortareashogar_haptikos.ui.screens.userStats.UserStatsUiState
+import haptikos.gestortareashogar_haptikos.ui.screens.userStats.HomeStatsItem
 
 class TaskInstanceViewModel(private val repository: AppRepository) : ViewModel() {
 
@@ -129,5 +131,31 @@ class TaskInstanceViewModel(private val repository: AppRepository) : ViewModel()
             repository.deleteTaskInstance(taskInstance)
         }
     }
+
+    //Estadisticas del usuario
+    val userStats: StateFlow<UserStatsUiState> = repository.allInstancesWithDetails.map { allInstances ->
+        val total = allInstances.size
+        val completed = allInstances.count { it.taskInstance.state == TaskState.COMPLETED }
+        val effectiveness = if (total > 0) (completed.toFloat() / total.toFloat() * 100).toInt() else 0
+
+        val statsByHome = allInstances.groupBy { it.room?.homeId ?: 0 }
+            .map { (homeId, instances) ->
+                val homeTotal = instances.size
+                val homeCompleted = instances.count { it.taskInstance.state == TaskState.COMPLETED }
+                HomeStatsItem(
+                    homeName = instances.firstOrNull()?.room?.name ?: "Hogar Desconocido", // Simplificación
+                    completedTasks = homeCompleted,
+                    totalTasks = homeTotal,
+                    progress = if (homeTotal > 0) homeCompleted.toFloat() / homeTotal.toFloat() else 0f
+                )
+            }
+
+        UserStatsUiState(
+            completedCount = completed,
+            effectiveness = effectiveness,
+            streakDays = 31,
+            homeStats = statsByHome
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserStatsUiState())
 
 }
