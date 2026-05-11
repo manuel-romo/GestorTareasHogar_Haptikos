@@ -23,7 +23,11 @@ class RoomViewModel(private val repository: AppRepository): ViewModel(){
 
     fun addRoom(room: RoomEntityNew) {
         viewModelScope.launch {
-            repository.insertRoomNew(room)
+            try {
+                repository.createRoomWithSync(room)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

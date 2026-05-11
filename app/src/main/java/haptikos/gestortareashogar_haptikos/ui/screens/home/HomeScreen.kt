@@ -7,35 +7,25 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import haptikos.gestortareashogar_haptikos.R
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
-import haptikos.gestortareashogar_haptikos.ui.components.CustomBottomNavigation
 import haptikos.gestortareashogar_haptikos.ui.theme.PausedYellow
+import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.TaskFilter
@@ -45,6 +35,7 @@ import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.Dashb
 fun HomeScreen(
     taskInstanceViewModel: TaskInstanceViewModel,
     homeViewModel: HomeViewModel,
+    authViewModel: AuthViewModel,
     onSettingsClick:() -> Unit,
     onTaskClick: (String) -> Unit,
     onStatusClick: (TaskInstanceEntityNew) -> Unit,
@@ -62,10 +53,15 @@ fun HomeScreen(
     val homesList by homeViewModel.allHomes.collectAsState()
     val selectedHome by homeViewModel.selectedHome.collectAsState()
 
+    val userName by authViewModel.userName.collectAsState("")
+    val hasAdminPermissions by homeViewModel.isCurrentUserCreatorOrAdmin.collectAsState()
+
     HomeContent(
         tasks = tasksInstanceList,
         stats = stats,
         currentFilter = currentFilter,
+        userName = userName,
+        hasAdminPermissions = hasAdminPermissions,
         onFilterChange = { nuevoFiltro -> taskInstanceViewModel.updateFilter(nuevoFiltro) },
         searchQuery = searchQuery,
         homesList = homesList,
@@ -86,6 +82,8 @@ fun HomeContent(
     tasks: List<TaskInstanceWithDetails>,
     stats: DashboardStats,
     currentFilter: TaskFilter,
+    userName: String,
+    hasAdminPermissions: Boolean,
     onFilterChange: (TaskFilter) -> Unit,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -115,7 +113,8 @@ fun HomeContent(
     ) {
         item {
             DashboardHeader(
-                userName = "María",
+                userName = userName,
+                userHasAdminPermissions = hasAdminPermissions,
                 pendingTasksCount = pendingTasksCount,
                 hasNotifications = false,
                 userPoints = userPoints,

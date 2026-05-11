@@ -1,6 +1,5 @@
 package haptikos.gestortareashogar_haptikos.data
 
-import android.util.Log
 import androidx.room.withTransaction
 import haptikos.gestortareashogar_haptikos.data.dao.HomeDao
 import haptikos.gestortareashogar_haptikos.data.dao.MemberDao
@@ -20,6 +19,9 @@ import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDet
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
 import haptikos.gestortareashogar_haptikos.network.HomeApi
 import haptikos.gestortareashogar_haptikos.network.RetrofitClient
+import haptikos.gestortareashogar_haptikos.network.RoomApi
+import haptikos.gestortareashogar_haptikos.network.TaskApi
+import haptikos.gestortareashogar_haptikos.network.UserApi
 import kotlinx.coroutines.flow.Flow
 import java.io.File
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
@@ -48,7 +50,35 @@ class AppRepository(
     // Operaciones de tareas
     suspend fun getTaskById(taskId: String): TaskEntityNew? = taskDao.getById(taskId)
 
-    suspend fun insertTaskNew(task: TaskEntityNew, memberIds: List<String>) = taskDao.insertTaskWithMembers(task, memberIds)
+    suspend fun insertTaskNew(task: TaskEntityNew, memberIds: List<String>) {
+
+        // Guardado local
+        taskDao.insertTaskWithMembers(task, memberIds)
+
+        val request = TaskApi.CreateTaskRequest(
+            id = task.id,
+            title = task.title,
+            description = task.description,
+            points = task.points,
+            priority = task.priority.name,
+            suggestedDay = task.suggestedDay.name,
+            recurrence = task.recurrence.name,
+            workMode = task.workMode.name,
+            lastMemberIndex = task.lastMemberIndex,
+            roomId = task.roomId,
+            memberIds = memberIds
+        )
+
+        try {
+            val response = RetrofitClient.getTaskApi(dataStore).createTask(request)
+
+            if (response.isSuccessful) {
+                taskDao.updateSyncStatus(task.id, isSynced = true)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
     suspend fun updateTaskNewWithMembers(task: TaskEntityNew, memberIds: List<String>) = taskDao.updateTaskWithMembers(task, memberIds)
 
@@ -84,7 +114,30 @@ class AppRepository(
     suspend fun updateRoomNew(room: RoomEntityNew) = roomDao.updateNew(room)
     suspend fun deleteRoomNew(room: RoomEntityNew) = roomDao.deleteNew(room)
 
-    suspend fun updateHome(home: HomeEntityNew) = homeDao.updateHome(home)
+    suspend fun updateHome(home: HomeEntityNew) {
+        // Guardado
+        val homeToSave = home.copy(isSynced = false)
+        homeDao.updateHome(homeToSave)
+
+        // Intento de sincronización con el servidor
+        try {
+            val request = HomeApi.UpdateHomeRequest(
+                notifyTaskReminders = home.notifyTaskReminders,
+                notifyTaskCompleted = home.notifyTaskCompleted,
+                notifyNewMembers = home.notifyNewMembers,
+                notifyAllMembers = home.notifyAllMembers,
+                forceSettings = home.forceSettings
+            )
+
+            val response = RetrofitClient.getHomeApi(dataStore).updateHome(home.id, request)
+
+            if (response.isSuccessful) {
+                homeDao.updateHome(homeToSave.copy(isSynced = true))
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
     suspend fun deleteHome(home: HomeEntityNew) = homeDao.deleteHome(home)
 
 
@@ -208,4 +261,83 @@ class AppRepository(
             null
         }
     }
+
+    // Actualización de nombre de usuario --------------------------------------
+    suspend fun updateUserName(userId: String, newName: String): Boolean {
+        return try {
+            // Solamente se envía el nombre
+            val request = UserApi.UpdateUserRequest(name = newName)
+            val response = RetrofitClient.getUserApi(dataStore).updateUser(userId, request)
+            response.isSuccessful
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    // Actualización de notificaciones de usuario --------------------------------------
+    suspend fun updateUserNotificationSettings(userId: String, type: String, isEnabled: Boolean): Boolean {
+        return try {
+            // Solo se envía la configuración de modificación modificada
+            val request = when (type) {
+                "reminders" -> UserApi.UpdateUserRequest(notifyTaskReminders = isEnabled)
+                "completed" -> UserApi.UpdateUserRequest(notifyTaskCompleted = isEnabled)
+                "newMembers" -> UserApi.UpdateUserRequest(notifyNewMembers = isEnabled)
+                else -> return false
+            }
+
+            val response = RetrofitClient.getUserApi(dataStore).updateUser(userId, request)
+            response.isSuccessful
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+
+    // Creación de habitación -----------------------------------------------
+    suspend fun createRoomWithSync(room: RoomEntityNew) {
+        // Guardado local
+        roomDao.addNew(room)
+
+        // Intento de sincronización
+        try {
+            val request = RoomApi.CreateRoomRequest(
+                id = room.id,
+                name = room.name,
+                icon = room.icon,
+                colorHex = room.colorHex,
+                homeId = room.homeId
+            )
+
+            val response = RetrofitClient.getRoomApi(dataStore).createRoom(request)
+
+            if (response.isSuccessful) {
+                val syncedRoom = room.copy(isSynced = true)
+                roomDao.updateNew(syncedRoom)
+            } else {
+                // Manejar error
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+
+    suspend fun deleteHomeWithSync(home: HomeEntityNew) {
+        // Eliminación local
+        appDatabase.withTransaction {
+            homeDao.deleteHome(home)
+        }
+
+        // Intento de sincronización
+        try {
+            val response = RetrofitClient.getHomeApi(dataStore).deleteHome(home.id)
+            if (!response.isSuccessful) {
+                // Error
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+
 }

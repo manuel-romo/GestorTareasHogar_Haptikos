@@ -1,6 +1,5 @@
 package haptikos.gestortareashogar_haptikos.network
 
-import com.google.android.gms.auth.api.phone.SmsRetriever.getClient
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -8,7 +7,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.logging.HttpLoggingInterceptor
 
 object RetrofitClient {
-    private const val BASE_URL = "http://192.168.1.66:8080/"
+    //private const val BASE_URL = "http://192.168.1.66:8080/"
+    private const val BASE_URL = "https://gestortareashaptikosservidor-production.up.railway.app/"
 
     val authApi: AuthApi by lazy {
         Retrofit.Builder()
@@ -43,4 +43,15 @@ object RetrofitClient {
     fun getUserApi(dataStore: DataStoreManager): UserApi {
         return getAuthenticatedRetrofit(dataStore).create(UserApi::class.java)
     }
+
+    // Función para Task
+    fun getTaskApi(dataStore: DataStoreManager): TaskApi {
+        return getAuthenticatedRetrofit(dataStore).create(TaskApi::class.java)
+    }
+
+    // Función para Room
+    fun getRoomApi(dataStore: DataStoreManager): RoomApi {
+        return getAuthenticatedRetrofit(dataStore).create(RoomApi::class.java)
+    }
+
 }

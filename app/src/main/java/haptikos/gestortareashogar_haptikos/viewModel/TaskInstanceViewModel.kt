@@ -5,6 +5,7 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
+import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
@@ -26,7 +27,10 @@ import haptikos.gestortareashogar_haptikos.ui.screens.userStats.HomeStatsItem
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
-class TaskInstanceViewModel(private val repository: AppRepository) : ViewModel() {
+class TaskInstanceViewModel(
+    private val repository: AppRepository,
+    private val dataStore: DataStoreManager
+) : ViewModel() {
 
     data class TaskFilter(
         val showOnlyMine: Boolean = false,
@@ -34,8 +38,9 @@ class TaskInstanceViewModel(private val repository: AppRepository) : ViewModel()
         val selectedDay: String = "Todos"
     )
 
-    // TODO obtener de Auth
-    private val currentUser = "María"
+    // Todas las tareas pendientes
+    val allTaskInstances: StateFlow<List<TaskInstanceWithDetails>> = repository.allInstancesWithDetails
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _currentFilter = MutableStateFlow(TaskFilter())
     val currentFilter = _currentFilter.asStateFlow()
@@ -79,11 +84,13 @@ class TaskInstanceViewModel(private val repository: AppRepository) : ViewModel()
     @OptIn(ExperimentalCoroutinesApi::class)
     val tasks: StateFlow<List<TaskInstanceWithDetails>> = combine(
         _currentFilter,
-        _searchQuery
-    ) { filter, query ->
-        Pair(filter, query)
-    }.flatMapLatest { (filter, query) ->
-        val ownerName = if (filter.showOnlyMine) currentUser else null
+        _searchQuery,
+        dataStore.usernameFlow
+    ) { filter, query, userName ->
+        Triple(filter, query, userName)
+    }.flatMapLatest { (filter, query, userName) ->
+        // Llamada a repositorio
+        val ownerName = if (filter.showOnlyMine) userName else null
 
         repository.getFilteredInstances(
             status = filter.status,

@@ -22,6 +22,7 @@ class AuthViewModel(
     private val dataStore: DataStoreManager
 ) : ViewModel() {
 
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
@@ -32,21 +33,27 @@ class AuthViewModel(
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     val isLoggedIn = dataStore.isLoggedInFlow.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5000),
-        false
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = false
     )
 
     val userName = dataStore.usernameFlow.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5000),
-        ""
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ""
     )
 
     val userId = dataStore.userIdFlow.stateIn(
-        viewModelScope,
-        SharingStarted.WhileSubscribed(5000),
-        ""
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ""
+    )
+
+    val userEmail = dataStore.userEmailFlow.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = ""
     )
 
     // Registro
@@ -116,7 +123,12 @@ class AuthViewModel(
                 val confirmedId = response.id ?: userId
 
                 if (!token.isNullOrEmpty()) {
-                    dataStore.saveSession(confirmedId, name, token)
+                    dataStore.saveSession(
+                        userId = userId,
+                        username = name,
+                        token = token,
+                        email = email
+                    )
                     _isSuccess.value = true
                 } else {
                     _errorMessage.value = "Registro exitoso, pero no se recibió token de acceso"
@@ -152,8 +164,14 @@ class AuthViewModel(
                 val userId = loginResponse.id ?: ""
                 val username = loginResponse.name ?: email.substringBefore("@")
                 val token = loginResponse.token ?: ""
+                val email = loginResponse.email ?: ""
 
-                dataStore.saveSession(userId, username, token)
+                dataStore.saveSession(
+                    userId = userId,
+                    username = username,
+                    token = token,
+                    email = email
+                )
                 _isSuccess.value = true
             }.onFailure { error ->
                 _errorMessage.value = "Correo o contraseña incorrectos o error de red"
@@ -188,4 +206,5 @@ class AuthViewModel(
     fun showBiometricError(error: String) {
         _errorMessage.value = error
     }
+
 }

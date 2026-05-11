@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
+import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.helpers.UserSuggestion
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.network.HomeApi
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -64,6 +66,24 @@ class HomeViewModel(
     fun selectHome(home: HomeEntityNew) {
         _selectedHome.value = home
     }
+
+
+    // Rol del usuario en el hogar actual
+    val isCurrentUserCreatorOrAdmin: StateFlow<Boolean> = combine(
+        selectedHome,
+        repository.allMembersNew,
+        dataStore.userIdFlow
+    ) { currentHome, members, userId ->
+        if (currentHome == null || userId == null) return@combine false
+
+        // Se busca el usuario actual entre los miembros del hogar
+        val currentUserMember = members.find {
+            it.homeId == currentHome.id && it.id == userId
+        }
+
+        // Rol del usuario
+        currentUserMember?.role == MemberRole.CREATOR || currentUserMember?.role == MemberRole.ADMIN
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     fun createNewHome(
         name: String,
@@ -121,12 +141,15 @@ class HomeViewModel(
 
     // Actualización
     fun updateHome(home: HomeEntityNew) {
+        // Se actualiza la IU antes de guardar en servidor
+        _selectedHome.value = home
+
         viewModelScope.launch {
             try {
                 repository.updateHome(home)
-                _selectedHome.value = home
             } catch (e: Exception) {
-                // TODO Manejar error
+                // TODO puede revertirse el cambio de la IU
+                e.printStackTrace()
             }
         }
     }
@@ -170,10 +193,11 @@ class HomeViewModel(
         val homeToDelete = _selectedHome.value ?: return
         viewModelScope.launch {
             try {
-                repository.deleteHome(homeToDelete)
+
+                repository.deleteHomeWithSync(homeToDelete)
+
                 _selectedHome.value = null
 
-                // Se selecciona el siguiente hogar existente
                 val otherHomes = repository.allHomes.first()
                 _selectedHome.value = otherHomes.firstOrNull()
 

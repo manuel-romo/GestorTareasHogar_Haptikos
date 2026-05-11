@@ -22,7 +22,8 @@ interface AuthApi {
         val message: String?,
         val token: String?,
         val name: String?,
-        val id: String?
+        val id: String?,
+        val email: String?
     )
 
     @POST("/api/auth/register")

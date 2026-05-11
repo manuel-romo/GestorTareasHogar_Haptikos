@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.ui.components.NotificationList
 
 @Composable
 fun NotificationsSection(
@@ -51,40 +52,18 @@ fun NotificationsSection(
             shape = RoundedCornerShape(16.dp)
         ) {
             Column {
-                val contentAlpha = if (home.notifyAllMembers) 1f else 0.5f
+                // Componente global
+                NotificationList(
+                    notifyTaskReminders = home.notifyTaskReminders,
+                    notifyTaskCompleted = home.notifyTaskCompleted,
+                    notifyNewMembers = home.notifyNewMembers,
+                    onRemindersChange = { onUpdate(home.copy(notifyTaskReminders = it)) },
+                    onCompletedChange = { onUpdate(home.copy(notifyTaskCompleted = it)) },
+                    onNewMembersChange = { onUpdate(home.copy(notifyNewMembers = it)) },
+                    isEnabled = home.notifyAllMembers
+                )
 
-                Column(modifier = Modifier.graphicsLayer(alpha = contentAlpha)) {
-                    NotificationEmojiRow(
-                        emoji = "⏰",
-                        title = "Recordatorios",
-                        desc = "Aviso antes de que venza una tarea",
-                        isChecked = home.notifyTaskReminders,
-                        onCheckedChange = { onUpdate(home.copy(notifyTaskReminders = it)) },
-                        enabled = home.notifyAllMembers
-                    )
-                    HorizontalDivider(color = Color(0xFFF0F0F0), modifier = Modifier.padding(horizontal = 16.dp))
-
-                    NotificationEmojiRow(
-                        emoji = "✅",
-                        title = "Tareas completadas",
-                        desc = "Cuando un miembro completa una tarea",
-                        isChecked = home.notifyTaskCompleted,
-                        onCheckedChange = { onUpdate(home.copy(notifyTaskCompleted = it)) },
-                        enabled = home.notifyAllMembers
-                    )
-                    HorizontalDivider(color = Color(0xFFF0F0F0), modifier = Modifier.padding(horizontal = 16.dp))
-
-                    NotificationEmojiRow(
-                        emoji = "👋",
-                        title = "Nuevos miembros",
-                        desc = "Cuando alguien se une al hogar",
-                        isChecked = home.notifyNewMembers,
-                        onCheckedChange = { onUpdate(home.copy(notifyNewMembers = it)) },
-                        enabled = home.notifyAllMembers
-                    )
-                }
-
-                // Sección de control global
+                // Sección de control global (Solo visible en Configuración de Hogar)
                 Surface(color = Color(0xFFFFF8F0)) {
                     Column {
                         NotificationMasterRow(
@@ -114,39 +93,7 @@ fun NotificationsSection(
     }
 }
 
-@Composable
-fun NotificationEmojiRow(
-    emoji: String,
-    title: String,
-    desc: String,
-    isChecked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    enabled: Boolean = true
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(modifier = Modifier.size(36.dp), contentAlignment = Alignment.Center) {
-            Text(text = emoji, fontSize = 24.sp)
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.Bold, color = if(enabled) Color.Black else Color.Gray, style = MaterialTheme.typography.bodyMedium)
-            Text(desc, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
-        }
-        Switch(
-            checked = isChecked,
-            onCheckedChange = onCheckedChange,
-            enabled = enabled,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFF00C853),
-                disabledCheckedTrackColor = Color(0xFF00C853).copy(alpha = 0.3f)
-            )
-        )
-    }
-}
+
 
 @Composable
 fun NotificationMasterRow(

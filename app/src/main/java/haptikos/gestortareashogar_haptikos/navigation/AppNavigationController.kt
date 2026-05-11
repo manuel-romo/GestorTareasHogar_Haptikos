@@ -22,7 +22,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -52,6 +51,7 @@ import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.ProfileViewModel
 
 sealed class Screen(val route: String){
     object Login: Screen("login")
@@ -79,7 +79,8 @@ fun AppNavigation(
     taskInstanceViewModel: TaskInstanceViewModel,
     roomViewModel: RoomViewModel,
     memberViewModel: MemberViewModel,
-    homeViewModel: HomeViewModel
+    homeViewModel: HomeViewModel,
+    profileViewModel: ProfileViewModel
 ) {
     val navController = rememberNavController()
 
@@ -203,6 +204,7 @@ fun AppNavigation(
                 HomeScreen(
                     taskInstanceViewModel = taskInstanceViewModel,
                     homeViewModel = homeViewModel,
+                    authViewModel = authViewModel,
                     onSettingsClick = { navController.navigate(Screen.HomeConfiguration.route) },
                     onTaskClick = { instanceId -> navController.navigate("${Screen.TaskDetail.route}/$instanceId") },
                     onStatusClick = { taskInstance ->
@@ -386,13 +388,18 @@ fun AppNavigation(
                 )
             }
 
+            // En tu ruta de profile:
             composable(Screen.Profile.route) {
                 ProfileScreen(
-                    userName = userName,
-                    onLogoutClick = { /* Lógica para cerrar sesión */ },
-                    onEditProfileClick = { },
-                    onPhotoSelected = { uri ->
-                        /* Aquí mandaremos la foto al servidor más adelante */
+                    authViewModel = authViewModel,
+                    profileViewModel = profileViewModel,
+                    homeViewModel = homeViewModel,
+                    memberViewModel = memberViewModel,
+                    taskInstanceViewModel = taskInstanceViewModel,
+                    onNavigateToLogin = {
+                        navController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 )
             }

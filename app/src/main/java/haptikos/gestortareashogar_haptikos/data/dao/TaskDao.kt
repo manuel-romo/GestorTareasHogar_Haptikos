@@ -70,4 +70,7 @@ interface TaskDao {
         addTaskMemberJoin(newJoins)
     }
 
+    @Query("UPDATE task_table_new SET isSynced = :isSynced WHERE id = :taskId")
+    suspend fun updateSyncStatus(taskId: String, isSynced: Boolean)
+
 }

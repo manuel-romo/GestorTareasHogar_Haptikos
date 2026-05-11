@@ -44,7 +44,8 @@ fun AccountActionItem(title: String, subtitle: String, iconRes: Int) {
         Icon(
             painter = painterResource(R.drawable.ic_arrow_right),
             contentDescription = null,
-            tint = Color.LightGray
+            tint = Color.LightGray,
+            modifier = Modifier.size(24.dp)
         )
     }
 }

@@ -100,16 +100,27 @@ fun FormHomeConfigurationScreen(
                     HomeMembersSection(members = members)
 
                     RoomsTasksSection(
+                        homeId = home.id,
                         roomViewModel = roomViewModel,
                         taskViewModel = taskViewModel,
                         onNavigateToEditPredeterminedTask = onNavigateToEditPredeterminedTask,
                         onNavigateToNewPredeterminedTask = onNavigateToNewPredeterminedTask
                     )
 
-                    NotificationsSection(
-                        home = home,
-                        onUpdate = { homeViewModel.updateHome(it) }
-                    )
+                    selectedHome?.let { home ->
+                        NotificationsSection(
+                            home = home,
+                            onUpdate = { updatedHome ->
+                                homeViewModel.updateNotificationSettings(
+                                    reminders = updatedHome.notifyTaskReminders,
+                                    completed = updatedHome.notifyTaskCompleted,
+                                    members = updatedHome.notifyNewMembers,
+                                    all = updatedHome.notifyAllMembers,
+                                    force = updatedHome.forceSettings
+                                )
+                            }
+                        )
+                    }
 
                     DangerZoneSection(
                         homeViewModel = homeViewModel,

@@ -2,9 +2,11 @@ package haptikos.gestortareashogar_haptikos.ui.screens.formHome
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
 import haptikos.gestortareashogar_haptikos.ui.components.BiometricAuthBottomSheet
@@ -61,6 +64,7 @@ import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoomsTasksSection(
+    homeId: String,
     roomViewModel: RoomViewModel,
     taskViewModel: TaskViewModel,
     onNavigateToEditPredeterminedTask: (taskId: String) -> Unit,
@@ -79,6 +83,8 @@ fun RoomsTasksSection(
     val taskFeedback by taskViewModel.taskFeedback.collectAsState()
 
     val allTasksWithDetails by taskViewModel.tasksWithDetails.collectAsState()
+
+    var showAddRoomSheet by remember { mutableStateOf(false) }
 
     Column {
         SectionTitleHeader(icon = R.drawable.ic_sparkles, title = "HABITACIONES Y TAREAS PREDETERMINADAS")
@@ -110,8 +116,8 @@ fun RoomsTasksSection(
             }
         }
 
+        // Listado de habitaciones
         rooms.forEach { room ->
-
             val roomTasks = allTasksWithDetails.filter { it.task.roomId == room.id }
 
             RoomExpandableCard(
@@ -133,6 +139,80 @@ fun RoomsTasksSection(
                 }
             )
             Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        // Agregar habitación
+        Spacer(modifier = Modifier.height(4.dp))
+
+        OutlinedButton(
+            onClick = { showAddRoomSheet = true },
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, Color(0xFFFF8A00)),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFFF8A00))
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_plus),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Agregar habitación",
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+
+    // Modal para crear habitación
+    if (showAddRoomSheet) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
+        ModalBottomSheet(
+            onDismissRequest = { showAddRoomSheet = false },
+            containerColor = Color.White,
+            sheetState = sheetState
+        ) {
+            EditRoomBottomSheet(
+                initialName = "",
+                initialIcon = "🛋️",
+                initialColorHex = "#FF8A00",
+                onDismiss = { showAddRoomSheet = false },
+                onSave = { newName, newIcon, newColorHex ->
+                    val newRoom = RoomEntityNew(
+                        name = newName,
+                        icon = newIcon,
+                        colorHex = newColorHex,
+                        homeId = homeId
+                    )
+                    roomViewModel.addRoom(newRoom)
+                    showAddRoomSheet = false
+                }
+            )
+        }
+    }
+
+    // Editar habitación
+    roomToEdit?.let { room ->
+        val sheetState = rememberModalBottomSheetState(
+            skipPartiallyExpanded = true,
+            confirmValueChange = { sheetValue -> sheetValue != SheetValue.Hidden }
+        )
+
+        ModalBottomSheet(
+            onDismissRequest = { roomViewModel.cancelEdit() },
+            containerColor = Color.White,
+            sheetState = sheetState
+        ) {
+            EditRoomBottomSheet(
+                initialName = room.name,
+                initialIcon = room.icon,
+                initialColorHex = room.colorHex,
+                onDismiss = { roomViewModel.cancelEdit() },
+                onSave = { newName, newIcon, newColorHex ->
+                    roomViewModel.updateRoom(newName, newIcon, newColorHex)
+                }
+            )
         }
     }
 

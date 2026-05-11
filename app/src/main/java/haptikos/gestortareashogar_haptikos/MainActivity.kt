@@ -12,11 +12,11 @@ import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.AuthRepository
 import haptikos.gestortareashogar_haptikos.navigation.AppNavigation
 import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
-import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.ProfileViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
@@ -53,10 +53,11 @@ class MainActivity : FragmentActivity() {
 
         val authViewModel: AuthViewModel by viewModels { AuthViewModelFactory(authRepository, dataStoreManager) }
         val taskViewModel: TaskViewModel by viewModels { TaskViewModelFactory(repository) }
-        val taskInstanceViewModel: TaskInstanceViewModel by viewModels { TaskInstanceViewModelFactory(repository) }
+        val taskInstanceViewModel: TaskInstanceViewModel by viewModels { TaskInstanceViewModelFactory(repository, dataStoreManager) }
         val roomViewModel: RoomViewModel by viewModels { RoomViewModelFactory(repository) }
         val memberViewModel: MemberViewModel by viewModels { MemberViewModelFactory(repository) }
         val homeViewModel: HomeViewModel by viewModels { HomeViewModelFactory(repository, dataStoreManager) }
+        val profileViewModel: ProfileViewModel by viewModels { ProfileViewModelFactory(repository, dataStoreManager) }
 
         setContent {
             GestorTareasHogar_HaptikosTheme {
@@ -66,7 +67,8 @@ class MainActivity : FragmentActivity() {
                     taskInstanceViewModel = taskInstanceViewModel,
                     memberViewModel = memberViewModel,
                     roomViewModel = roomViewModel,
-                    homeViewModel = homeViewModel
+                    homeViewModel = homeViewModel,
+                    profileViewModel = profileViewModel
                 )
             }
         }
@@ -88,9 +90,12 @@ class TaskViewModelFactory(private val repository: AppRepository): ViewModelProv
     }
 }
 
-class TaskInstanceViewModelFactory(private val repository: AppRepository): ViewModelProvider.Factory{
+class TaskInstanceViewModelFactory(
+    private val repository: AppRepository,
+    private val dataStore: DataStoreManager
+    ): ViewModelProvider.Factory{
     override fun <T: ViewModel> create(modelClass: Class<T>): T{
-        return TaskInstanceViewModel(repository) as T
+        return TaskInstanceViewModel(repository, dataStore) as T
     }
 }
 
@@ -112,5 +117,14 @@ class HomeViewModelFactory(
 ): ViewModelProvider.Factory{
     override fun <T: ViewModel> create(modelClass: Class<T>): T{
         return HomeViewModel(repository, dataStore) as T
+    }
+}
+
+class ProfileViewModelFactory(
+    private val repository: AppRepository,
+    private val dataStore: DataStoreManager
+): ViewModelProvider.Factory{
+    override fun <T: ViewModel> create(modelClass: Class<T>): T{
+        return ProfileViewModel(repository, dataStore) as T
     }
 }

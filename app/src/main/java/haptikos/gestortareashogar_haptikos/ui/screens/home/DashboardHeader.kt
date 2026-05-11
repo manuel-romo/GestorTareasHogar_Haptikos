@@ -61,6 +61,7 @@ fun DashboardHeader(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     currentFilter: TaskFilter,
+    userHasAdminPermissions: Boolean,
     onFilterChange: (TaskFilter) -> Unit,
     onSettingsClick: () -> Unit,
     currentHomeName: String,
@@ -225,7 +226,7 @@ fun DashboardHeader(
             }
 
             // Configuración de Hogar
-            val canAccessSettings = homesList.isNotEmpty() && isHomeSelected
+            val canAccessSettings = homesList.isNotEmpty() && isHomeSelected && userHasAdminPermissions
 
             Surface(
                 color = if (canAccessSettings) Color.White.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f),
@@ -234,7 +235,7 @@ fun DashboardHeader(
             ) {
                 Icon(
                     painterResource(id = R.drawable.ic_configuration),
-                    contentDescription = "Ajustes",
+                    contentDescription = if (canAccessSettings) "Ajustes del hogar" else "Solo el creador puede editar",
                     modifier = Modifier.padding(8.dp).size(20.dp),
                     tint = if (canAccessSettings) Color.White else Color.White.copy(alpha = 0.4f)
                 )

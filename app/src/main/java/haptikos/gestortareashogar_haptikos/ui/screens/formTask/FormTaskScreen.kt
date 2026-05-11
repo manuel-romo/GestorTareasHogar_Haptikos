@@ -182,6 +182,14 @@ fun FormatTaskContent(
     var showRoomSelector by remember { mutableStateOf(false) }
     var showMemberSelector by remember { mutableStateOf(false) }
 
+    val isFormValid = remember(taskName, isRoomScope, selectedRoom, selectedMembers) {
+        val hasName = taskName.isNotBlank()
+        val hasValidRoom = if (isRoomScope) selectedRoom != null else true
+        val hasMembers = selectedMembers.isNotEmpty()
+
+        hasName && hasValidRoom && hasMembers
+    }
+
     // Actualiza lista de turnos automáticamente cuando cambian los miembros
     LaunchedEffect(selectedMembers) {
         orderedTurns.clear()
@@ -201,6 +209,7 @@ fun FormatTaskContent(
         bottomBar = {
             TaskBottomBar(
                 isEditing = taskToEdit != null,
+                isSaveEnabled = isFormValid,
                 onReturn = onReturn,
                 onSaveClick = {
                     onSaveTask(
@@ -407,15 +416,36 @@ fun TaskTopAppBar(
 fun TaskBottomBar(
     isEditing: Boolean = false,
     onReturn:() -> Unit,
-    onSaveClick:() -> Unit
+    onSaveClick:() -> Unit,
+    isSaveEnabled: Boolean = true
 ) {
     Surface(color = Color.White, shadowElevation = 8.dp, modifier = Modifier.navigationBarsPadding()) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            Button(onClick = { onReturn() }, modifier = Modifier.weight(1f).height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF2F2F7)), shape = RoundedCornerShape(12.dp)) {
+            Button(
+                onClick = { onReturn() },
+                modifier = Modifier.weight(1f).height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF2F2F7)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
                 Text("Cancelar", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
-            Button(onClick = { onSaveClick() }, modifier = Modifier.weight(1f).height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = OrangeMain), shape = RoundedCornerShape(12.dp)) {
-                Text(if (isEditing) "Guardar cambios" else "Crear tarea", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+
+            Button(
+                onClick = { onSaveClick() },
+                enabled = isSaveEnabled,
+                modifier = Modifier.weight(1f).height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = OrangeMain,
+                    disabledContainerColor = OrangeMain.copy(alpha = 0.5f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = if (isEditing) "Guardar" else "Crear tarea",
+                    color = if (isSaveEnabled) Color.White else Color.White.copy(alpha = 0.7f),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
