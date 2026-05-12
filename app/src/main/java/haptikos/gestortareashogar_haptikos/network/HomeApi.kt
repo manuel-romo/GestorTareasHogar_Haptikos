@@ -3,9 +3,11 @@ package haptikos.gestortareashogar_haptikos.network
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
+import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface HomeApi {
 
@@ -15,6 +17,7 @@ interface HomeApi {
         val name: String,
         val description: String?,
         val isPrivate: Boolean,
+        val creatorMemberId: String,
         val creatorId: String,
         val creatorName: String,
         val creatorLastName: String,
@@ -42,6 +45,7 @@ interface HomeApi {
         val name: String? = null,
         val description: String? = null,
         val isPrivate: Boolean? = null,
+        val editPermission: String? = null,
         val notifyTaskReminders: Boolean? = null,
         val notifyTaskCompleted: Boolean? = null,
         val notifyNewMembers: Boolean? = null,
@@ -63,5 +67,48 @@ interface HomeApi {
 
     @DELETE("/api/homes/{homeId}")
     suspend fun deleteHome(@Path("homeId") homeId: String): Response<Void>
+
+
+
+    data class RegenerateCodeResponse(val inviteCode: String)
+
+    @POST("/api/homes/{homeId}/regenerate-code")
+    suspend fun regenerateInviteCode(@Path("homeId") homeId: String): Response<RegenerateCodeResponse>
+
+
+    data class HomePreviewResponse(
+        val id: String,
+        val name: String,
+        val creatorName: String,
+        val memberCount: Int,
+        val taskCount: Long,
+        val pendingCount: Long,
+        val isAlreadyMember: Boolean
+    )
+
+    data class JoinHomeRequest(
+        val inviteCode: String,
+        val userId: String,
+        val name: String,
+        val lastName: String,
+        val colorHex: String
+    )
+
+    data class JoinHomeResponse(
+        val message: String,
+        val memberId: String
+    )
+
+
+
+    @GET("/api/homes/by-code/{inviteCode}")
+    suspend fun findHomeByCode(
+        @Path("inviteCode") inviteCode: String,
+        @Query("userId") userId: String
+    ): Response<HomePreviewResponse>
+
+    @POST("/api/homes/join")
+    suspend fun joinHome(@Body request: JoinHomeRequest): Response<JoinHomeResponse>
+
 
 }

@@ -52,7 +52,6 @@ fun TaskCard(
     onDeleteClick: () -> Unit
 ) {
 
-    val isPaused = taskInstance.taskInstance.state == TaskState.PAUSED
     val isCompleted = taskInstance.taskInstance.state == TaskState.COMPLETED
 
     Card(
@@ -62,8 +61,7 @@ fun TaskCard(
             .clickable { onClick() },
         colors = CardDefaults.cardColors(containerColor = White),
         shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(if (isCompleted) 0.dp else 2.dp),
-        border = if (isPaused) BorderStroke(1.5.dp, PausedYellow) else null
+        elevation = CardDefaults.cardElevation(if (isCompleted) 0.dp else 2.dp)
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -81,21 +79,13 @@ fun TaskCard(
                         width = 2.dp,
                         color = when {
                             isCompleted -> CompletedGreen
-                            isPaused -> PausedYellow
                             else -> MaterialTheme.colorScheme.outlineVariant
                         },
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                if (isPaused) {
-                    Icon(
-                        painterResource(id = R.drawable.ic_pause),
-                        contentDescription = "Pausada",
-                        tint = PausedYellow,
-                        modifier = Modifier.size(12.dp)
-                    )
-                } else if (isCompleted) {
+                if (isCompleted) {
                     Icon(
                         painterResource(id = R.drawable.ic_check),
                         contentDescription = "Completada",
@@ -168,16 +158,6 @@ fun TaskCard(
                             )
                         }
                     }
-                }
-
-                // Fecha fin de pausa para tarea pausada
-                if (isPaused && taskInstance.taskInstance.pausedUntil != null) {
-                    Text(
-                        text = "Pausada hasta ${getDateString(taskInstance.taskInstance.pausedUntil)}",
-                        color = PausedYellow,
-                        fontSize = 12.sp,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
                 }
 
                 Spacer(Modifier.height(8.dp))

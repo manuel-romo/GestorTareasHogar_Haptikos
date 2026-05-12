@@ -54,16 +54,19 @@ interface TaskInstanceDao {
 
     @Transaction
     @Query("""
-        SELECT DISTINCT task_instance_table_new.* FROM task_instance_table_new
-        INNER JOIN task_table_new ON task_instance_table_new.taskId = task_table_new.id
-        LEFT JOIN task_instance_member_join ON task_instance_table_new.id = task_instance_member_join.taskInstanceId
-        LEFT JOIN member_table_new ON task_instance_member_join.memberId = member_table_new.id
-        WHERE (:status IS NULL OR task_instance_table_new.state = :status)
-        AND task_table_new.title LIKE '%' || :searchQuery || '%'
-        AND (:memberName IS NULL OR member_table_new.name = :memberName)
-        ORDER BY task_instance_table_new.dueDate ASC
+    SELECT DISTINCT ti.* FROM task_instance_table_new ti
+    INNER JOIN task_table_new t ON ti.taskId = t.id
+    LEFT JOIN room_table_new r ON t.roomId = r.id
+    LEFT JOIN task_instance_member_join jim ON ti.id = jim.taskInstanceId
+    LEFT JOIN member_table_new m ON jim.memberId = m.id
+    WHERE (:homeId IS NULL OR t.homeId = :homeId)
+    AND (:status IS NULL OR ti.state = :status)
+    AND t.title LIKE '%' || :searchQuery || '%'
+    AND (:memberName IS NULL OR m.name = :memberName)
+    ORDER BY ti.dueDate ASC
     """)
     fun getFilteredInstances(
+        homeId: String?,
         status: TaskState?,
         searchQuery: String,
         memberName: String?
@@ -73,5 +76,17 @@ interface TaskInstanceDao {
     @Query("SELECT * FROM task_instance_table_new WHERE id = :instanceId")
     suspend fun getInstanceWithDetailsById(instanceId: String): TaskInstanceWithDetails?
 
+    @Query("DELETE FROM task_instance_member_join WHERE taskInstanceId = :instanceId")
+    suspend fun deleteInstanceMembers(instanceId: String)
+
+    @Transaction
+    suspend fun updateInstanceMembers(instanceId: String, memberIds: List<String>) {
+        deleteInstanceMembers(instanceId)
+        val joins = memberIds.map { TaskInstanceMemberJoin(taskInstanceId = instanceId, memberId = it) }
+        addTaskInstanceMemberJoin(joins)
+    }
+
+    @Query("SELECT * FROM task_instance_table_new WHERE taskId = :taskId ORDER BY dueDate DESC LIMIT 1")
+    suspend fun getLastInstanceForTask(taskId: String): TaskInstanceEntityNew?
 
 }

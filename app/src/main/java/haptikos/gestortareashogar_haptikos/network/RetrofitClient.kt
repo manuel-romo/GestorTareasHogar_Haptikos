@@ -1,14 +1,15 @@
 package haptikos.gestortareashogar_haptikos.network
 
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
+import haptikos.gestortareashogar_haptikos.network.SyncApi
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.logging.HttpLoggingInterceptor
 
 object RetrofitClient {
-    //private const val BASE_URL = "http://192.168.1.66:8080/"
-    private const val BASE_URL = "https://gestortareashaptikosservidor-production.up.railway.app/"
+    private const val BASE_URL = "http://192.168.1.66:8080/"
+    //private const val BASE_URL = "https://gestortareashaptikosservidor-production.up.railway.app/"
 
     val authApi: AuthApi by lazy {
         Retrofit.Builder()
@@ -52,6 +53,16 @@ object RetrofitClient {
     // Función para Room
     fun getRoomApi(dataStore: DataStoreManager): RoomApi {
         return getAuthenticatedRetrofit(dataStore).create(RoomApi::class.java)
+    }
+
+    // Instancias de Task
+    fun getTaskInstanceApi(dataStore: DataStoreManager): TaskInstanceApi {
+        return getAuthenticatedRetrofit(dataStore).create(TaskInstanceApi::class.java)
+    }
+
+    // Sincronización
+    fun getSyncApi(dataStore: DataStoreManager): SyncApi {
+        return getAuthenticatedRetrofit(dataStore).create(SyncApi::class.java)
     }
 
 }

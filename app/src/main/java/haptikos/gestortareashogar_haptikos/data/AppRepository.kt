@@ -7,6 +7,7 @@ import haptikos.gestortareashogar_haptikos.data.dao.RoomDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskInstanceDao
 import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
+import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberStatus
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
@@ -22,11 +23,16 @@ import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import haptikos.gestortareashogar_haptikos.network.RoomApi
 import haptikos.gestortareashogar_haptikos.network.TaskApi
 import haptikos.gestortareashogar_haptikos.network.UserApi
+import haptikos.gestortareashogar_haptikos.utils.getNextDueDate
+import haptikos.gestortareashogar_haptikos.utils.getNextDueDateAfter
+import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import java.io.File
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import java.util.UUID
 
 class AppRepository(
     private val taskDao: TaskDao,
@@ -47,6 +53,7 @@ class AppRepository(
     val allTasksWithDetails: Flow<List<TaskWithDetails>> = taskDao.getAllTasksWithDetails()
     val allHomes: Flow<List<HomeEntityNew>> = homeDao.getAllHomes()
 
+
     // Operaciones de tareas
     suspend fun getTaskById(taskId: String): TaskEntityNew? = taskDao.getById(taskId)
 
@@ -54,6 +61,9 @@ class AppRepository(
 
         // Guardado local
         taskDao.insertTaskWithMembers(task, memberIds)
+
+        // Se genera la instancia de la semana actual
+        generateInstanceForTask(task, memberIds)
 
         val request = TaskApi.CreateTaskRequest(
             id = task.id,
@@ -66,6 +76,7 @@ class AppRepository(
             workMode = task.workMode.name,
             lastMemberIndex = task.lastMemberIndex,
             roomId = task.roomId,
+            homeId = task.homeId,
             memberIds = memberIds
         )
 
@@ -79,6 +90,65 @@ class AppRepository(
             e.printStackTrace()
         }
     }
+
+    suspend fun generateInstanceForTask(task: TaskEntityNew, memberIds: List<String>) {
+        // No se genera si la tarea está pausada
+        if (task.pausedUntil != null && task.pausedUntil > System.currentTimeMillis()) return
+
+        val dueDate = getNextDueDate(task.suggestedDay, task.recurrence)
+
+        val instance = TaskInstanceEntityNew(
+            taskId = task.id,
+            dueDate = dueDate,
+            state = TaskState.PENDING
+        )
+
+        taskInstanceDao.insertInstanceWithAssignedMembers(instance, memberIds)
+    }
+
+    suspend fun generatePendingInstances() {
+        val allTasks = taskDao.getAllNew().first()
+        val now = System.currentTimeMillis()
+
+        allTasks.forEach { task ->
+            // Se pasa si está pausada
+            if (task.pausedUntil != null && task.pausedUntil > now) return@forEach
+
+            // Se obtiene la última instancia de esta tarea
+            val lastInstance = taskInstanceDao.getLastInstanceForTask(task.id)
+
+            // Si nunca ha tenido instancia
+            val shouldGenerate = if (lastInstance == null) {
+                true
+            } else {
+                val nextDue = getNextDueDateAfter(
+                    lastInstance.dueDate, task.recurrence, task.suggestedDay
+                )
+                nextDue <= now
+            }
+
+            if (shouldGenerate) {
+                val dueDate = if (lastInstance == null) {
+                    getNextDueDate(task.suggestedDay, task.recurrence)
+                } else {
+                    getNextDueDateAfter(
+                        lastInstance.dueDate, task.recurrence, task.suggestedDay
+                    )
+                }
+
+                // Obtener miembros de la tarea base
+                val memberIds = taskDao.getMemberIdsForTask(task.id)
+
+                val instance = TaskInstanceEntityNew(
+                    taskId = task.id,
+                    dueDate = dueDate,
+                    state = TaskState.PENDING
+                )
+                taskInstanceDao.insertInstanceWithAssignedMembers(instance, memberIds)
+            }
+        }
+    }
+
 
     suspend fun updateTaskNewWithMembers(task: TaskEntityNew, memberIds: List<String>) = taskDao.updateTaskWithMembers(task, memberIds)
 
@@ -97,12 +167,13 @@ class AppRepository(
         return taskInstanceDao.getInstanceWithDetailsById(instanceId)
     }
 
-    suspend fun getFilteredInstances(
+    fun getFilteredInstances(
+        homeId: String?,
         status: TaskState?,
         searchQuery: String,
         memberName: String?
     ): Flow<List<TaskInstanceWithDetails>> {
-        return taskInstanceDao.getFilteredInstances(status, searchQuery, memberName)
+        return taskInstanceDao.getFilteredInstances(homeId, status, searchQuery, memberName)
     }
 
     // Operaciones básicas
@@ -122,6 +193,8 @@ class AppRepository(
         // Intento de sincronización con el servidor
         try {
             val request = HomeApi.UpdateHomeRequest(
+                name = home.name,
+                editPermission = home.editPermission.name,
                 notifyTaskReminders = home.notifyTaskReminders,
                 notifyTaskCompleted = home.notifyTaskCompleted,
                 notifyNewMembers = home.notifyNewMembers,
@@ -140,6 +213,17 @@ class AppRepository(
     }
     suspend fun deleteHome(home: HomeEntityNew) = homeDao.deleteHome(home)
 
+
+    suspend fun regenerateInviteCode(homeId: String): String? {
+        return try {
+            val response = RetrofitClient.getHomeApi(dataStore).regenerateInviteCode(homeId)
+            if (response.isSuccessful) {
+                val newCode = response.body()!!.inviteCode
+                homeDao.updateInviteCodeAndSync(homeId, newCode, isSynced = true)
+                newCode
+            } else null
+        } catch (e: Exception) { null }
+    }
 
     suspend fun createHomeWithSync(
         homeId: String,
@@ -163,8 +247,11 @@ class AppRepository(
             isSynced = false
         )
 
+        val creatorMemberId = UUID.randomUUID().toString()
+
         val creatorMember = MemberEntityNew(
-            id = creatorId,
+            id = creatorMemberId,
+            userId = creatorId,
             homeId = homeId,
             name = creatorName,
             lastName = creatorLastName,
@@ -178,6 +265,7 @@ class AppRepository(
             MemberEntityNew(
                 id = invite.id,
                 homeId = homeId,
+                userId = "",
                 name = invite.title,
                 lastName = invite.subtitle,
                 colorHex = defaultInviteColor,
@@ -199,6 +287,7 @@ class AppRepository(
             val request = HomeApi.CreateHomeRequest(
                 id = homeId,
                 name = homeName,
+                creatorMemberId = creatorMemberId,
                 description = homeDescription,
                 isPrivate = isPrivate,
                 creatorId = creatorId,
@@ -339,5 +428,61 @@ class AppRepository(
         }
     }
 
+    fun getMembersByHome(homeId: String): Flow<List<MemberEntityNew>> =
+        memberDao.getMembersByHome(homeId)
 
+
+    // Unirse a hogar -------------------------------------------------------------
+    suspend fun findHomeByCode(inviteCode: String): HomeViewModel.HomePreviewInfo? {
+        val userId = dataStore.userIdFlow.first()
+        return try {
+            val response = RetrofitClient.getHomeApi(dataStore).findHomeByCode(inviteCode, userId)
+            if (response.isSuccessful) {
+                response.body()?.let {
+                    HomeViewModel.HomePreviewInfo(
+                        id = it.id, name = it.name, creatorName = it.creatorName,
+                        memberCount = it.memberCount, taskCount = it.taskCount.toInt(),
+                        pendingCount = it.pendingCount.toInt(),
+                        isAlreadyMember = it.isAlreadyMember
+                    )
+                }
+            } else null
+        } catch (e: Exception) { null }
+    }
+
+    suspend fun joinHome(inviteCode: String, memberId: String, homeId: String,
+                         userId: String, name: String, colorHex: String): Boolean {
+        return try {
+            // Verificar con servidor
+            val request = HomeApi.JoinHomeRequest(inviteCode, userId, name, "", colorHex)
+            val response = RetrofitClient.getHomeApi(dataStore).joinHome(request)
+
+            if (response.isSuccessful) {
+                val newMember = MemberEntityNew(
+                    id = memberId,
+                    userId = userId,
+                    homeId = homeId,
+                    name = name,
+                    lastName = "",
+                    colorHex = colorHex,
+                    role = MemberRole.MEMBER,
+                    status = MemberStatus.ACCEPTED,
+                    isSynced = true
+                )
+                memberDao.addNew(newMember)
+                true
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+
+    // Editar miembros de instancia de tarea ----------------------------------------
+    suspend fun updateInstanceMembers(instanceId: String, memberIds: List<String>) {
+        taskInstanceDao.updateInstanceMembers(instanceId, memberIds)
+    }
 }

@@ -2,20 +2,16 @@ package haptikos.gestortareashogar_haptikos.ui.screens.joinHome
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,6 +67,7 @@ fun JoinHomeScreen(
                     FoundHomeSection(
                         home = currentState.home,
                         enteredCode = code,
+                        isAlreadyMember = currentState.isAlreadyMember,
                         onJoinClick = { viewModel.joinFoundHome() },
                         onTryAnotherCode = { viewModel.resetJoinFlow() }
                     )
@@ -92,55 +89,34 @@ fun JoinHomeScreen(
 
 @Composable
 fun JoinHomeHeader(onBackClick: () -> Unit) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(Color(0xFF4A68FF))
-            .padding(24.dp)
             .statusBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier
-                    .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(12.dp))
-                    .size(40.dp)
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_back),
-                    contentDescription = "Volver",
-                    tint = Color.White)
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = "Unirse a un hogar",
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold
-            )
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(10.dp))
+                .clickable { onBackClick() }
+                .align(Alignment.CenterStart),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(painterResource(R.drawable.ic_back), null,
+                tint = Color.White, modifier = Modifier.size(18.dp))
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                // Simulación de icono de entrada
-                Text("→]", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text("Código de invitación", color = Color.White, fontWeight = FontWeight.Bold)
-                Text(
-                    "Pide el código al creador del\nhogar e ingrésalo aquí.",
-                    color = Color.White.copy(alpha = 0.8f),
-                    fontSize = 14.sp
-                )
-            }
+        // Título centrado
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            Text("Unirse a un hogar", color = Color.White,
+                fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Text("Ingresa el código de invitación",
+                color = Color.White.copy(alpha = 0.75f), fontSize = 12.sp)
         }
     }
 }

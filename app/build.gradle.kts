@@ -76,6 +76,7 @@ dependencies {
     implementation(libs.runtime)
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.animation)
+    implementation(libs.androidx.work.runtime.ktx)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -85,6 +86,7 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
+
 
 configurations.all {
     resolutionStrategy {

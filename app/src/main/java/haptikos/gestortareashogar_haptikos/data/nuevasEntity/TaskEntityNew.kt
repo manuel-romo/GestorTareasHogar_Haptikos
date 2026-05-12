@@ -18,6 +18,12 @@ import java.util.UUID
             parentColumns = ["id"],
             childColumns = ["roomId"],
             onDelete = ForeignKey.SET_NULL
+        ),
+        ForeignKey(
+            entity = HomeEntityNew::class,
+            parentColumns = ["id"],
+            childColumns = ["homeId"],
+            onDelete = ForeignKey.CASCADE
         )
     ]
 )
@@ -26,13 +32,14 @@ data class TaskEntityNew(
     val title: String,
     val description: String = "",
     val roomId: String?,
+    val homeId: String,
     val points: Int,
     val priority: PriorityLevel = PriorityLevel.MEDIA,
     val suggestedDay: SuggestedDay = SuggestedDay.LUNES,
     val recurrence: RecurrenceType = RecurrenceType.DIARIO,
     val workMode: WorkMode = WorkMode.TEAM,
     val lastMemberIndex: Int = 0,
-
+    val pausedUntil: Long? = null,
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false
 )

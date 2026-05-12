@@ -10,7 +10,7 @@ interface TaskApi {
     data class CreateTaskRequest(
         val id: String,
         val title: String,
-        val description: String,
+        val description: String?,
         val points: Int,
         val priority: String,
         val suggestedDay: String,
@@ -18,6 +18,7 @@ interface TaskApi {
         val workMode: String,
         val lastMemberIndex: Int,
         val roomId: String?,
+        val homeId: String,
         val memberIds: List<String>
     )
 

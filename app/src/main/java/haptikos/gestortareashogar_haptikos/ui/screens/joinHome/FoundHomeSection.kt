@@ -41,6 +41,7 @@ import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel.HomePreviewIn
 fun FoundHomeSection(
     home: HomePreviewInfo,
     enteredCode: String,
+    isAlreadyMember: Boolean,
     onJoinClick: () -> Unit,
     onTryAnotherCode: () -> Unit
 ) {
@@ -130,15 +131,34 @@ fun FoundHomeSection(
             }
         }
 
-        Spacer(modifier = Modifier.weight(1f)) // Empuja los botones hacia abajo
+        Spacer(modifier = Modifier.weight(1f))
 
-        Button(
-            onClick = onJoinClick,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A68FF)),
-            shape = RoundedCornerShape(16.dp)
-        ) {
-            Text("→] Unirme a ${home.name}", fontWeight = FontWeight.Bold)
+        if (isAlreadyMember) {
+            Surface(
+                color = Color(0xFFFFF3E0),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text("👑", fontSize = 18.sp)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Ya eres miembro de este hogar",
+                        color = Color(0xFFFF8A00), fontWeight = FontWeight.Bold)
+                }
+            }
+        } else {
+            Button(
+                onClick = onJoinClick,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF4A68FF)),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text("→] Unirme a ${home.name}", fontWeight = FontWeight.Bold)
+            }
         }
 
         Spacer(modifier = Modifier.height(12.dp))

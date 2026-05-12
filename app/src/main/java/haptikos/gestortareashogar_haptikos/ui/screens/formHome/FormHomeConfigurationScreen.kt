@@ -1,5 +1,8 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.formHome
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +16,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import haptikos.gestortareashogar_haptikos.ui.components.FeedbackBottomSheet
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
@@ -41,7 +44,7 @@ fun FormHomeConfigurationScreen(
     onNavigateToNewPredeterminedTask: (roomId: String) -> Unit
 ) {
     val selectedHome by homeViewModel.selectedHome.collectAsState()
-    val members by memberViewModel.members.collectAsState()
+    val members by memberViewModel.getMembersForHome(selectedHome?.id ?: "").collectAsState()
     val showSuccessFeedback by homeViewModel.showSuccessFeedback.collectAsState()
 
     if (showSuccessFeedback) {
@@ -81,12 +84,23 @@ fun FormHomeConfigurationScreen(
                     .padding(bottom = paddingValues.calculateBottomPadding())
                     .verticalScroll(rememberScrollState())
             ) {
+                val context = LocalContext.current
+                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
                 HomeConfigurationHeader(
                     homeName = home.name,
                     inviteCode = home.inviteCode ?: "Pendiente...",
-                    onBack = onBack
+                    onBack = onBack,
+                    onCopyCode = {
+                        val clip = ClipData.newPlainText("Código de invitación", home.inviteCode)
+                        clipboard.setPrimaryClip(clip)
+                    },
+                    onRegenerateCode = {
+                        homeViewModel.regenerateInviteCode { newCode ->
+                            // el ViewModel ya actualiza selectedHome, la UI se recompone sola
+                        }
+                    }
                 )
-
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -95,7 +109,16 @@ fun FormHomeConfigurationScreen(
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    GeneralSection(homeName = home.name)
+                    GeneralSection(
+                        homeName = home.name,
+                        editPermission = home.editPermission,
+                        onNameSave = { newName ->
+                            homeViewModel.updateHome(home.copy(name = newName))
+                        },
+                        onPermissionChange = { permission ->
+                            homeViewModel.updateHome(home.copy(editPermission = permission))
+                        }
+                    )
 
                     HomeMembersSection(members = members)
 

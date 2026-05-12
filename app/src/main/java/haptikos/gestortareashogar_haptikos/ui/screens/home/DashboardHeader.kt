@@ -418,11 +418,6 @@ fun DashboardHeader(
                             trailingIcon = { if (currentFilter.status == TaskState.PENDING) Icon(painterResource(id = R.drawable.ic_check), "Activo", modifier = Modifier.size(20.dp)) else null }
                         )
                         DropdownMenuItem(
-                            text = { Text("Pausadas") },
-                            onClick = { onFilterChange(currentFilter.copy(status = TaskState.PAUSED)); showFilterMenu = false },
-                            trailingIcon = { if (currentFilter.status == TaskState.PAUSED) Icon(painterResource(id = R.drawable.ic_check), "Activo", modifier = Modifier.size(20.dp)) else null }
-                        )
-                        DropdownMenuItem(
                             text = { Text("Completadas") },
                             onClick = { onFilterChange(currentFilter.copy(status = TaskState.COMPLETED)); showFilterMenu = false },
                             trailingIcon = { if (currentFilter.status == TaskState.COMPLETED) Icon(painterResource(id = R.drawable.ic_check), "Activo", modifier = Modifier.size(20.dp)) else null }

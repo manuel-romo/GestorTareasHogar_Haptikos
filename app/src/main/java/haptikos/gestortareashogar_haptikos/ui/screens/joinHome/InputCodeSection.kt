@@ -1,8 +1,18 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.joinHome
 
+import android.content.ClipboardManager
+import android.content.Context
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,12 +41,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
@@ -49,84 +65,102 @@ fun InputCodeSection(
     isLoading: Boolean,
     errorMessage: String?
 ) {
-    // Estado para saber si el usuario está interactuando con el campo de texto
-    var isTextFieldFocused by remember { mutableStateOf(false) }
+    val focusRequester = remember { FocusRequester() }
+    var isFocused by remember { mutableStateOf(false) }
+
+    val cursorAlpha by rememberInfiniteTransition(label = "cursor").animateFloat(
+        initialValue = 1f, targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ), label = "blink"
+    )
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
+        modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = "INTRODUCE EL CÓDIGO",
-            color = Color.Gray,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
+            color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
         )
 
-        // Cuadros responsivos de 8 caracteres
-        BasicTextField(
-            value = code,
-            onValueChange = {
-                if (it.length <= 8) onCodeChange(it)
-            },
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Characters,
-                imeAction = ImeAction.Done
-            ),
-            modifier = Modifier.onFocusChanged { focusState ->
-                isTextFieldFocused = focusState.isFocused
-            },
-            decorationBox = {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    for (i in 0 until 8) {
-                        val char = code.getOrNull(i)?.toString() ?: ""
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() }
+                ) { focusRequester.requestFocus() },
+            contentAlignment = Alignment.Center
+        ) {
+            val textFieldValue = remember(code) {
+                TextFieldValue(text = code, selection = TextRange(code.length))
+            }
 
-                        // Lógica cuadro en edición
-                        val isCurrentBox = isTextFieldFocused && (i == code.length || (code.length == 8 && i == 7))
+            BasicTextField(
+                value = textFieldValue,
+                onValueChange = { newValue ->
+                    val filtered = newValue.text.filter { it.isLetterOrDigit() }.uppercase()
+                    if (filtered.length <= 8) onCodeChange(filtered)
+                },
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Ascii,
+                    capitalization = KeyboardCapitalization.Characters,
+                    imeAction = ImeAction.Done
+                ),
+                modifier = Modifier
+                    .size(1.dp)
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { isFocused = it.isFocused },
+                decorationBox = { it() }
+            )
 
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .aspectRatio(0.85f)
-                                .padding(horizontal = 3.dp)
-                                .background(Color.White, RoundedCornerShape(8.dp))
-                                .border(
-                                    width = if (isCurrentBox) 2.dp else 1.dp,
-                                    color = if (isCurrentBox) Color(0xFF4A68FF) else Color(0xFFE0E0E0),
-                                    shape = RoundedCornerShape(8.dp)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = char,
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (isCurrentBox) Color(0xFF4A68FF) else Color.Black
-                            )
-                        }
+            // Cuadros visuales
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                for (i in 0 until 8) {
+                    val char = code.getOrNull(i)?.toString() ?: ""
+                    val isCurrentBox = isFocused && (i == code.length || (code.length == 8 && i == 7))
 
-                        if (i == 3) {
-                            Text(
-                                text = "-",
-                                color = Color.Gray,
-                                modifier = Modifier.padding(horizontal = 6.dp),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Light
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .aspectRatio(0.85f)
+                            .padding(horizontal = 3.dp)
+                            .background(Color.White, RoundedCornerShape(8.dp))
+                            .border(
+                                width = if (isCurrentBox) 2.dp else 1.dp,
+                                color = if (isCurrentBox) Color(0xFF4A68FF) else Color(0xFFE0E0E0),
+                                shape = RoundedCornerShape(8.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (char.isNotEmpty()) {
+                            Text(char, fontSize = 20.sp, fontWeight = FontWeight.Bold,
+                                color = if (isCurrentBox) Color(0xFF4A68FF) else Color.Black)
+                        } else if (isCurrentBox) {
+                            // Cursor
+                            Box(
+                                modifier = Modifier
+                                    .width(2.dp).height(22.dp)
+                                    .background(Color(0xFF4A68FF).copy(alpha = cursorAlpha))
                             )
                         }
                     }
+
+                    if (i == 3) {
+                        Text("-", color = Color.Gray,
+                            modifier = Modifier.padding(horizontal = 6.dp),
+                            fontSize = 24.sp, fontWeight = FontWeight.Light)
+                    }
                 }
             }
-        )
+        }
 
         Text(
             text = "Ej: MICA-8F2K",
@@ -174,18 +208,39 @@ fun InputCodeSection(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Tip de Pegar
+
+        val context = LocalContext.current
+
         Surface(
             color = Color(0xFFF0F5FF),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                text = "💡 Puedes pegar el código directamente si lo tienes copiado. El formato es XXXX-XXXX.",
-                color = Color(0xFF4A68FF),
-                fontSize = 14.sp,
-                modifier = Modifier.padding(16.dp)
-            )
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "💡 Si tienes el código copiado, pégalo aquí.",
+                    color = Color(0xFF4A68FF), fontSize = 13.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                Surface(
+                    color = Color(0xFF4A68FF),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.clickable {
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val pasted = clipboard.primaryClip?.getItemAt(0)?.text?.toString() ?: return@clickable
+                        val cleaned = pasted.filter { it.isLetterOrDigit() }.uppercase().take(8)
+                        if (cleaned.isNotEmpty()) onCodeChange(cleaned)
+                    }
+                ) {
+                    Text("Pegar", color = Color.White, fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        fontSize = 13.sp)
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(32.dp))

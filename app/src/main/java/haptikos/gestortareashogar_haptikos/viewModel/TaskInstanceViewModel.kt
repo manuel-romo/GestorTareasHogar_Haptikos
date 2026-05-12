@@ -6,7 +6,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
+import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
+import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.ui.screens.userStats.ChartPoint
@@ -48,6 +51,24 @@ class TaskInstanceViewModel(
     private val _selectedTimeRange = MutableStateFlow("Año")
     val selectedTimeRange = _selectedTimeRange.asStateFlow()
 
+    // Estado de permisos de edición para la instancia actual
+    private val _canEditCurrentInstance = MutableStateFlow(false)
+    val canEditCurrentInstance = _canEditCurrentInstance.asStateFlow()
+
+    // Estado para eliminación de instancia
+    private val _isDeletingInstance = MutableStateFlow(false)
+    val isDeletingInstance = _isDeletingInstance.asStateFlow()
+
+    private val _instanceDeleteError = MutableStateFlow<String?>(null)
+    val instanceDeleteError = _instanceDeleteError.asStateFlow()
+
+    private val _selectedHomeId = MutableStateFlow<String?>(null)
+
+    fun setSelectedHome(homeId: String?) {
+        _selectedHomeId.value = homeId
+    }
+
+
     fun updateTimeRange(range: String) {
         _selectedTimeRange.value = range
     }
@@ -85,14 +106,16 @@ class TaskInstanceViewModel(
     val tasks: StateFlow<List<TaskInstanceWithDetails>> = combine(
         _currentFilter,
         _searchQuery,
+        _selectedHomeId,
         dataStore.usernameFlow
-    ) { filter, query, userName ->
-        Triple(filter, query, userName)
-    }.flatMapLatest { (filter, query, userName) ->
-        // Llamada a repositorio
+    ) { filter, query, homeId, userName ->
+        Triple(filter, query, Pair(homeId, userName))
+    }.flatMapLatest { (filter, query, homeAndUser) ->
+        val (homeId, userName) = homeAndUser
         val ownerName = if (filter.showOnlyMine) userName else null
 
         repository.getFilteredInstances(
+            homeId = homeId,
             status = filter.status,
             searchQuery = query,
             memberName = ownerName
@@ -129,13 +152,6 @@ class TaskInstanceViewModel(
     // Consultas únicas
     suspend fun getInstanceWithDetailsById(instanceId: String): TaskInstanceWithDetails? {
         return repository.getTaskInstanceWithDetailsById(instanceId)
-    }
-
-    // Alternar entre Pausado y Pendiente
-    fun toggleTaskPause(taskInstance: TaskInstanceEntityNew) {
-        val newState = if (taskInstance.state == TaskState.PAUSED) TaskState.PENDING else TaskState.PAUSED
-        val updatedTask = taskInstance.copy(state = newState)
-        updateTask(updatedTask)
     }
 
     // Reactivar una tarea completada
@@ -307,5 +323,58 @@ class TaskInstanceViewModel(
         if (instances.isEmpty()) return 0f
         val completed = instances.count { it.taskInstance.state == TaskState.COMPLETED }
         return (completed.toFloat() / instances.size.toFloat() * 100)
+    }
+
+
+
+
+    // Calcular si el usuario puede editar según el hogar de la tarea
+    fun checkEditPermission(instance: TaskInstanceWithDetails, allHomes: List<HomeEntityNew>, userId: String) {
+        val homeId = instance.taskDetails.room?.homeId
+        val home = allHomes.find { it.id == homeId }
+
+        _canEditCurrentInstance.value = when (home?.editPermission) {
+            HomePermission.ALL_MEMBERS -> true
+            HomePermission.ADMINS -> {
+                instance.assignedMembers.any { it.userId == userId } ||
+                        instance.taskDetails.members.any {
+                            it.userId == userId && (it.role == MemberRole.ADMIN || it.role == MemberRole.CREATOR)
+                        }
+            }
+            HomePermission.CREATOR_ONLY -> {
+                instance.taskDetails.members.any {
+                    it.userId == userId && it.role == MemberRole.CREATOR
+                }
+            }
+            null -> false
+        }
+    }
+
+    // Actualizar miembros asignados a la instancia
+    fun updateInstanceMembers(instanceId: String, memberIds: List<String>) {
+        viewModelScope.launch {
+            repository.updateInstanceMembers(instanceId, memberIds)
+        }
+    }
+
+    // Control de eliminación
+    fun initiateInstanceDeletion() { _isDeletingInstance.value = true }
+    fun cancelInstanceDeletion() { _isDeletingInstance.value = false }
+    fun dismissInstanceDeleteError() { _instanceDeleteError.value = null }
+
+    fun confirmInstanceDeletion(instance: TaskInstanceEntityNew, onBack: () -> Unit) {
+        viewModelScope.launch {
+            try {
+                repository.deleteTaskInstance(instance)
+                _isDeletingInstance.value = false
+                onBack()
+            } catch (e: Exception) {
+                _instanceDeleteError.value = "Error al eliminar la tarea"
+            }
+        }
+    }
+
+    fun showInstanceDeleteError(message: String) {
+        _instanceDeleteError.value = message
     }
 }

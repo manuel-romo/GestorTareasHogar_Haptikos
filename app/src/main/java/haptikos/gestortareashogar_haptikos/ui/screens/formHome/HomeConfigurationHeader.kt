@@ -30,7 +30,9 @@ import haptikos.gestortareashogar_haptikos.R
 fun HomeConfigurationHeader(
     homeName: String,
     inviteCode: String,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onCopyCode: () -> Unit,
+    onRegenerateCode: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -97,11 +99,21 @@ fun HomeConfigurationHeader(
                     Text(inviteCode, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Box(modifier = Modifier.size(36.dp).background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                        Icon(painterResource(id = R.drawable.ic_copy), contentDescription = "Copiar", tint = Color.White, modifier = Modifier.size(18.dp))
+                    Box(
+                        modifier = Modifier.size(36.dp)
+                            .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .clickable { onCopyCode() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(painterResource(R.drawable.ic_copy), null, tint = Color.White, modifier = Modifier.size(18.dp))
                     }
-                    Box(modifier = Modifier.size(36.dp).background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
-                        Icon(painterResource(id = R.drawable.ic_refresh), contentDescription = "Generar otro", tint = Color.White, modifier = Modifier.size(18.dp))
+                    Box(
+                        modifier = Modifier.size(36.dp)
+                            .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                            .clickable { onRegenerateCode() },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(painterResource(R.drawable.ic_refresh), null, tint = Color.White, modifier = Modifier.size(18.dp))
                     }
                 }
             }

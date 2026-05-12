@@ -52,6 +52,7 @@ import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.ProfileViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.SyncViewModel
 
 sealed class Screen(val route: String){
     object Login: Screen("login")
@@ -80,7 +81,8 @@ fun AppNavigation(
     roomViewModel: RoomViewModel,
     memberViewModel: MemberViewModel,
     homeViewModel: HomeViewModel,
-    profileViewModel: ProfileViewModel
+    profileViewModel: ProfileViewModel,
+    syncViewModel: SyncViewModel,
 ) {
     val navController = rememberNavController()
 
@@ -93,7 +95,7 @@ fun AppNavigation(
 
     // Se busca el usuario como miembro que coincida en la lista seleccionada y en el hogar actual
     val currentMember = allMembers.find {
-        it.homeId == selectedHome?.id && it.id == userId
+        it.homeId == selectedHome?.id && it.userId == userId
     }
 
     val canCreateTasks = currentMember?.role == MemberRole.CREATOR || currentMember?.role == MemberRole.ADMIN
@@ -205,6 +207,7 @@ fun AppNavigation(
                     taskInstanceViewModel = taskInstanceViewModel,
                     homeViewModel = homeViewModel,
                     authViewModel = authViewModel,
+                    syncViewModel = syncViewModel,
                     onSettingsClick = { navController.navigate(Screen.HomeConfiguration.route) },
                     onTaskClick = { instanceId -> navController.navigate("${Screen.TaskDetail.route}/$instanceId") },
                     onStatusClick = { taskInstance ->
@@ -227,6 +230,7 @@ fun AppNavigation(
                     roomViewModel = roomViewModel,
                     taskViewModel = taskViewModel,
                     memberViewModel = memberViewModel,
+                    homeViewModel = homeViewModel,
                     onReturn = { navController.popBackStack() }
                 )
             }
@@ -242,6 +246,7 @@ fun AppNavigation(
                     roomViewModel = roomViewModel,
                     taskViewModel = taskViewModel,
                     memberViewModel = memberViewModel,
+                    homeViewModel = homeViewModel,
                     onReturn = {
                         navController.popBackStack()
                     }
@@ -260,6 +265,7 @@ fun AppNavigation(
                     roomViewModel = roomViewModel,
                     taskViewModel = taskViewModel,
                     memberViewModel = memberViewModel,
+                    homeViewModel = homeViewModel,
                     onReturn = {
                         navController.popBackStack()
                     }
@@ -278,6 +284,7 @@ fun AppNavigation(
                     roomViewModel = roomViewModel,
                     taskViewModel = taskViewModel,
                     memberViewModel = memberViewModel,
+                    homeViewModel = homeViewModel,
                     onReturn = {
                         navController.popBackStack()
                     }
@@ -303,15 +310,13 @@ fun AppNavigation(
                 )
             }
 
-            composable(
-                route = "${Screen.TaskDetail.route}/{instanceId}",
-                arguments = listOf(navArgument("instanceId") { type = NavType.StringType })
-            ) { backStackEntry ->
+            composable("${Screen.TaskDetail.route}/{instanceId}") { backStackEntry ->
                 val instanceId = backStackEntry.arguments?.getString("instanceId") ?: return@composable
-
                 TaskDetailScreen(
                     instanceId = instanceId,
                     viewModel = taskInstanceViewModel,
+                    homeViewModel = homeViewModel,
+                    authViewModel = authViewModel,
                     onBack = { navController.popBackStack() }
                 )
             }

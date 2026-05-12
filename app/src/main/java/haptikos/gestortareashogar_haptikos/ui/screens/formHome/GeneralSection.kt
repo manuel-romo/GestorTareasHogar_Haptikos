@@ -35,12 +35,18 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
+import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.ui.components.GenericSelectionBottomSheet
 import haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme
 
 
 @Composable
-fun GeneralSection(homeName: String) {
+fun GeneralSection(
+    homeName: String,
+    editPermission: HomePermission,
+    onNameSave: (String) -> Unit,
+    onPermissionChange: (HomePermission) -> Unit
+) {
     var isEditingName by remember { mutableStateOf(false) }
     var currentName by remember { mutableStateOf(homeName) }
 
@@ -87,7 +93,10 @@ fun GeneralSection(homeName: String) {
                             modifier = Modifier
                                 .size(37.dp)
                                 .background(Color(0xFFFF8A00), RoundedCornerShape(15.dp))
-                                .clickable { isEditingName = false },
+                                .clickable {
+                                    isEditingName = false
+                                    onNameSave(currentName)
+                                },
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
@@ -164,7 +173,10 @@ fun GeneralSection(homeName: String) {
         description = "Define quién puede crear, editar y eliminar tareas en este hogar.",
         items = HomePermission.values().toList(),
         selectedItem = selectedPermission,
-        onItemSelected = { selectedPermission = it },
+        onItemSelected = {
+            selectedPermission = it
+            onPermissionChange(it)
+        },
         itemIcon = { it.emoji },
         itemText = { it.title },
         itemSubtitle = { it.description }
@@ -172,6 +184,7 @@ fun GeneralSection(homeName: String) {
 }
 
 
+/*
 @Preview
 @Composable
 fun GeneralSectionPreview(){
@@ -179,3 +192,4 @@ fun GeneralSectionPreview(){
         GeneralSection("")
     }
 }
+ */

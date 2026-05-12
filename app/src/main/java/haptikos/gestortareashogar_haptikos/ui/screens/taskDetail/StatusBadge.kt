@@ -26,7 +26,6 @@ fun StatusBadge(state: TaskState) {
     val (text, dotColor) = when(state) {
         TaskState.PENDING -> "Pendiente" to Color(0xFFFFB74D)
         TaskState.COMPLETED -> "Completada" to Color(0xFF81C784)
-        TaskState.PAUSED -> "Pausada" to Color(0xFFE57373)
     }
 
     Surface(

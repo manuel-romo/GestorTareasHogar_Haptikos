@@ -1,20 +1,17 @@
 package haptikos.gestortareashogar_haptikos.viewModel
 
-import androidx.compose.remote.creation.first
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
+import haptikos.gestortareashogar_haptikos.data.SyncRepository
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.helpers.UserSuggestion
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.network.HomeApi
 import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import haptikos.gestortareashogar_haptikos.ui.screens.createHome.InvitedUser
+import haptikos.gestortareashogar_haptikos.utils.NetworkConnectivityObserver
 import haptikos.gestortareashogar_haptikos.utils.generateUniqueId
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,14 +19,18 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class HomeViewModel(
     private val repository: AppRepository,
     private val dataStore: DataStoreManager
 ) : ViewModel() {
+
 
     // Modelo para la vista previa del hogar
     data class HomePreviewInfo(
@@ -38,15 +39,18 @@ class HomeViewModel(
         val creatorName: String,
         val memberCount: Int,
         val taskCount: Int,
-        val pendingCount: Int
+        val pendingCount: Int,
+        val isAlreadyMember: Boolean = false
     )
 
-    // Estados de pantalla de unión a un hogar
     sealed class JoinHomeState {
         object Input : JoinHomeState()
         object Searching : JoinHomeState()
         data class Error(val message: String) : JoinHomeState()
-        data class Found(val home: HomePreviewInfo) : JoinHomeState()
+        data class Found(
+            val home: HomePreviewInfo,
+            val isAlreadyMember: Boolean = false
+        ) : JoinHomeState()
         object Joining : JoinHomeState()
         data class Success(val homeName: String, val totalMembers: Int) : JoinHomeState()
     }
@@ -74,14 +78,12 @@ class HomeViewModel(
         repository.allMembersNew,
         dataStore.userIdFlow
     ) { currentHome, members, userId ->
-        if (currentHome == null || userId == null) return@combine false
+        if (currentHome == null || userId.isEmpty()) return@combine false
 
-        // Se busca el usuario actual entre los miembros del hogar
         val currentUserMember = members.find {
-            it.homeId == currentHome.id && it.id == userId
+            it.homeId == currentHome.id && it.userId == userId
         }
 
-        // Rol del usuario
         currentUserMember?.role == MemberRole.CREATOR || currentUserMember?.role == MemberRole.ADMIN
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
@@ -104,8 +106,9 @@ class HomeViewModel(
 
                 val userId = dataStore.userIdFlow.first()
 
-                if (userId == null) {
+                if (userId.isEmpty()) {
                     onComplete(null)
+                    return@launch
                 }
 
                 val invitedUsersWithIds = invitedUsers.map { user ->
@@ -175,6 +178,18 @@ class HomeViewModel(
         updateHome(updatedHome)
     }
 
+    fun regenerateInviteCode(onResult: (String?) -> Unit) {
+        val homeId = _selectedHome.value?.id ?: return
+        viewModelScope.launch {
+            val newCode = repository.regenerateInviteCode(homeId)
+            if (newCode != null) {
+                _selectedHome.value = _selectedHome.value?.copy(inviteCode = newCode)
+            }
+            onResult(newCode)
+        }
+    }
+
+
     // Estados para controlar la eliminación del hogar
     private val _isDeletingHome = MutableStateFlow(false)
     val isDeletingHome = _isDeletingHome.asStateFlow()
@@ -221,10 +236,6 @@ class HomeViewModel(
 
     private val _suggestedUsers = MutableStateFlow<List<UserSuggestion>>(emptyList())
     val suggestedUsers = _suggestedUsers.asStateFlow()
-
-    init {
-        loadSuggestedUsers()
-    }
 
     private var allSuggestedUsers: List<UserSuggestion> = emptyList()
 
@@ -287,25 +298,15 @@ class HomeViewModel(
 
         viewModelScope.launch {
             _joinState.value = JoinHomeState.Searching
+            val formattedCode = "${currentCode.take(4)}-${currentCode.takeLast(4)}"
+            val preview = repository.findHomeByCode(formattedCode)
 
-            // TODO: Cambiar por llamada real a Repositorio
-            delay(1500)
-
-            // Simulación de lógica de búsqueda
-            if (currentCode == "APART5W6" || currentCode.startsWith("APART")) {
-                _joinState.value = JoinHomeState.Found(
-                    HomePreviewInfo(
-                        id = "123",
-                        name = "Apartamento Playa",
-                        creatorName = "Carlos Ruiz",
-                        memberCount = 3,
-                        taskCount = 18,
-                        pendingCount = 5
-                    )
-                )
-            } else {
+            if (preview == null) {
                 _joinState.value = JoinHomeState.Error("No encontramos ningún hogar con ese código. Verifica con el creador del hogar.")
+                return@launch
             }
+
+            _joinState.value = JoinHomeState.Found(preview, preview.isAlreadyMember)
         }
     }
 
@@ -314,15 +315,43 @@ class HomeViewModel(
         if (currentState !is JoinHomeState.Found) return
 
         viewModelScope.launch {
+            val userId = dataStore.userIdFlow.first()
+            if (userId.isEmpty()) {
+                _joinState.value = JoinHomeState.Error("Sesión no válida")
+                return@launch
+            }
+
+            val yaEsMiembro = repository.allMembersNew.first().any {
+                it.homeId == currentState.home.id && it.userId == userId
+            }
+            if (yaEsMiembro) {
+                _joinState.value = JoinHomeState.Error("Ya eres miembro de este hogar.")
+                return@launch
+            }
+
             _joinState.value = JoinHomeState.Joining
 
-            // TODO: Cambiar por llamada real a tu API/Repositorio para unirse
-            delay(2000) // Simulación de red
+            val userName = dataStore.usernameFlow.first()
+            val memberId = UUID.randomUUID().toString()
+            val formattedCode = "${_joinCode.value.take(4)}-${_joinCode.value.takeLast(4)}"
 
-            _joinState.value = JoinHomeState.Success(
-                homeName = currentState.home.name,
-                totalMembers = currentState.home.memberCount + 1
+            val success = repository.joinHome(
+                inviteCode = formattedCode,
+                memberId = memberId,
+                homeId = currentState.home.id,
+                userId = userId,
+                name = userName,
+                colorHex = "#9E9E9E"
             )
+
+            _joinState.value = if (success) {
+                JoinHomeState.Success(
+                    homeName = currentState.home.name,
+                    totalMembers = currentState.home.memberCount + 1
+                )
+            } else {
+                JoinHomeState.Error("No se pudo unir al hogar. Intenta de nuevo.")
+            }
         }
     }
 
@@ -330,4 +359,19 @@ class HomeViewModel(
         _joinCode.value = ""
         _joinState.value = JoinHomeState.Input
     }
+
+    init {
+        loadSuggestedUsers()
+        viewModelScope.launch {
+            allHomes
+                .filter { it.isNotEmpty() }
+                .first()
+                .let { homes ->
+                    if (_selectedHome.value == null) {
+                        _selectedHome.value = homes.first()
+                    }
+                }
+        }
+    }
+
 }

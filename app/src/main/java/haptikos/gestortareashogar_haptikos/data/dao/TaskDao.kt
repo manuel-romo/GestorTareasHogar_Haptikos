@@ -73,4 +73,7 @@ interface TaskDao {
     @Query("UPDATE task_table_new SET isSynced = :isSynced WHERE id = :taskId")
     suspend fun updateSyncStatus(taskId: String, isSynced: Boolean)
 
+    @Query("SELECT memberId FROM task_member_join WHERE taskId = :taskId")
+    suspend fun getMemberIdsForTask(taskId: String): List<String>
+
 }

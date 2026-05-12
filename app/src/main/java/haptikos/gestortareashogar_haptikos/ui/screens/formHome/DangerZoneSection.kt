@@ -73,7 +73,7 @@ fun DangerZoneSection(
                         .background(Color(0xFFFFF0F0), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(painterResource(R.drawable.ic_trash), null, tint = Color(0xFFFF4B4B))
+                    Icon(painterResource(R.drawable.ic_trash), null, tint = Color(0xFFFF4B4B), modifier = Modifier.size(23.dp))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
@@ -109,7 +109,7 @@ fun DangerZoneSection(
         }
     }
 
-    // 2. Éxito
+    // Éxito
     if (showSuccessFeedback) {
         FeedbackBottomSheet(
             title = "¡Hogar eliminado!",

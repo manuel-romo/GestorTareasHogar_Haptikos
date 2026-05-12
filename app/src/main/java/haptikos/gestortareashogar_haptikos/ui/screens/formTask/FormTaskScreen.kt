@@ -59,10 +59,13 @@ import haptikos.gestortareashogar_haptikos.ui.enums.SuggestedDay
 import haptikos.gestortareashogar_haptikos.ui.enums.RecurrenceType
 import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
 import haptikos.gestortareashogar_haptikos.ui.enums.TurnMode
+import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
+import kotlinx.coroutines.flow.flowOf
 import java.util.UUID
+
 
 @Composable
 fun FormTaskScreen(
@@ -72,10 +75,17 @@ fun FormTaskScreen(
     roomViewModel: RoomViewModel,
     taskViewModel: TaskViewModel,
     memberViewModel: MemberViewModel,
+    homeViewModel: HomeViewModel,
     onReturn:() -> Unit
 ){
+
+    val selectedHome by homeViewModel.selectedHome.collectAsState()
     val roomList by roomViewModel.rooms.collectAsState()
-    val memberList by memberViewModel.members.collectAsState()
+    // TODO corregir
+    val memberList by remember(selectedHome?.id) {
+        selectedHome?.let { memberViewModel.getMembersForHome(it.id) }
+            ?: flowOf(emptyList())
+    }.collectAsState(initial = emptyList())
 
 
     // Se busca si la tarea existe en la BD.
@@ -108,11 +118,11 @@ fun FormTaskScreen(
 
             if (name.isNotBlank()) {
                 val task = TaskEntityNew(
-                    // Si es edición, se conserva el ID que tiene la tarea.
-                    id = taskToEdit?.task?.id?: UUID.randomUUID().toString(),
+                    id = taskToEdit?.task?.id ?: UUID.randomUUID().toString(),
                     title = name,
                     description = desc,
                     roomId = room?.id,
+                    homeId = selectedHome?.id ?: "",
                     points = priority.points,
                     priority = priority,
                     suggestedDay = day,

@@ -31,4 +31,10 @@ interface MemberDao {
     @Delete
     suspend fun deleteNew(member: MemberEntityNew)
 
+    @Query("SELECT * FROM member_table_new WHERE homeId = :homeId AND isDeleted = 0 ORDER BY name ASC")
+    fun getMembersByHome(homeId: String): Flow<List<MemberEntityNew>>
+
+    @Query("SELECT * FROM member_table_new WHERE homeId = :homeId AND role = 'CREATOR' LIMIT 1")
+    suspend fun getCreatorByHomeId(homeId: String): MemberEntityNew?
+
 }

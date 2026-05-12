@@ -22,8 +22,6 @@ data class TaskInstanceEntityNew(
     val taskId: String,
     val dueDate: Long,
     val state: TaskState = TaskState.PENDING,
-    val pausedUntil: Long? = null,
-
     val isSynced: Boolean = false,
     val isDeleted: Boolean = false
 )

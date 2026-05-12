@@ -31,6 +31,7 @@ identityJvm = "202411.1"
 androidxRuntime = "1.11.1"
 navigationRuntimeKtx = "2.9.8"
 animationVersion = "1.11.1"
+workRuntimeKtx = "2.11.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -70,6 +71,7 @@ identity-jvm = { group = "com.android.identity", name = "identity-jvm", version.
 runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "androidxRuntime" }
 androidx-navigation-runtime-ktx = { group = "androidx.navigation", name = "navigation-runtime-ktx", version.ref = "navigationRuntimeKtx" }
 androidx-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animationVersion" }
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntimeKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

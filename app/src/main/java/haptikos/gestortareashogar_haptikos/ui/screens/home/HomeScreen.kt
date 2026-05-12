@@ -2,31 +2,43 @@ package haptikos.gestortareashogar_haptikos.ui.screens.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
+import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
+import haptikos.gestortareashogar_haptikos.ui.components.OfflineSyncBanner
 import haptikos.gestortareashogar_haptikos.ui.theme.PausedYellow
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.SyncViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.TaskFilter
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.DashboardStats
@@ -35,6 +47,7 @@ import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.Dashb
 fun HomeScreen(
     taskInstanceViewModel: TaskInstanceViewModel,
     homeViewModel: HomeViewModel,
+    syncViewModel: SyncViewModel,
     authViewModel: AuthViewModel,
     onSettingsClick:() -> Unit,
     onTaskClick: (String) -> Unit,
@@ -43,11 +56,16 @@ fun HomeScreen(
     onNavigateToCreateHome:() -> Unit,
     onNavigateToJoinHome: () -> Unit,
 ){
+
+    val hasPendingSyncs by syncViewModel.hasPendingSyncs.collectAsState()
+    val isOffline by syncViewModel.isOffline.collectAsState()
+
     // Estados de tareas
     val tasksInstanceList by taskInstanceViewModel.tasks.collectAsState()
     val stats by taskInstanceViewModel.stats.collectAsState()
     val currentFilter by taskInstanceViewModel.currentFilter.collectAsState()
     val searchQuery by taskInstanceViewModel.searchQuery.collectAsState()
+
 
     // Estados de hogar
     val homesList by homeViewModel.allHomes.collectAsState()
@@ -55,6 +73,10 @@ fun HomeScreen(
 
     val userName by authViewModel.userName.collectAsState("")
     val hasAdminPermissions by homeViewModel.isCurrentUserCreatorOrAdmin.collectAsState()
+
+    LaunchedEffect(selectedHome?.id) {
+        taskInstanceViewModel.setSelectedHome(selectedHome?.id)
+    }
 
     HomeContent(
         tasks = tasksInstanceList,
@@ -73,7 +95,9 @@ fun HomeScreen(
         onStatusClick = onStatusClick,
         onDeleteClick = onDeleteClick,
         onNavigateToCreateHome = onNavigateToCreateHome,
-        onNavigateToJoinHome = onNavigateToJoinHome
+        onNavigateToJoinHome = onNavigateToJoinHome,
+        hasPendingSyncs = hasPendingSyncs,
+        isOffline = isOffline
     )
 }
 
@@ -96,112 +120,142 @@ fun HomeContent(
     onDeleteClick: (TaskInstanceEntityNew) -> Unit,
     onNavigateToCreateHome:() -> Unit,
     onNavigateToJoinHome: () -> Unit,
+    hasPendingSyncs: Boolean,
+    isOffline: Boolean
 ) {
     val tareasPendientes = tasks.filter { it.taskInstance.state == TaskState.PENDING }
-    val tareasPausadas = tasks.filter { it.taskInstance.state == TaskState.PAUSED }
     val tareasCompletadas = tasks.filter { it.taskInstance.state == TaskState.COMPLETED }
+
 
     val pendingTasksCount = stats.pendingTasksCount
     val totalTasks = stats.totalTasks
     val dailyProgress = stats.dailyProgress
     val userPoints = stats.userPoints
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
-        item {
-            DashboardHeader(
-                userName = userName,
-                userHasAdminPermissions = hasAdminPermissions,
-                pendingTasksCount = pendingTasksCount,
-                hasNotifications = false,
-                userPoints = userPoints,
-                dailyProgress = dailyProgress,
-                searchQuery = searchQuery,
-                onSearchQueryChange = onSearchQueryChange,
-                currentFilter = currentFilter,
-                onFilterChange = onFilterChange,
-                isHomeSelected = selectedHome != null,
-                currentHomeName = selectedHome?.name ?: "Seleccionar hogar",
-                homesList = homesList,
-                onHomeSelected = onHomeSelected,
-                onSettingsClick = onSettingsClick,
-                onNavigateToCreateHome = onNavigateToCreateHome,
-                onNavigateToJoinHome = onNavigateToJoinHome
-            )
-        }
-        item {
-            DaySelector(
-                selectedDay = currentFilter.selectedDay,
-                onDaySelected = { dia ->
-                    onFilterChange(currentFilter.copy(selectedDay = dia))
-                }
-            )
-        }
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        OfflineSyncBanner(
+            isOffline = isOffline,
+            hasPendingSyncs = hasPendingSyncs
+        )
 
-        // Tareas pendientes
-        item { SectionTitle("PENDIENTES (${tareasPendientes.size})") }
-
-        items(tareasPendientes) { task ->
-            TaskCard(
-                taskInstance = task,
-                onClick = { onTaskClick(task.taskInstance.id) },
-                onStatusClick = { onStatusClick(task.taskInstance) },
-                onDeleteClick = {onDeleteClick(task.taskInstance) }
-            )
-        }
-
-        // Tareas pausadas
-        if (tareasPausadas.isNotEmpty()) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
             item {
-                SectionTitle(
-                    title = "PAUSADAS (${tareasPausadas.size})",
-                    color = PausedYellow
+                DashboardHeader(
+                    userName = userName,
+                    userHasAdminPermissions = hasAdminPermissions,
+                    pendingTasksCount = pendingTasksCount,
+                    hasNotifications = false,
+                    userPoints = userPoints,
+                    dailyProgress = dailyProgress,
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = onSearchQueryChange,
+                    currentFilter = currentFilter,
+                    onFilterChange = onFilterChange,
+                    isHomeSelected = selectedHome != null,
+                    currentHomeName = selectedHome?.name ?: "Seleccionar hogar",
+                    homesList = homesList,
+                    onHomeSelected = onHomeSelected,
+                    onSettingsClick = onSettingsClick,
+                    onNavigateToCreateHome = onNavigateToCreateHome,
+                    onNavigateToJoinHome = onNavigateToJoinHome
                 )
             }
-            items(tareasPausadas) { task ->
-                TaskCard(
-                    taskInstance = task,
-                    onClick = { onTaskClick(task.taskInstance.id) },
-                    onStatusClick = { onStatusClick(task.taskInstance) },
-                    onDeleteClick = {onDeleteClick(task.taskInstance) }
-                )
-            }
-        }
-
-        // Tareas completadas
-        if (tareasCompletadas.isNotEmpty()) {
             item {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(end = 24.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SectionTitle(
-                        title = "COMPLETADAS (${tareasCompletadas.size})"
-                    )
-                    Text(
-                        text = "Ver historial >",
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                DaySelector(
+                    selectedDay = currentFilter.selectedDay,
+                    onDaySelected = { dia ->
+                        onFilterChange(currentFilter.copy(selectedDay = dia))
+                    }
+                )
+            }
+
+            // Tareas pendientes
+            if (tareasPendientes.isNotEmpty()) {
+                item { SectionTitle("PENDIENTES (${tareasPendientes.size})") }
+            }
+
+            if (tareasPendientes.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 48.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .background(Color(0xFFFFF3E0), CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_sparkles),
+                                contentDescription = null,
+                                tint = Color(0xFFFF8A00),
+                                modifier = Modifier.size(36.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        Text("Sin tareas por mostrar",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurface)
+                        Spacer(Modifier.height(4.dp))
+                        Text("No tienes tareas en esta categoría.\n¡Disfruta tu tiempo libre!",
+                            color = Color.Gray,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 32.dp))
+                    }
+                }
+            } else {
+                items(tareasPendientes) { task ->
+                    TaskCard(
+                        taskInstance = task,
+                        onClick = { onTaskClick(task.taskInstance.id) },
+                        onStatusClick = { onStatusClick(task.taskInstance) },
+                        onDeleteClick = { onDeleteClick(task.taskInstance) }
                     )
                 }
             }
-            items(tareasCompletadas) { task ->
-                TaskCard(
-                    taskInstance = task,
-                    onClick = { onTaskClick(task.taskInstance.id) },
-                    onStatusClick = { onStatusClick(task.taskInstance) },
-                    onDeleteClick = {onDeleteClick(task.taskInstance) }
-                )
-            }
-        }
 
-        item { Spacer(modifier = Modifier.height(100.dp)) }
+            // Tareas completadas
+            if (tareasCompletadas.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(end = 24.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SectionTitle(
+                            title = "COMPLETADAS (${tareasCompletadas.size})"
+                        )
+                        Text(
+                            text = "Ver historial >",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+                items(tareasCompletadas) { task ->
+                    TaskCard(
+                        taskInstance = task,
+                        onClick = { onTaskClick(task.taskInstance.id) },
+                        onStatusClick = { onStatusClick(task.taskInstance) },
+                        onDeleteClick = {onDeleteClick(task.taskInstance) }
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(100.dp)) }
+        }
     }
+
 }
 
 /*

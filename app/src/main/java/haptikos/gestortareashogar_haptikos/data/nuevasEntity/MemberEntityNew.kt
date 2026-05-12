@@ -18,9 +18,11 @@ import java.util.UUID
         )
     ]
 )
-data class MemberEntityNew (
+data class MemberEntityNew(
     @PrimaryKey
     val id: String = UUID.randomUUID().toString(),
+
+    val userId: String,
 
     val name: String,
     val lastName: String,

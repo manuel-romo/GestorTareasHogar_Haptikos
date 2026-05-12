@@ -3,13 +3,16 @@ package haptikos.gestortareashogar_haptikos.viewModel
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.AuthRepository
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
+import haptikos.gestortareashogar_haptikos.data.SyncRepository
 import haptikos.gestortareashogar_haptikos.data.enumerators.UserGender
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -19,6 +22,7 @@ import kotlin.onSuccess
 
 class AuthViewModel(
     private val authRepository: AuthRepository,
+    private val syncRepository: SyncRepository,
     private val dataStore: DataStoreManager
 ) : ViewModel() {
 
@@ -129,6 +133,7 @@ class AuthViewModel(
                         token = token,
                         email = email
                     )
+                    syncRepository.syncAll(userId)
                     _isSuccess.value = true
                 } else {
                     _errorMessage.value = "Registro exitoso, pero no se recibió token de acceso"
@@ -164,14 +169,17 @@ class AuthViewModel(
                 val userId = loginResponse.id ?: ""
                 val username = loginResponse.name ?: email.substringBefore("@")
                 val token = loginResponse.token ?: ""
-                val email = loginResponse.email ?: ""
+                val userEmail = loginResponse.email ?: ""
 
                 dataStore.saveSession(
                     userId = userId,
                     username = username,
                     token = token,
-                    email = email
+                    email = userEmail
                 )
+
+                syncRepository.syncAll(userId)
+
                 _isSuccess.value = true
             }.onFailure { error ->
                 _errorMessage.value = "Correo o contraseña incorrectos o error de red"
@@ -193,8 +201,13 @@ class AuthViewModel(
     }
 
     fun loginWithBiometrics() {
-        // Se verifica si hay una sesión guardada en el dispositivo
         if (isLoggedIn.value) {
+            viewModelScope.launch {
+                val userId = dataStore.userIdFlow.first()
+                if (userId.isNotEmpty()) {
+                    syncRepository.syncAll(userId)
+                }
+            }
             _errorMessage.value = null
             _isSuccess.value = true
         } else {

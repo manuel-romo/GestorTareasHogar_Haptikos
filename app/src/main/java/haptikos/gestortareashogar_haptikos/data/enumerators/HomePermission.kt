@@ -1,4 +1,4 @@
-package haptikos.gestortareashogar_haptikos.ui.screens.formHome
+package haptikos.gestortareashogar_haptikos.data.enumerators
 
 enum class HomePermission(val title: String, val description: String, val emoji: String) {
     CREATOR_ONLY("Solo el creador", "Solo tú puedes crear y editar tareas", "👑"),
