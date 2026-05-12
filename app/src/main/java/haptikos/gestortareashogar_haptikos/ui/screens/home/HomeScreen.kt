@@ -38,6 +38,7 @@ import haptikos.gestortareashogar_haptikos.ui.components.OfflineSyncBanner
 import haptikos.gestortareashogar_haptikos.ui.theme.PausedYellow
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.NotificationViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.SyncViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.TaskFilter
@@ -49,15 +50,20 @@ fun HomeScreen(
     homeViewModel: HomeViewModel,
     syncViewModel: SyncViewModel,
     authViewModel: AuthViewModel,
+    notificationViewModel: NotificationViewModel,
     onSettingsClick:() -> Unit,
     onTaskClick: (String) -> Unit,
     onStatusClick: (TaskInstanceEntityNew) -> Unit,
     onDeleteClick: (TaskInstanceEntityNew) -> Unit,
     onNavigateToCreateHome:() -> Unit,
     onNavigateToJoinHome: () -> Unit,
+    onNotificationsClick: () -> Unit
 ){
 
     val isOffline by syncViewModel.isOffline.collectAsState()
+
+    val unreadCount by notificationViewModel.unreadCount.collectAsState()
+    val hasNotifications = unreadCount > 0
 
     // Estados de tareas
     val tasksInstanceList by taskInstanceViewModel.tasks.collectAsState()
@@ -95,7 +101,9 @@ fun HomeScreen(
         onDeleteClick = onDeleteClick,
         onNavigateToCreateHome = onNavigateToCreateHome,
         onNavigateToJoinHome = onNavigateToJoinHome,
-        isOffline = isOffline
+        onNotificationsClick = onNotificationsClick,
+        isOffline = isOffline,
+        hasNotifications = hasNotifications
     )
 }
 
@@ -118,7 +126,9 @@ fun HomeContent(
     onDeleteClick: (TaskInstanceEntityNew) -> Unit,
     onNavigateToCreateHome:() -> Unit,
     onNavigateToJoinHome: () -> Unit,
-    isOffline: Boolean
+    onNotificationsClick: () -> Unit,
+    isOffline: Boolean,
+    hasNotifications: Boolean
 ) {
     val tareasPendientes = tasks.filter { it.taskInstance.state == TaskState.PENDING }
     val tareasCompletadas = tasks.filter { it.taskInstance.state == TaskState.COMPLETED }
@@ -144,7 +154,7 @@ fun HomeContent(
                     userName = userName,
                     userHasAdminPermissions = hasAdminPermissions,
                     pendingTasksCount = pendingTasksCount,
-                    hasNotifications = false,
+                    hasNotifications = hasNotifications,
                     userPoints = userPoints,
                     dailyProgress = dailyProgress,
                     searchQuery = searchQuery,
@@ -157,7 +167,8 @@ fun HomeContent(
                     onHomeSelected = onHomeSelected,
                     onSettingsClick = onSettingsClick,
                     onNavigateToCreateHome = onNavigateToCreateHome,
-                    onNavigateToJoinHome = onNavigateToJoinHome
+                    onNavigateToJoinHome = onNavigateToJoinHome,
+                    onNotificationsClick = onNotificationsClick,
                 )
             }
             item {

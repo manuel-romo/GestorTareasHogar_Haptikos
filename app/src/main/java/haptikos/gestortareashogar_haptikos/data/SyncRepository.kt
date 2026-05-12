@@ -11,6 +11,7 @@ import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberStatus
+import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
@@ -200,8 +201,17 @@ class SyncRepository(
 
         pendingInstances.forEach { instance ->
             try {
-                val memberIds = taskInstanceDao.getMemberIdsForInstance(instance.id)
+                // Si está completada, llama al endpoint de completar
+                if (instance.state == TaskState.COMPLETED) {
+                    val response = RetrofitClient.getTaskApi(dataStore).completeInstance(instance.id)
+                    if (response.isSuccessful) {
+                        taskInstanceDao.updateSyncStatus(instance.id, isSynced = true)
+                    }
+                    return@forEach
+                }
 
+                // Si es nueva, la crea en el servidor
+                val memberIds = taskInstanceDao.getMemberIdsForInstance(instance.id)
                 val request = TaskInstanceApi.CreateTaskInstanceRequest(
                     id = instance.id,
                     taskId = instance.taskId,
@@ -209,9 +219,7 @@ class SyncRepository(
                     state = instance.state.name,
                     memberIds = memberIds
                 )
-
                 val response = RetrofitClient.getTaskInstanceApi(dataStore).createTaskInstance(request)
-
                 if (response.isSuccessful) {
                     taskInstanceDao.updateSyncStatus(instance.id, isSynced = true)
                 }

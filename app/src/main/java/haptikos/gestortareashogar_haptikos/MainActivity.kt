@@ -1,10 +1,13 @@
 package haptikos.gestortareashogar_haptikos
 
 import android.app.Application
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -12,16 +15,19 @@ import androidx.lifecycle.lifecycleScope
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.google.firebase.messaging.FirebaseMessaging
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.AuthRepository
 import haptikos.gestortareashogar_haptikos.data.SyncRepository
+import haptikos.gestortareashogar_haptikos.data.dao.NotificationDao
 import haptikos.gestortareashogar_haptikos.navigation.AppNavigation
 import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
 import haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.NotificationViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.ProfileViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.SyncViewModel
@@ -100,6 +106,19 @@ class MainActivity : FragmentActivity() {
         val homeViewModel: HomeViewModel by viewModels { HomeViewModelFactory(repository, dataStoreManager) }
         val profileViewModel: ProfileViewModel by viewModels { ProfileViewModelFactory(repository, dataStoreManager) }
         val syncViewModel: SyncViewModel by viewModels { SyncViewModelFactory(application, syncRepository) }
+        val notificationViewModel: NotificationViewModel by viewModels { NotificationViewModelFactory(database.notificationDao()) }
+
+        FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+            Log.d("FCM_TOKEN", "Token: $token")
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                1001
+            )
+        }
 
         setContent {
             GestorTareasHogar_HaptikosTheme {
@@ -112,6 +131,7 @@ class MainActivity : FragmentActivity() {
                     homeViewModel = homeViewModel,
                     profileViewModel = profileViewModel,
                     syncViewModel = syncViewModel,
+                    notificationViewModel = notificationViewModel
                 )
             }
         }
@@ -179,5 +199,13 @@ class SyncViewModelFactory(
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return SyncViewModel(application, syncRepository) as T
+    }
+}
+
+class NotificationViewModelFactory(
+    private val notificationDao: NotificationDao
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return NotificationViewModel(notificationDao) as T
     }
 }

@@ -382,4 +382,9 @@ class AppRepository(
     suspend fun updateInstanceMembers(instanceId: String, memberIds: List<String>) {
         taskInstanceDao.updateInstanceMembers(instanceId, memberIds)
     }
+
+    // Completar instancia de tarea -----------------------------------------------------
+    suspend fun completeTaskInstance(taskInstance: TaskInstanceEntityNew) {
+        taskInstanceDao.update(taskInstance.copy(state = TaskState.COMPLETED, isSynced = false))
+    }
 }

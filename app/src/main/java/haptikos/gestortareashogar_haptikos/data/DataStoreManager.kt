@@ -25,6 +25,7 @@ class DataStoreManager(private val context: Context) {
         val NOTIFY_REMINDERS = booleanPreferencesKey("notify_reminders")
         val NOTIFY_COMPLETED = booleanPreferencesKey("notify_completed")
         val NOTIFY_NEW_MEMBERS = booleanPreferencesKey("notify_new_members")
+        val FCM_TOKEN = stringPreferencesKey("fcm_token")
 
     }
 
@@ -63,6 +64,9 @@ class DataStoreManager(private val context: Context) {
         context.dataStore.edit { it[PROFILE_PIC_URL] = url }
     }
 
+    val fcmTokenFlow: Flow<String?> = context.dataStore.data
+        .map { it[FCM_TOKEN] }
+
     suspend fun saveSession(userId: String, username: String, email: String, token: String) {
         context.dataStore.edit {
             it[IS_LOGGED_IN] = true
@@ -83,6 +87,9 @@ class DataStoreManager(private val context: Context) {
         }
     }
 
+    suspend fun saveFcmToken(token: String) {
+        context.dataStore.edit { it[FCM_TOKEN] = token }
+    }
 
     suspend fun logout() {
         context.dataStore.edit {

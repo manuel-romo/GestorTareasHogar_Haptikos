@@ -4,27 +4,22 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 import haptikos.gestortareashogar_haptikos.data.dao.HomeDao
 import haptikos.gestortareashogar_haptikos.data.dao.MemberDao
+import haptikos.gestortareashogar_haptikos.data.dao.NotificationDao
 import haptikos.gestortareashogar_haptikos.data.dao.RoomDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskInstanceDao
-import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
-import haptikos.gestortareashogar_haptikos.data.enumerators.MemberStatus
-import haptikos.gestortareashogar_haptikos.data.enumerators.PriorityLevel
-import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.NotificationEntity
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskMemberJoin
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceMemberJoin
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import java.util.UUID
 
 @Database(
     entities = [
@@ -34,7 +29,8 @@ import java.util.UUID
         RoomEntityNew::class,
         TaskMemberJoin::class,
         TaskInstanceMemberJoin::class,
-        HomeEntityNew::class
+        HomeEntityNew::class,
+        NotificationEntity::class
     ],
     version = 2,
     exportSchema = false
@@ -47,6 +43,7 @@ abstract class TaskDatabase : RoomDatabase() {
     abstract fun roomDao(): RoomDao
     abstract fun taskInstanceDao(): TaskInstanceDao
     abstract fun homeDao(): HomeDao
+    abstract fun notificationDao(): NotificationDao
 
     companion object {
         @Volatile

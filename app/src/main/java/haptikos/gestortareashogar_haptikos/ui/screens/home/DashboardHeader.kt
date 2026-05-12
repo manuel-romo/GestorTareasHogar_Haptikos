@@ -69,7 +69,8 @@ fun DashboardHeader(
     homesList: List<HomeEntityNew>,
     onHomeSelected: (HomeEntityNew) -> Unit,
     onNavigateToCreateHome: () -> Unit,
-    onNavigateToJoinHome: () -> Unit
+    onNavigateToJoinHome: () -> Unit,
+    onNotificationsClick: () -> Unit
 ) {
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
@@ -277,7 +278,9 @@ fun DashboardHeader(
                     Surface(
                         color = Color.White.copy(alpha = 0.2f),
                         shape = CircleShape,
-                        modifier = Modifier.size(44.dp)
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clickable { onNotificationsClick() }
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(

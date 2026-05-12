@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
 import haptikos.gestortareashogar_haptikos.utils.getDayName
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -108,6 +109,12 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
                 _taskToDelete.value = null
                 showSuccessFeedback("Actividad eliminada", "La tarea se eliminó correctamente.")
             }
+        }
+    }
+
+    fun markTaskAsCompleted(taskInstance: TaskInstanceEntityNew) {
+        viewModelScope.launch {
+            repository.completeTaskInstance(taskInstance)
         }
     }
 }

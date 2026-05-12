@@ -33,4 +33,11 @@ interface UserApi {
         @Body request: UpdateUserRequest
     ): Response<Map<String, String>>
 
+    // Envío de token FMC
+    @PATCH("/api/users/{userId}/fcm-token")
+    suspend fun updateFcmToken(
+        @Path("userId") userId: String,
+        @Body body: Map<String, String>
+    ): Response<Void>
+
 }

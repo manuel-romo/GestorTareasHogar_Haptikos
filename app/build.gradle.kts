@@ -67,6 +67,8 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
     implementation(libs.androidx.ui)
     implementation(libs.androidx.compose.remote.creation.core)
     implementation(libs.androidx.compose.animation)

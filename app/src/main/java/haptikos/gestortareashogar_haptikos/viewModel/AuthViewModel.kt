@@ -8,6 +8,7 @@ import haptikos.gestortareashogar_haptikos.data.AuthRepository
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import haptikos.gestortareashogar_haptikos.data.SyncRepository
 import haptikos.gestortareashogar_haptikos.data.enumerators.UserGender
+import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -135,6 +136,19 @@ class AuthViewModel(
                     )
                     syncRepository.syncAll(userId)
                     _isSuccess.value = true
+
+                    val fcmToken = dataStore.fcmTokenFlow.first()
+                    if (!fcmToken.isNullOrEmpty()) {
+                        try {
+                            RetrofitClient.getUserApi(dataStore).updateFcmToken(
+                                userId,
+                                mapOf("fcmToken" to fcmToken)
+                            )
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+
                 } else {
                     _errorMessage.value = "Registro exitoso, pero no se recibió token de acceso"
                 }
@@ -181,6 +195,19 @@ class AuthViewModel(
                 syncRepository.syncAll(userId)
 
                 _isSuccess.value = true
+
+                val fcmToken = dataStore.fcmTokenFlow.first()
+                if (!fcmToken.isNullOrEmpty()) {
+                    try {
+                        RetrofitClient.getUserApi(dataStore).updateFcmToken(
+                            userId,
+                            mapOf("fcmToken" to fcmToken)
+                        )
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
             }.onFailure { error ->
                 _errorMessage.value = "Correo o contraseña incorrectos o error de red"
                 error.printStackTrace()

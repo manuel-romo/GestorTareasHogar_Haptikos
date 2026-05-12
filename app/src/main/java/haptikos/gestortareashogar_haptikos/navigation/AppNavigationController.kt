@@ -45,9 +45,11 @@ import haptikos.gestortareashogar_haptikos.ui.screens.login.LogInScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.SignUpScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.pruebaUserEdition.ProfileScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.taskDetail.TaskDetailScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.notifications.NotificationsScreen
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.NotificationViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
@@ -71,6 +73,8 @@ sealed class Screen(val route: String){
 
     object Profile: Screen("profile")
     object Stats: Screen("stats")
+
+    object Notifications: Screen("notifications")
 }
 
 @Composable
@@ -83,6 +87,7 @@ fun AppNavigation(
     homeViewModel: HomeViewModel,
     profileViewModel: ProfileViewModel,
     syncViewModel: SyncViewModel,
+    notificationViewModel: NotificationViewModel
 ) {
     val navController = rememberNavController()
 
@@ -208,6 +213,7 @@ fun AppNavigation(
                     homeViewModel = homeViewModel,
                     authViewModel = authViewModel,
                     syncViewModel = syncViewModel,
+                    notificationViewModel = notificationViewModel,
                     onSettingsClick = { navController.navigate(Screen.HomeConfiguration.route) },
                     onTaskClick = { instanceId -> navController.navigate("${Screen.TaskDetail.route}/$instanceId") },
                     onStatusClick = { taskInstance ->
@@ -221,7 +227,8 @@ fun AppNavigation(
                         )
                     },
                     onNavigateToCreateHome = { navController.navigate(Screen.CreateHomeStep1.route) },
-                    onNavigateToJoinHome = { navController.navigate(Screen.JoinHome.route) }
+                    onNavigateToJoinHome = { navController.navigate(Screen.JoinHome.route) },
+                    onNotificationsClick = { navController.navigate(Screen.Notifications.route) }
                 )
             }
 
@@ -387,7 +394,6 @@ fun AppNavigation(
                 )
             }
 
-            // En tu ruta de profile:
             composable(Screen.Profile.route) {
                 ProfileScreen(
                     authViewModel = authViewModel,
@@ -400,6 +406,13 @@ fun AppNavigation(
                             popUpTo(0) { inclusive = true }
                         }
                     }
+                )
+            }
+
+            composable(Screen.Notifications.route) {
+                NotificationsScreen(
+                    viewModel = notificationViewModel,
+                    onBack = { navController.popBackStack() }
                 )
             }
 
