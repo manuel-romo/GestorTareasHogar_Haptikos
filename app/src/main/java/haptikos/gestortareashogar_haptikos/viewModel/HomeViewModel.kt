@@ -65,7 +65,16 @@ class HomeViewModel(
 
     // Hogar seleccionado
     private val _selectedHome = MutableStateFlow<HomeEntityNew?>(null)
-    val selectedHome = _selectedHome.asStateFlow()
+    val selectedHome: StateFlow<HomeEntityNew?> = combine(
+        _selectedHome,
+        allHomes
+    ) { selected, homes ->
+        if (selected != null) {
+            homes.find { it.id == selected.id } ?: selected
+        } else {
+            homes.firstOrNull()
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun selectHome(home: HomeEntityNew) {
         _selectedHome.value = home
@@ -101,15 +110,24 @@ class HomeViewModel(
 
         viewModelScope.launch {
             try {
-                // Generación de ID local
                 val generatedHomeId = generateUniqueId()
-
                 val userId = dataStore.userIdFlow.first()
 
                 if (userId.isEmpty()) {
                     onComplete(null)
                     return@launch
                 }
+
+                val tempHome = HomeEntityNew(
+                    id = generatedHomeId,
+                    name = name,
+                    description = finalDescription,
+                    isPrivate = isPrivate,
+                    inviteCode = null,
+                    isSynced = false
+                )
+
+                _selectedHome.value = tempHome
 
                 val invitedUsersWithIds = invitedUsers.map { user ->
                     HomeApi.InvitedUserDto(
@@ -119,7 +137,7 @@ class HomeViewModel(
                     )
                 }
 
-                val inviteCode = repository.createHomeWithSync(
+                repository.createHomeWithSync(
                     homeId = generatedHomeId,
                     creatorId = userId,
                     homeName = name,
@@ -132,8 +150,7 @@ class HomeViewModel(
                     defaultInviteColor = "#9E9E9E"
                 )
 
-                // Se envía el código obtenido o null si no se generó
-                onComplete(inviteCode)
+                onComplete(null)
 
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -208,16 +225,10 @@ class HomeViewModel(
         val homeToDelete = _selectedHome.value ?: return
         viewModelScope.launch {
             try {
-
                 repository.deleteHomeWithSync(homeToDelete)
 
                 _selectedHome.value = null
 
-                val otherHomes = repository.allHomes.first()
-                _selectedHome.value = otherHomes.firstOrNull()
-
-                _isDeletingHome.value = false
-                _showSuccessFeedback.value = true
             } catch (e: Exception) {
                 _biometricError.value = "Error al eliminar"
             }

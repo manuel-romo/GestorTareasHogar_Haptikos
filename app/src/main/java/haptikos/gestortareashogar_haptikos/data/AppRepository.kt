@@ -65,30 +65,6 @@ class AppRepository(
         // Se genera la instancia de la semana actual
         generateInstanceForTask(task, memberIds)
 
-        val request = TaskApi.CreateTaskRequest(
-            id = task.id,
-            title = task.title,
-            description = task.description,
-            points = task.points,
-            priority = task.priority.name,
-            suggestedDay = task.suggestedDay.name,
-            recurrence = task.recurrence.name,
-            workMode = task.workMode.name,
-            lastMemberIndex = task.lastMemberIndex,
-            roomId = task.roomId,
-            homeId = task.homeId,
-            memberIds = memberIds
-        )
-
-        try {
-            val response = RetrofitClient.getTaskApi(dataStore).createTask(request)
-
-            if (response.isSuccessful) {
-                taskDao.updateSyncStatus(task.id, isSynced = true)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
 
     suspend fun generateInstanceForTask(task: TaskEntityNew, memberIds: List<String>) {
@@ -189,28 +165,8 @@ class AppRepository(
         // Guardado
         val homeToSave = home.copy(isSynced = false)
         homeDao.updateHome(homeToSave)
-
-        // Intento de sincronización con el servidor
-        try {
-            val request = HomeApi.UpdateHomeRequest(
-                name = home.name,
-                editPermission = home.editPermission.name,
-                notifyTaskReminders = home.notifyTaskReminders,
-                notifyTaskCompleted = home.notifyTaskCompleted,
-                notifyNewMembers = home.notifyNewMembers,
-                notifyAllMembers = home.notifyAllMembers,
-                forceSettings = home.forceSettings
-            )
-
-            val response = RetrofitClient.getHomeApi(dataStore).updateHome(home.id, request)
-
-            if (response.isSuccessful) {
-                homeDao.updateHome(homeToSave.copy(isSynced = true))
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
     }
+
     suspend fun deleteHome(home: HomeEntityNew) = homeDao.deleteHome(home)
 
 
@@ -282,36 +238,9 @@ class AppRepository(
             invitedMembers.forEach { memberDao.addNew(it) }
         }
 
-        // Intento de sincronización
-        return try {
-            val request = HomeApi.CreateHomeRequest(
-                id = homeId,
-                name = homeName,
-                creatorMemberId = creatorMemberId,
-                description = homeDescription,
-                isPrivate = isPrivate,
-                creatorId = creatorId,
-                creatorName = creatorName,
-                creatorLastName = creatorLastName,
-                creatorColorHex = creatorColorHex,
-                invitedUsers = invitedUsers
-            )
+        // El código será recibido por Sync
+        return null
 
-            val response = RetrofitClient.getHomeApi(dataStore).createHome(request)
-
-            if (response.isSuccessful && response.body() != null) {
-                val inviteCode = response.body()!!.inviteCode
-
-                updateHomeSyncStatus(homeId, inviteCode, isSynced = true)
-
-                inviteCode
-            } else {
-                null
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
     }
 
     suspend fun updateHomeSyncStatus(homeId: String, inviteCode: String?, isSynced: Boolean) {
@@ -385,29 +314,7 @@ class AppRepository(
     // Creación de habitación -----------------------------------------------
     suspend fun createRoomWithSync(room: RoomEntityNew) {
         // Guardado local
-        roomDao.addNew(room)
-
-        // Intento de sincronización
-        try {
-            val request = RoomApi.CreateRoomRequest(
-                id = room.id,
-                name = room.name,
-                icon = room.icon,
-                colorHex = room.colorHex,
-                homeId = room.homeId
-            )
-
-            val response = RetrofitClient.getRoomApi(dataStore).createRoom(request)
-
-            if (response.isSuccessful) {
-                val syncedRoom = room.copy(isSynced = true)
-                roomDao.updateNew(syncedRoom)
-            } else {
-                // Manejar error
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        roomDao.addNew(room.copy(isSynced = false))
     }
 
 
@@ -415,16 +322,6 @@ class AppRepository(
         // Eliminación local
         appDatabase.withTransaction {
             homeDao.deleteHome(home)
-        }
-
-        // Intento de sincronización
-        try {
-            val response = RetrofitClient.getHomeApi(dataStore).deleteHome(home.id)
-            if (!response.isSuccessful) {
-                // Error
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
     }
 

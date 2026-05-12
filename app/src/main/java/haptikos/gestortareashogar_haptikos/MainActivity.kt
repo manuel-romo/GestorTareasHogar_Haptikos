@@ -85,7 +85,8 @@ class MainActivity : FragmentActivity() {
                 homeDao = database.homeDao(),
                 taskDao = database.taskDao(),
                 roomDao = database.roomDao(),
-                memberDao = database.memberDao()
+                memberDao = database.memberDao(),
+                taskInstanceDao = database.taskInstanceDao()
             )
         }
 
@@ -98,7 +99,7 @@ class MainActivity : FragmentActivity() {
         val memberViewModel: MemberViewModel by viewModels { MemberViewModelFactory(repository) }
         val homeViewModel: HomeViewModel by viewModels { HomeViewModelFactory(repository, dataStoreManager) }
         val profileViewModel: ProfileViewModel by viewModels { ProfileViewModelFactory(repository, dataStoreManager) }
-        val syncViewModel: SyncViewModel by viewModels { SyncViewModelFactory(application, syncRepository, dataStoreManager) }
+        val syncViewModel: SyncViewModel by viewModels { SyncViewModelFactory(application, syncRepository) }
 
         setContent {
             GestorTareasHogar_HaptikosTheme {
@@ -174,10 +175,9 @@ class ProfileViewModelFactory(
 
 class SyncViewModelFactory(
     private val application: Application,
-    private val syncRepository: SyncRepository,
-    private val dataStore: DataStoreManager
+    private val syncRepository: SyncRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return SyncViewModel(application, syncRepository, dataStore) as T
+        return SyncViewModel(application, syncRepository) as T
     }
 }

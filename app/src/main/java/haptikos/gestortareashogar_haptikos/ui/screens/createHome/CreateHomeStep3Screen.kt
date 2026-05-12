@@ -28,6 +28,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +37,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,14 +53,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.navigation.Screen
+import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.SyncViewModel
 
 @Composable
 fun CreateHomeStep3Screen(
     homeName: String,
-    inviteCode: String?,
+    homeViewModel: HomeViewModel,
+    syncViewModel: SyncViewModel,
     invitedUsers: List<InvitedUser> = emptyList(),
     onFinishClick: () -> Unit
 ) {
+    val isOffline by syncViewModel.isOffline.collectAsState()
+    val selectedHome by homeViewModel.selectedHome.collectAsState()
+
+    val inviteCode = remember(selectedHome) {
+        selectedHome?.inviteCode
+    }
+
     val context = LocalContext.current
 
     val handleCopyCode: (String) -> Unit = { code ->
@@ -79,6 +93,7 @@ fun CreateHomeStep3Screen(
     CreateHomeStep3Content(
         homeName = homeName,
         inviteCode = inviteCode,
+        isOffline = isOffline,
         invitedUsers = invitedUsers,
         onCopyCodeClick = handleCopyCode,
         onShareCodeClick = handleShareCode,
@@ -92,11 +107,15 @@ fun CreateHomeStep3Screen(
 fun CreateHomeStep3Content(
     homeName: String,
     inviteCode: String?,
+    isOffline: Boolean,
     invitedUsers: List<InvitedUser>,
     onCopyCodeClick: (String) -> Unit,
     onShareCodeClick: (String) -> Unit,
     onFinishClick: () -> Unit
 ) {
+
+    val isReady = !inviteCode.isNullOrBlank()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -198,75 +217,66 @@ fun CreateHomeStep3Content(
             item {
                 Text(
                     text = "CÓDIGO DE INVITACIÓN",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 12.sp,
-                    color = Color.Gray,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
-                    textAlign = TextAlign.Start
+                    fontWeight = FontWeight.ExtraBold, fontSize = 12.sp, color = Color.Gray,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp), textAlign = TextAlign.Start
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(16.dp),
                     elevation = CardDefaults.cardElevation(4.dp)
                 ) {
                     Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = inviteCode ?: "--- Pendiente ---",
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = if (inviteCode != null) Color(0xFFFF8A00) else Color.LightGray,
-                            letterSpacing = 4.sp
-                        )
+
+                        if (isReady) {
+                            // Muestra el código naranja si ya existe
+                            Text(
+                                text = inviteCode!!,
+                                fontSize = 32.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFFFF8A00),
+                                letterSpacing = 4.sp
+                            )
+                        } else {
+                            if (!isOffline) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(32.dp),
+                                    color = Color(0xFFFF8A00)
+                                )
+                                Text(
+                                    "Sincronizando...",
+                                    color = Color.Gray,
+                                    fontSize = 12.sp,
+                                    modifier = Modifier.padding(top = 8.dp)
+                                )
+                            } else {
+                                Text("---", fontSize = 32.sp, color = Color.LightGray)
+                                Text("Sin conexión", color = Color.Gray, fontSize = 12.sp)
+                            }
+                        }
+
                         Spacer(modifier = Modifier.height(24.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
+                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Button(
-                                onClick = { inviteCode?.let { onCopyCodeClick(it) } },
-                                enabled = inviteCode != null,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(48.dp),
+                                onClick = { onCopyCodeClick(inviteCode!!) },
+                                enabled = isReady,
+                                modifier = Modifier.weight(1f).height(48.dp),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFFFFF6EB),
-                                    contentColor = Color(0xFFFF8A00),
-                                    disabledContainerColor = Color(0xFFF5F5F5),
-                                    disabledContentColor = Color.LightGray
-                                )
-                            ) {
-                                Text("Copiar código", fontWeight = FontWeight.Bold)
-                            }
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFF6EB), contentColor = Color(0xFFFF8A00))
+                            ) { Text("Copiar código", fontWeight = FontWeight.Bold) }
 
                             IconButton(
-                                onClick = { inviteCode?.let { onShareCodeClick(it) } },
-                                enabled = inviteCode != null,
-                                modifier = Modifier
-                                    .size(48.dp)
-                                    .background(
-                                        if (inviteCode != null) Color(0xFFFFF6EB) else Color(0xFFF5F5F5),
-                                        RoundedCornerShape(12.dp)
-                                    )
+                                onClick = { onShareCodeClick(inviteCode!!) },
+                                enabled = isReady,
+                                modifier = Modifier.size(48.dp).background(if (isReady) Color(0xFFFFF6EB) else Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
                             ) {
-                                Icon(
-                                    painter = painterResource(android.R.drawable.ic_menu_share), // Ajusta a tu R.drawable.ic_share
-                                    contentDescription = "Compartir",
-                                    tint = if (inviteCode != null) Color(0xFFFF8A00) else Color.LightGray
-                                )
+                                Icon(painterResource(android.R.drawable.ic_menu_share), contentDescription = null, tint = if (isReady) Color(0xFFFF8A00) else Color.LightGray)
                             }
                         }
                     }
@@ -274,38 +284,29 @@ fun CreateHomeStep3Content(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Banner Contextual
+            // Banner contextual
             item {
-                val bannerColor = if (inviteCode != null) Color(0xFFFFF9E6) else Color(0xFFFFF0F0)
-                val textColor = if (inviteCode != null) Color(0xFFB28000) else Color(0xFFD32F2F)
-                val bannerText = if (inviteCode != null) {
-                    "El código nunca caduca. Puedes regenerarlo más adelante desde los ajustes de tu hogar."
-                } else {
-                    "Sin conexión. Conéctate a internet para generar tu código y enviar las invitaciones pendientes."
+                val (bannerColor, textColor, bannerText, bannerIcon) = when {
+                    isReady -> {
+                        Banner(Color(0xFFFFF9E6), Color(0xFFB28000), "El código nunca caduca. Puedes gestionarlo en ajustes.", "💡")
+                    }
+                    !isOffline -> {
+                        Banner(Color(0xFFE3F2FD), Color(0xFF1976D2), "Sincronizando tu nuevo hogar con la nube...", "⏳")
+                    }
+                    else -> {
+                        Banner(Color(0xFFFFF0F0), Color(0xFFD32F2F), "Sin conexión. Conéctate para generar tu código.", "⚠️")
+                    }
                 }
 
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
                     colors = CardDefaults.cardColors(containerColor = bannerColor),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            if (inviteCode != null) "💡" else "⚠️",
-                            fontSize = 20.sp
-                        )
+                    Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text(bannerIcon, fontSize = 20.sp)
                         Spacer(Modifier.width(12.dp))
-                        Text(
-                            text = bannerText,
-                            color = textColor,
-                            fontSize = 12.sp,
-                            lineHeight = 16.sp
-                        )
+                        Text(text = bannerText, color = textColor, fontSize = 12.sp, lineHeight = 16.sp)
                     }
                 }
                 Spacer(modifier = Modifier.height(32.dp))
@@ -368,3 +369,5 @@ fun CreateHomeStep3Content(
         }
     }
 }
+
+data class Banner<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)

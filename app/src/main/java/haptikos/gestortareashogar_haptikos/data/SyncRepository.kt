@@ -6,6 +6,7 @@ import haptikos.gestortareashogar_haptikos.data.dao.HomeDao
 import haptikos.gestortareashogar_haptikos.data.dao.MemberDao
 import haptikos.gestortareashogar_haptikos.data.dao.RoomDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskDao
+import haptikos.gestortareashogar_haptikos.data.dao.TaskInstanceDao
 import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
@@ -13,10 +14,12 @@ import haptikos.gestortareashogar_haptikos.data.enumerators.MemberStatus
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.network.HomeApi
 import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import haptikos.gestortareashogar_haptikos.network.RoomApi
 import haptikos.gestortareashogar_haptikos.network.TaskApi
+import haptikos.gestortareashogar_haptikos.network.TaskInstanceApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -27,21 +30,25 @@ class SyncRepository(
     private val homeDao: HomeDao,
     private val memberDao: MemberDao,
     private val taskDao: TaskDao,
+    private val taskInstanceDao: TaskInstanceDao,
     private val roomDao: RoomDao
 ) {
 
     private val allHomes: Flow<List<HomeEntityNew>> = homeDao.getAllHomes()
     private val allMembersNew: Flow<List<MemberEntityNew>> = memberDao.getAllNew()
     private val allTasksNew: Flow<List<TaskEntityNew>> = taskDao.getAllNew()
+    private val allInstancesNew: Flow<List<TaskInstanceEntityNew>> = taskInstanceDao.getAllNew()
 
     val hasPendingSyncs: Flow<Boolean> = combine(
         allHomes,
         allMembersNew,
-        allTasksNew
-    ) { homes, members, tasks ->
+        allTasksNew,
+        allInstancesNew
+    ) { homes, members, tasks, instances ->
         homes.any { !it.isSynced } ||
                 members.any { !it.isSynced } ||
-                tasks.any { !it.isSynced }
+                tasks.any { !it.isSynced } ||
+                instances.any { !it.isSynced }
     }
 
 
@@ -54,6 +61,7 @@ class SyncRepository(
         syncPendingHomes()
         syncPendingRooms()
         syncPendingTasks()
+        syncPendingTaskInstances()
     }
 
     private suspend fun syncPendingHomes() {
@@ -184,6 +192,32 @@ class SyncRepository(
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private suspend fun syncPendingTaskInstances() {
+        val pendingInstances = taskInstanceDao.getAllNew().first().filter { !it.isSynced }
+
+        pendingInstances.forEach { instance ->
+            try {
+                val memberIds = taskInstanceDao.getMemberIdsForInstance(instance.id)
+
+                val request = TaskInstanceApi.CreateTaskInstanceRequest(
+                    id = instance.id,
+                    taskId = instance.taskId,
+                    dueDate = instance.dueDate,
+                    state = instance.state.name,
+                    memberIds = memberIds
+                )
+
+                val response = RetrofitClient.getTaskInstanceApi(dataStore).createTaskInstance(request)
+
+                if (response.isSuccessful) {
+                    taskInstanceDao.updateSyncStatus(instance.id, isSynced = true)
+                }
+            } catch (e: Exception) {
+                Log.e("SYNC", "Error sincronizando instancia ${instance.id}: ${e.message}")
+            }
         }
     }
 

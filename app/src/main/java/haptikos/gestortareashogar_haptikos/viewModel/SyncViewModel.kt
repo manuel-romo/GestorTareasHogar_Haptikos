@@ -9,16 +9,15 @@ import haptikos.gestortareashogar_haptikos.utils.NetworkConnectivityObserver
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class SyncViewModel(
     application: Application,
-    private val syncRepository: SyncRepository,
-    private val dataStore: DataStoreManager
+    private val syncRepository: SyncRepository
 ) : AndroidViewModel(application) {
 
     private val connectivityObserver = NetworkConnectivityObserver(application.applicationContext)
@@ -27,22 +26,27 @@ class SyncViewModel(
         .map { !it }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
-    val hasPendingSyncs: StateFlow<Boolean> = syncRepository.hasPendingSyncs
+    // Indica si hay trabajo pendiente en la cola
+    val hasPendingWork: StateFlow<Boolean> = syncRepository.hasPendingSyncs
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
+
     init {
-        observeConnectivityForSync()
+        observeSyncTriggers()
     }
 
-    private fun observeConnectivityForSync() {
+    private fun observeSyncTriggers() {
         viewModelScope.launch {
-            connectivityObserver.isConnected
-                // Cuando hay conexión solamente se ejecuta esto:
-                .filter { it }
-                .collect {
-                    delay(2000)
-                    val userId = dataStore.userIdFlow.first()
-                    if (userId.isNotEmpty()) {
+            combine(
+                connectivityObserver.isConnected,
+                syncRepository.hasPendingSyncs
+            ) { connected, pending ->
+                connected && pending
+            }
+                .distinctUntilChanged()
+                .collect { shouldSync ->
+                    if (shouldSync) {
+                        delay(700)
                         syncRepository.syncPendingItems()
                     }
                 }

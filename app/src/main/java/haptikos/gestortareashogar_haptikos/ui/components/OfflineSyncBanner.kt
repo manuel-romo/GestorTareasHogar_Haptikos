@@ -24,12 +24,11 @@ import haptikos.gestortareashogar_haptikos.R
 
 @Composable
 fun OfflineSyncBanner(
-    isOffline: Boolean,
-    hasPendingSyncs: Boolean
+    isOffline: Boolean
 ) {
 
     AnimatedVisibility(
-        visible = isOffline && hasPendingSyncs,
+        visible = isOffline,
         enter = expandVertically(),
         exit = shrinkVertically()
     ) {

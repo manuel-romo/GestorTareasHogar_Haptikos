@@ -89,4 +89,10 @@ interface TaskInstanceDao {
     @Query("SELECT * FROM task_instance_table_new WHERE taskId = :taskId ORDER BY dueDate DESC LIMIT 1")
     suspend fun getLastInstanceForTask(taskId: String): TaskInstanceEntityNew?
 
+    @Query("UPDATE task_instance_table_new SET isSynced = :isSynced WHERE id = :instanceId")
+    suspend fun updateSyncStatus(instanceId: String, isSynced: Boolean)
+
+    @Query("SELECT memberId FROM task_instance_member_join WHERE taskInstanceId = :instanceId")
+    suspend fun getMemberIdsForInstance(instanceId: String): List<String>
+
 }

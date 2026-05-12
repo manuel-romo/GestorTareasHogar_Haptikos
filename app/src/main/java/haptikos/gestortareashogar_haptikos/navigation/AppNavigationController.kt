@@ -361,21 +361,15 @@ fun AppNavigation(
             }
 
             composable(
-                route = "${Screen.CreateHomeStep3.route}/{homeName}?inviteCode={inviteCode}",
-                arguments = listOf(
-                    navArgument("homeName") { type = NavType.StringType },
-                    navArgument("inviteCode") {
-                        type = NavType.StringType; nullable = true; defaultValue = null
-                    }
-                )
+                route = "${Screen.CreateHomeStep3.route}/{homeName}",
+                arguments = listOf(navArgument("homeName") { type = NavType.StringType })
             ) { backStackEntry ->
-                val homeName = backStackEntry.arguments?.getString("homeName") ?: "Mi Hogar"
-                val inviteCode = backStackEntry.arguments?.getString("inviteCode")
+                val homeName = backStackEntry.arguments?.getString("homeName") ?: ""
 
                 CreateHomeStep3Screen(
                     homeName = homeName,
-                    inviteCode = inviteCode,
-                    invitedUsers = emptyList(),
+                    homeViewModel = homeViewModel,
+                    syncViewModel = syncViewModel,
                     onFinishClick = {
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Home.route) { inclusive = true }

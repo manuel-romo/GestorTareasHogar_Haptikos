@@ -57,7 +57,6 @@ fun HomeScreen(
     onNavigateToJoinHome: () -> Unit,
 ){
 
-    val hasPendingSyncs by syncViewModel.hasPendingSyncs.collectAsState()
     val isOffline by syncViewModel.isOffline.collectAsState()
 
     // Estados de tareas
@@ -96,7 +95,6 @@ fun HomeScreen(
         onDeleteClick = onDeleteClick,
         onNavigateToCreateHome = onNavigateToCreateHome,
         onNavigateToJoinHome = onNavigateToJoinHome,
-        hasPendingSyncs = hasPendingSyncs,
         isOffline = isOffline
     )
 }
@@ -120,7 +118,6 @@ fun HomeContent(
     onDeleteClick: (TaskInstanceEntityNew) -> Unit,
     onNavigateToCreateHome:() -> Unit,
     onNavigateToJoinHome: () -> Unit,
-    hasPendingSyncs: Boolean,
     isOffline: Boolean
 ) {
     val tareasPendientes = tasks.filter { it.taskInstance.state == TaskState.PENDING }
@@ -134,8 +131,7 @@ fun HomeContent(
 
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         OfflineSyncBanner(
-            isOffline = isOffline,
-            hasPendingSyncs = hasPendingSyncs
+            isOffline = isOffline
         )
 
         LazyColumn(
