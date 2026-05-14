@@ -46,6 +46,7 @@ import haptikos.gestortareashogar_haptikos.ui.screens.login.SignUpScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.pruebaUserEdition.ProfileScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.taskDetail.TaskDetailScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.notifications.NotificationsScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.rewards.RewardsScreen
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
@@ -75,6 +76,8 @@ sealed class Screen(val route: String){
     object Stats: Screen("stats")
 
     object Notifications: Screen("notifications")
+
+    object Rewards: Screen("rewards")
 }
 
 @Composable
@@ -228,7 +231,8 @@ fun AppNavigation(
                     },
                     onNavigateToCreateHome = { navController.navigate(Screen.CreateHomeStep1.route) },
                     onNavigateToJoinHome = { navController.navigate(Screen.JoinHome.route) },
-                    onNotificationsClick = { navController.navigate(Screen.Notifications.route) }
+                    onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
+                    onRewardsClick = { navController.navigate(Screen.Rewards.route) }
                 )
             }
 
@@ -413,6 +417,13 @@ fun AppNavigation(
                 NotificationsScreen(
                     viewModel = notificationViewModel,
                     onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.Rewards.route) {
+                RewardsScreen(
+                    taskInstanceViewModel = taskInstanceViewModel,
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 

@@ -70,7 +70,8 @@ fun DashboardHeader(
     onHomeSelected: (HomeEntityNew) -> Unit,
     onNavigateToCreateHome: () -> Unit,
     onNavigateToJoinHome: () -> Unit,
-    onNotificationsClick: () -> Unit
+    onNotificationsClick: () -> Unit,
+    onRewardsClick: () -> Unit
 ) {
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
@@ -303,7 +304,9 @@ fun DashboardHeader(
                 }
 
                 // Trofeo con puntos
-                Box {
+                Box (
+                    modifier = Modifier.clickable { onRewardsClick() }
+                ){
                     Surface(
                         color = Color.White.copy(alpha = 0.2f),
                         shape = CircleShape,

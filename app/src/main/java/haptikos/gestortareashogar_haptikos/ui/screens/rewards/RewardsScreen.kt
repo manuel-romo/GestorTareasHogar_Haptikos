@@ -134,13 +134,13 @@ fun RewardsScreen(
                 }
             } else if (selectedTab == "Insignias") {
                 //Sección de Insignias integrada
-                BadgesContent()
+                BadgesContent(badgeList = rewardsState.badges)
             } else if (selectedTab == "Ranking") {
                 //Sección de Ranking integrada
                 RankingContent(rankingList = rewardsState.rankingList)
             } else if (selectedTab == "Retos") {
                 //Sección de Retos integrada
-                ChallengesContent()
+                ChallengesContent(challengeList = rewardsState.challenges)
             }
         }
         Spacer(modifier = Modifier.height(32.dp))
@@ -272,9 +272,11 @@ fun RecentPointRow(title: String, points: String, iconId: Int) {
 
 //Sección para las insignias
 @Composable
-fun BadgesContent() {
+fun BadgesContent(badgeList: List<BadgeItem>) {
+    val unlocked = badgeList.filter { it.isUnlocked }
+    val locked = badgeList.filter { !it.isUnlocked }
+
     Column {
-        //Contador de progreso
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -283,88 +285,33 @@ fun BadgesContent() {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("🏆", fontSize = 18.sp)
                 Spacer(Modifier.width(8.dp))
-                Text("4 de 9 desbloqueadas", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF2D3142))
+                Text("${unlocked.size} de ${badgeList.size} desbloqueadas", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF2D3142))
             }
-            Text("🔥🏆🌟👑", fontSize = 14.sp)
         }
 
-        SectionBadgeTitle("DESBLOQUEADAS")
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            BadgeCard(
-                "Racha Ardiente",
-                "15 mar",
-                "🔥",
-                true, Modifier.weight(1f)
-            )
-            BadgeCard(
-                "Primer Hogar",
-                "1 ene",
-                "🏆",
-                true,
-                Modifier.weight(1f)
-            )
-            BadgeCard(
-                "Centenario",
-                "20 feb",
-                "🌟",
-                true,
-                Modifier.weight(1f)
-            )
-        }
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            BadgeCard(
-                "Líder del Mes",
-                "28 mar",
-                "👑",
-                true,
-                Modifier.weight(1f)
-            )
-            Spacer(Modifier.weight(1f))
-            Spacer(Modifier.weight(1f))
+        if (unlocked.isNotEmpty()) {
+            SectionBadgeTitle("DESBLOQUEADAS")
+            unlocked.chunked(3).forEach { rowItems ->
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    rowItems.forEach { badge ->
+                        BadgeCard(badge.name, badge.dateUnlocked, badge.icon, true, Modifier.weight(1f))
+                    }
+                    repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        SectionBadgeTitle("POR DESBLOQUEAR")
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            BadgeCard(
-                "Turbo",
-                null,
-                "",
-                false,
-                Modifier.weight(1f)
-            )
-            BadgeCard(
-                "Mano Verde",
-                null,
-                "",
-                false,
-                Modifier.weight(1f)
-            )
-            BadgeCard(
-                "Puntual",
-                null,
-                "",
-                false,
-                Modifier.weight(1f)
-            )
-        }
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            BadgeCard(
-                "Social",
-                null,
-                "",
-                false,
-                Modifier.weight(1f)
-            )
-            BadgeCard(
-                "Diamante",
-                null,
-                "",
-                false,
-                Modifier.weight(1f)
-            )
-            Spacer(Modifier.weight(1f))
+        if (locked.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(24.dp))
+            SectionBadgeTitle("POR DESBLOQUEAR")
+            locked.chunked(3).forEach { rowItems ->
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    rowItems.forEach { badge ->
+                        BadgeCard(badge.name, null, badge.icon, false, Modifier.weight(1f))
+                    }
+                    repeat(3 - rowItems.size) { Spacer(Modifier.weight(1f)) }
+                }
+            }
         }
     }
 }
@@ -490,11 +437,9 @@ fun RankingContent(rankingList: List<RankingMemberItem>) {
     }
 }
 
-//Sección para los retos
 @Composable
-fun ChallengesContent() {
+fun ChallengesContent(challengeList: List<ChallengeItem>) {
     Column {
-        //Banner superior
         Surface(
             modifier = Modifier.fillMaxWidth(),
             color = Color(0xFF7E57C2),
@@ -502,69 +447,29 @@ fun ChallengesContent() {
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_bolt),
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    Icon(painterResource(id = R.drawable.ic_bolt), null, tint = Color.White, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        "Retos semanales",
-                        color = Color.White,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Text("Retos semanales", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    "Completa estos retos para ganar puntos extra 🎯",
-                    color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 14.sp
-                )
+                Text("Completa estos retos para ganar puntos extra 🎯", color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
             }
         }
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        //Cards de los retos
-        ChallengeCard(
-            title = "Semana Perfecta",
-            reward = "+50",
-            description = "Completa todas las tareas del día durante 5 días seguidos",
-            progress = 3f,
-            total = 5f,
-            timeLeft = "Quedan 4 días",
-            icon = "🏅"
-        )
-        ChallengeCard(
-            title = "Limpieza Profunda",
-            reward = "+30",
-            description = "Completa 3 tareas de baños esta semana",
-            progress = 1f,
-            total = 3f,
-            timeLeft = "Quedan 2 días",
-            icon = "🧽"
-        )
-        ChallengeCard(
-            title = "Madrugador",
-            reward = "+20",
-            description = "Completa una tarea antes de las 9 am por 3 días",
-            progress = 2f,
-            total = 3f,
-            timeLeft = "Quedan 5 días",
-            icon = "🌅"
-        )
-        ChallengeCard(
-            title = "Primer Invitado",
-            reward = "+15",
-            description = "Invita a un nuevo miembro al hogar",
-            progress = 1f,
-            total = 1f,
-            timeLeft = "",
-            icon = "✉️",
-            isCompleted = true
-        )
+        challengeList.forEach { challenge ->
+            ChallengeCard(
+                title = challenge.title,
+                reward = "+${challenge.rewardPoints}",
+                description = challenge.description,
+                progress = challenge.currentProgress.toFloat(),
+                total = challenge.totalGoal.toFloat(),
+                timeLeft = "Semana actual",
+                icon = challenge.icon,
+                isCompleted = challenge.isCompleted
+            )
+        }
     }
 }
 

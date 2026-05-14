@@ -57,7 +57,8 @@ fun HomeScreen(
     onDeleteClick: (TaskInstanceEntityNew) -> Unit,
     onNavigateToCreateHome:() -> Unit,
     onNavigateToJoinHome: () -> Unit,
-    onNotificationsClick: () -> Unit
+    onNotificationsClick: () -> Unit,
+    onRewardsClick: () -> Unit
 ){
 
     val isOffline by syncViewModel.isOffline.collectAsState()
@@ -102,6 +103,7 @@ fun HomeScreen(
         onNavigateToCreateHome = onNavigateToCreateHome,
         onNavigateToJoinHome = onNavigateToJoinHome,
         onNotificationsClick = onNotificationsClick,
+        onRewardsClick = onRewardsClick,
         isOffline = isOffline,
         hasNotifications = hasNotifications
     )
@@ -127,6 +129,7 @@ fun HomeContent(
     onNavigateToCreateHome:() -> Unit,
     onNavigateToJoinHome: () -> Unit,
     onNotificationsClick: () -> Unit,
+    onRewardsClick: () -> Unit,
     isOffline: Boolean,
     hasNotifications: Boolean
 ) {
@@ -169,6 +172,8 @@ fun HomeContent(
                     onNavigateToCreateHome = onNavigateToCreateHome,
                     onNavigateToJoinHome = onNavigateToJoinHome,
                     onNotificationsClick = onNotificationsClick,
+                    onRewardsClick = onRewardsClick
+
                 )
             }
             item {
