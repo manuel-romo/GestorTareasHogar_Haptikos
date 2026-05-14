@@ -53,7 +53,7 @@ fun RewardsScreen(
     taskInstanceViewModel: TaskInstanceViewModel,
     onBackClick: () -> Unit
 ) {
-    val stats by taskInstanceViewModel.stats.collectAsState()
+    val rewardsState by taskInstanceViewModel.rewardsState.collectAsState()
     val tasks by taskInstanceViewModel.tasks.collectAsState()
 
     //Variable para controlar la pestaña seleccionada
@@ -70,12 +70,12 @@ fun RewardsScreen(
     ) {
         //Header con puntos del usuario
         RewardsHeader(
-            points = stats.userPoints,
-            progress = stats.dailyProgress,
+            points = rewardsState.totalPoints,
+            progress = rewardsState.dailyProgress,
             onBackClick = onBackClick
         )
 
-        //Selector de secciones (Ahora funcional)
+        //Selector de secciones
         RewardsTabSelector(
             selectedTab = selectedTab,
             onTabSelected = { selectedTab = it }
@@ -137,7 +137,7 @@ fun RewardsScreen(
                 BadgesContent()
             } else if (selectedTab == "Ranking") {
                 //Sección de Ranking integrada
-                RankingContent()
+                RankingContent(rankingList = rewardsState.rankingList)
             } else if (selectedTab == "Retos") {
                 //Sección de Retos integrada
                 ChallengesContent()
@@ -371,7 +371,7 @@ fun BadgesContent() {
 
 //Sección para el ranking
 @Composable
-fun RankingContent() {
+fun RankingContent(rankingList: List<RankingMemberItem>) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         //Banner informativo superior
         Surface(
@@ -392,7 +392,7 @@ fun RankingContent() {
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    "Ranking mensual del hogar · Mi Casa",
+                    "Ranking mensual del hogar",
                     fontSize = 13.sp,
                     color = Color(0xFFE65100),
                     fontWeight = FontWeight.Medium
@@ -401,52 +401,59 @@ fun RankingContent() {
         }
 
         Spacer(modifier = Modifier.height(24.dp))
-
-        //Visualización del Podio
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.Bottom
-        ) {
-            //Segundo lugar (mock)
-            PodiumItem(
-                name = "Pedro",
-                points = 610,
-                color = Color(0xFF00C853),
-                initial = "P",
-                rankIcon = "🥈",
-                height = 70.dp,
-                boxColor = Color(0xFFE0E4E8)
-            )
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            //Primer lugar (mock)
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("👑", fontSize = 24.sp)
+        //Ya se supone que se debe ver el podio bien ahora si
+        if (rankingList.size >= 2) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.Bottom
+            ) {
+                // Segundo lugar
                 PodiumItem(
-                    name = "María",
-                    points = 680,
-                    color = Color(0xFFF014A8),
-                    initial = "M",
-                    rankIcon = "🥇",
-                    height = 95.dp,
-                    boxColor = Color(0xFFFFC107)
+                    name = rankingList[1].name.split(" ").first(),
+                    points = rankingList[1].points,
+                    color = Color(android.graphics.Color.parseColor(rankingList[1].colorHex)),
+                    initial = rankingList[1].name.first().toString(),
+                    rankIcon = "🥈",
+                    height = 70.dp,
+                    boxColor = Color(0xFFE0E4E8)
                 )
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Primer lugar
+                if (rankingList.isNotEmpty()) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("👑", fontSize = 24.sp)
+                        PodiumItem(
+                            name = rankingList[0].name.split(" ").first(),
+                            points = rankingList[0].points,
+                            color = Color(android.graphics.Color.parseColor(rankingList[0].colorHex)),
+                            initial = rankingList[0].name.first().toString(),
+                            rankIcon = "🥇",
+                            height = 95.dp,
+                            boxColor = Color(0xFFFFC107)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                // Tercer lugar
+                if (rankingList.size >= 3) {
+                    PodiumItem(
+                        name = rankingList[2].name.split(" ").first(),
+                        points = rankingList[2].points,
+                        color = Color(android.graphics.Color.parseColor(rankingList[2].colorHex)),
+                        initial = rankingList[2].name.first().toString(),
+                        rankIcon = "🥉",
+                        height = 55.dp,
+                        boxColor = Color(0xFFFFD1A4)
+                    )
+                }
             }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            //Tercer lugar (mock)
-            PodiumItem(
-                name = "Ana",
-                points = 540,
-                color = Color(0xFF7C4DFF),
-                initial = "A",
-                rankIcon = "🥉",
-                height = 55.dp,
-                boxColor = Color(0xFFFFD1A4)
-            )
+        } else if (rankingList.isEmpty()) {
+            Text("No hay datos de ranking aún", color = Color.Gray, modifier = Modifier.padding(32.dp))
         }
 
         Spacer(modifier = Modifier.height(32.dp))
@@ -459,38 +466,25 @@ fun RankingContent() {
             shadowElevation = 2.dp
         ) {
             Column {
-                RankingRow(
-                    "🥇",
-                    "M",
-                    "María",
-                    "(tú)",
-                    "52 tareas completadas",
-                    680, Color(0xFFF014A8), isMe = true
-                )
-                RankingRow(
-                    "🥈",
-                    "P",
-                    "Pedro",
-                    "",
-                    "47 tareas completadas",
-                    610, Color(0xFF00C853)
-                )
-                RankingRow(
-                    "🥉",
-                    "A",
-                    "Ana",
-                    "",
-                    "41 tareas completadas",
-                    540, Color(0xFF7C4DFF)
-                )
-                RankingRow(
-                    "4",
-                    "J",
-                    "Juan",
-                    "",
-                    "35 tareas completadas",
-                    420, Color(0xFF2979FF)
-                )
+                rankingList.forEach { item ->
+                    val rankLabel = when(item.position) {
+                        1 -> "🥇"
+                        2 -> "🥈"
+                        3 -> "🥉"
+                        else -> item.position.toString()
+                    }
+
+                    RankingRow(
+                        rank = rankLabel,
+                        initial = item.name.first().toString(),
+                        name = item.name,
+                        suffix = if (item.isCurrentUser) "(tú)" else "",
+                        tasks = "Puntos acumulados",
+                        points = item.points,
+                        color = Color(android.graphics.Color.parseColor(item.colorHex)),
+                        isMe = item.isCurrentUser
+                    )
+                }
             }
         }
     }
@@ -786,11 +780,11 @@ fun BadgeCard(name: String, date: String?, icon: String, isUnlocked: Boolean, mo
 
 @Composable
 fun SectionBadgeTitle(title: String) {
-    Text(title, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold, color = Color.LightGray, letterSpacing = 1.sp, modifier = Modifier.padding(vertical = 12.dp))
+    SectionBadgeTitle(title)
 }
 
-//Preview de la pantalla de recompensas (todo esto es de prueba)
-@Preview(showBackground = true, showSystemUi = true)
+//Preview de la pantalla de recompensas
+@Preview(showBackground = true, showSystemUi = true, name = "Vista Año - Resumen")
 @Composable
 fun RewardsScreenPreview() {
     //Crear un estado de estadísticas de prueba
@@ -812,21 +806,50 @@ fun RewardsScreenPreview() {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                //Header con datos de prueba
                 RewardsHeader(
                     points = mockStats.userPoints,
                     progress = mockStats.dailyProgress,
                     onBackClick = {}
                 )
 
-                //En Preview se simula la selección de "Retos" para ver el diseño final
-                RewardsTabSelector(selectedTab = "Retos", onTabSelected = {})
+                RewardsTabSelector(selectedTab = "Resumen", onTabSelected = {})
 
                 Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                    ChallengesContent()
+                    // Contenido de resumen con InfoCards
+                    InfoCard(title = "¿Cómo ganar puntos?", iconId = R.drawable.ic_bolt) {
+                        RewardEarningRow("Tarea completada", "+10 pts", Color(0xFFE8F5E9), Color(0xFF4CAF50))
+                    }
                 }
                 Spacer(modifier = Modifier.height(32.dp))
             }
+        }
+    }
+}
+
+@Preview(showBackground = true, showSystemUi = true, name = "Vista Ranking Mock")
+@Composable
+fun RewardsScreenRankingPreview() {
+    // Mock de lista de ranking
+    val mockRanking = listOf(
+        RankingMemberItem("1", "María", 680, "#F014A8", 1, true),
+        RankingMemberItem("2", "Pedro", 610, "#00C853", 2, false),
+        RankingMemberItem("3", "Ana", 540, "#7C4DFF", 3, false),
+        RankingMemberItem("4", "Juan", 420, "#2979FF", 4, false)
+    )
+
+    haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF7F9FA))
+                .verticalScroll(rememberScrollState())
+        ) {
+            RewardsHeader(points = 680, progress = 0.84f, onBackClick = {})
+            RewardsTabSelector(selectedTab = "Ranking", onTabSelected = {})
+            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+                RankingContent(rankingList = mockRanking)
+            }
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

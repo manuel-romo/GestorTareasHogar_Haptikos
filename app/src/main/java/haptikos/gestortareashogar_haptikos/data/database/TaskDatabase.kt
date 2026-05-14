@@ -32,7 +32,7 @@ import kotlinx.coroutines.CoroutineScope
         HomeEntityNew::class,
         NotificationEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 
