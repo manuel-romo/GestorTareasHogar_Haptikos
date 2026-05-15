@@ -40,6 +40,7 @@ import haptikos.gestortareashogar_haptikos.ui.screens.createHome.CreateHomeStep3
 import haptikos.gestortareashogar_haptikos.ui.screens.formHome.FormHomeConfigurationScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.formTask.FormTaskScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.home.HomeScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.HomeStatsScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.joinHome.JoinHomeScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.LogInScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.SignUpScreen
@@ -78,6 +79,8 @@ sealed class Screen(val route: String){
     object Notifications: Screen("notifications")
 
     object Rewards: Screen("rewards")
+
+    object HomeStats : Screen("home_stats")
 }
 
 @Composable
@@ -423,6 +426,13 @@ fun AppNavigation(
             composable(Screen.Rewards.route) {
                 RewardsScreen(
                     taskInstanceViewModel = taskInstanceViewModel,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.HomeStats.route) {
+                HomeStatsScreen(
+                    viewModel = taskInstanceViewModel,
                     onBackClick = { navController.popBackStack() }
                 )
             }
