@@ -23,8 +23,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import haptikos.gestortareashogar_haptikos.R
+import haptikos.gestortareashogar_haptikos.ui.components.CustomBottomNavigation
 import haptikos.gestortareashogar_haptikos.ui.screens.rewards.InfoCard
+import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 
 data class BarChartData(
@@ -65,31 +68,46 @@ data class HomeStatsUiState(
 @Composable
 fun HomeStatsScreen(
     viewModel: TaskInstanceViewModel,
+    homeViewModel: HomeViewModel,
+    navController: NavController,
     onBackClick: () -> Unit
 ) {
     val state by viewModel.homeStatsState.collectAsState()
     val userName by viewModel.userName.collectAsState()
+    val canCreateTasks by homeViewModel.isCurrentUserCreatorOrAdmin.collectAsState()
 
     HomeStatsContent(
         userName = userName,
         state = state,
+        navController = navController,
+        canCreateTasks = canCreateTasks,
         onRangeSelected = { viewModel.updateHomeStatsRange(it) },
         onBackClick = onBackClick
     )
 }
-
 @Composable
 fun HomeStatsContent(
     userName: String,
     state: HomeStatsUiState,
+    navController: NavController? = null, // Opcional para Previews
+    canCreateTasks: Boolean = false,
     onRangeSelected: (String) -> Unit,
     onBackClick: () -> Unit
 ) {
-    // Aquí se calcula el MVP de forma dinámica basándonos en los datos reales
     val mvpName = state.members.maxByOrNull { it.completedTasks }?.name ?: "N/A"
 
     Scaffold(
-        containerColor = Color(0xFFF8F9FA)
+        containerColor = Color(0xFFF8F9FA),
+        // Acá se integra el bottom navigation en la pantalla
+        bottomBar = {
+            if (navController != null) {
+                CustomBottomNavigation(
+                    navController = navController,
+                    currentRoute = haptikos.gestortareashogar_haptikos.navigation.Screen.HomeStats.route,
+                    hasCenterFab = canCreateTasks
+                )
+            }
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -124,7 +142,7 @@ fun HomeStatsContent(
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Gráfica de barras (Datos reales del año/mes)
+                // Gráfica de barras
                 TasksByPeriodCard(data = state.barChartData)
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -378,6 +396,7 @@ fun RoomStatsCard(rooms: List<RoomStatsItem>) {
     }
 }
 
+// Preview para sección "Año"
 @Preview(showBackground = true, showSystemUi = true, name = "Análisis Anual - Datos Mock")
 @Composable
 fun HomeStatsYearOnlyPreview() {
@@ -425,6 +444,46 @@ fun HomeStatsYearOnlyPreview() {
         HomeStatsContent(
             userName = mockUserName,
             state = yearState,
+            onRangeSelected = {},
+            onBackClick = {}
+        )
+    }
+}
+
+// Preview para la sección de "Mes"
+@Preview(showBackground = true, showSystemUi = true, name = "Análisis Mensual - Datos Mock")
+@Composable
+fun HomeStatsMonthOnlyPreview() {
+    val monthData = listOf(
+        BarChartData("Sem 1", 25f, 5f),
+        BarChartData("Sem 2", 18f, 12f),
+        BarChartData("Sem 3", 30f, 2f),
+        BarChartData("Sem 4", 22f, 8f)
+    )
+
+    val monthState = HomeStatsUiState(
+        selectedRange = "Mes",
+        effectiveness = 78,
+        completedCount = 95,
+        pendingCount = 27,
+        membersCount = 3,
+        barChartData = monthData,
+        members = listOf(
+            MemberStatsItem("Yuri", 40, 45, Color(0xFFFF6D00)),
+            MemberStatsItem("María", 35, 40, Color(0xFFE91E63)),
+            MemberStatsItem("Pedro", 20, 37, Color(0xFF2196F3))
+        ),
+        rooms = listOf(
+            RoomStatsItem("Cocina", 30, 35),
+            RoomStatsItem("Baños", 25, 30),
+            RoomStatsItem("Sala", 40, 57)
+        )
+    )
+
+    haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
+        HomeStatsContent(
+            userName = "Yuri",
+            state = monthState,
             onRangeSelected = {},
             onBackClick = {}
         )

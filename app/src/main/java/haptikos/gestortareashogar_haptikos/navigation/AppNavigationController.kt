@@ -433,6 +433,8 @@ fun AppNavigation(
             composable(Screen.HomeStats.route) {
                 HomeStatsScreen(
                     viewModel = taskInstanceViewModel,
+                    homeViewModel = homeViewModel,
+                    navController = navController,
                     onBackClick = { navController.popBackStack() }
                 )
             }
