@@ -489,3 +489,45 @@ fun HomeStatsMonthOnlyPreview() {
         )
     }
 }
+
+// Preview para la sección de "Semana"
+@Preview(showBackground = true, showSystemUi = true, name = "Análisis Semanal - Datos Mock")
+@Composable
+fun HomeStatsWeekOnlyPreview() {
+    val weekData = listOf(
+        BarChartData("Lun", 4f, 1f),
+        BarChartData("Mar", 3f, 0f),
+        BarChartData("Mié", 5f, 2f),
+        BarChartData("Jue", 2f, 1f),
+        BarChartData("Vie", 6f, 0f),
+        BarChartData("Sáb", 4f, 3f),
+        BarChartData("Dom", 1f, 0f)
+    )
+
+    val weekState = HomeStatsUiState(
+        selectedRange = "Semana",
+        effectiveness = 75,
+        completedCount = 25,
+        pendingCount = 7,
+        membersCount = 2,
+        barChartData = weekData,
+        members = listOf(
+            MemberStatsItem("Yuri", 15, 18, Color(0xFFFF6D00)),
+            MemberStatsItem("María", 10, 14, Color(0xFFE91E63))
+        ),
+        rooms = listOf(
+            RoomStatsItem("Cocina", 10, 12),
+            RoomStatsItem("Sala", 8, 8),
+            RoomStatsItem("Baños", 7, 12)
+        )
+    )
+
+    haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
+        HomeStatsContent(
+            userName = "Yuri",
+            state = weekState,
+            onRangeSelected = {},
+            onBackClick = {}
+        )
+    }
+}

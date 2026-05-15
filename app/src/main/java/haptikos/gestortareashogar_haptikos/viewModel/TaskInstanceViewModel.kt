@@ -509,14 +509,19 @@ class TaskInstanceViewModel(
         range: String
     ): List<BarChartData> {
         return when (range) {
-            "Año" -> {
-                val months = listOf("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
-                months.mapIndexed { index, label ->
-                    val mInst = instances.filter {
+            "Semana" -> {
+                val days = listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
+                days.mapIndexed { index, label ->
+                    val dayInstances = instances.filter {
                         val instCal = Calendar.getInstance().apply { timeInMillis = it.taskInstance.dueDate }
-                        instCal.get(Calendar.MONTH) == index
+                        val dayOfWeek = (instCal.get(Calendar.DAY_OF_WEEK) + 5) % 7
+                        dayOfWeek == index
                     }
-                    BarChartData(label, mInst.count { it.taskInstance.state == TaskState.COMPLETED }.toFloat(), mInst.count { it.taskInstance.state == TaskState.PENDING }.toFloat())
+                    BarChartData(
+                        label = label,
+                        completed = dayInstances.count { it.taskInstance.state == TaskState.COMPLETED }.toFloat(),
+                        pending = dayInstances.count { it.taskInstance.state == TaskState.PENDING }.toFloat()
+                    )
                 }
             }
             "Mes" -> {
@@ -535,15 +540,14 @@ class TaskInstanceViewModel(
                     BarChartData(label, mInst.count { it.taskInstance.state == TaskState.COMPLETED }.toFloat(), mInst.count { it.taskInstance.state == TaskState.PENDING }.toFloat())
                 }
             }
-            "Semana" -> {
-                val days = listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom")
-                days.mapIndexed { index, label ->
-                    val dInst = instances.filter {
+            "Año" -> {
+                val months = listOf("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
+                months.mapIndexed { index, label ->
+                    val mInst = instances.filter {
                         val instCal = Calendar.getInstance().apply { timeInMillis = it.taskInstance.dueDate }
-                        val dayOfWeek = (instCal.get(Calendar.DAY_OF_WEEK) + 5) % 7
-                        dayOfWeek == index
+                        instCal.get(Calendar.MONTH) == index
                     }
-                    BarChartData(label, dInst.count { it.taskInstance.state == TaskState.COMPLETED }.toFloat(), dInst.count { it.taskInstance.state == TaskState.PENDING }.toFloat())
+                    BarChartData(label, mInst.count { it.taskInstance.state == TaskState.COMPLETED }.toFloat(), mInst.count { it.taskInstance.state == TaskState.PENDING }.toFloat())
                 }
             }
             else -> emptyList()
