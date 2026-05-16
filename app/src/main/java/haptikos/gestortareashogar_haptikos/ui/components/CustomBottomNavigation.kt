@@ -46,7 +46,7 @@ fun CustomBottomNavigation(
             }
         )
 
-        // HOGAR (Aún no tienes esta pantalla en Screen, la dejamos pendiente)
+        // HOGAR (ahora si se tiene la pantalla en local)
         NavigationBarItem(
             icon = {
                 Icon(
@@ -56,8 +56,14 @@ fun CustomBottomNavigation(
                 )
             },
             label = { Text("Hogar") },
-            selected = false, // Cambiar cuando tengas la ruta
-            onClick = { /* TODO: Navegar a la pantalla del Hogar */ }
+            selected = currentRoute == Screen.HomeStats.route,
+            onClick = {
+                navController.navigate(Screen.HomeStats.route) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
         )
 
         if (hasCenterFab) {

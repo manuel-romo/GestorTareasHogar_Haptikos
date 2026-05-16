@@ -40,12 +40,14 @@ import haptikos.gestortareashogar_haptikos.ui.screens.createHome.CreateHomeStep3
 import haptikos.gestortareashogar_haptikos.ui.screens.formHome.FormHomeConfigurationScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.formTask.FormTaskScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.home.HomeScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.HomeStatsScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.joinHome.JoinHomeScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.LogInScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.SignUpScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.pruebaUserEdition.ProfileScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.taskDetail.TaskDetailScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.notifications.NotificationsScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.rewards.RewardsScreen
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
@@ -75,6 +77,10 @@ sealed class Screen(val route: String){
     object Stats: Screen("stats")
 
     object Notifications: Screen("notifications")
+
+    object Rewards: Screen("rewards")
+
+    object HomeStats : Screen("home_stats")
 }
 
 @Composable
@@ -228,7 +234,8 @@ fun AppNavigation(
                     },
                     onNavigateToCreateHome = { navController.navigate(Screen.CreateHomeStep1.route) },
                     onNavigateToJoinHome = { navController.navigate(Screen.JoinHome.route) },
-                    onNotificationsClick = { navController.navigate(Screen.Notifications.route) }
+                    onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
+                    onRewardsClick = { navController.navigate(Screen.Rewards.route) }
                 )
             }
 
@@ -413,6 +420,22 @@ fun AppNavigation(
                 NotificationsScreen(
                     viewModel = notificationViewModel,
                     onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.Rewards.route) {
+                RewardsScreen(
+                    taskInstanceViewModel = taskInstanceViewModel,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+
+            composable(Screen.HomeStats.route) {
+                HomeStatsScreen(
+                    viewModel = taskInstanceViewModel,
+                    homeViewModel = homeViewModel,
+                    navController = navController,
+                    onBackClick = { navController.popBackStack() }
                 )
             }
 
