@@ -102,4 +102,10 @@ interface TaskInstanceDao {
     """)
     fun getCompletedTaskCountForMember(memberId: String): Flow<Int>
 
+    @Query("""
+        DELETE FROM task_instance_table_new 
+        WHERE taskId IN (SELECT id FROM task_table_new WHERE homeId = :homeId)
+    """)
+    suspend fun deleteAllByHomeId(homeId: String)
+
 }

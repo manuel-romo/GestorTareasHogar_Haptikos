@@ -2,6 +2,7 @@ package haptikos.gestortareashogar_haptikos.network
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
@@ -25,7 +26,8 @@ interface TaskApi {
         val roomId: String?,
         val homeId: String,
         val memberIds: List<String>,
-        val isPredetemined: Boolean
+        val predetermined: Boolean,
+        val userId: String = ""
     )
 
     data class TaskResponse(
@@ -45,7 +47,9 @@ interface TaskApi {
         val lastMemberIndex: Int,
         val roomId: String?,
         val homeId: String,
-        val isPredetermined: Boolean
+        val predetermined: Boolean,
+        val memberIds: List<String>,
+        val instances: List<TaskInstanceApi.TaskInstanceNetworkDto> = emptyList()
     )
 
     data class UpdateTaskRequest(
@@ -75,4 +79,11 @@ interface TaskApi {
 
     @GET("/api/tasks/home/{homeId}")
     suspend fun getTasksByHome(@Path("homeId") homeId: String): Response<List<TaskNetworkDto>>
+
+    @DELETE("/api/tasks/{taskId}")
+    suspend fun deleteTask(
+        @Path("taskId") taskId: String,
+        @Query("userId") userId: String
+    ): Response<Void>
+
 }

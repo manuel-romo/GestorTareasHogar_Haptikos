@@ -102,8 +102,10 @@ class TaskInstanceViewModel(
     // Acciones
     fun markTaskAsCompleted(taskInstance: TaskInstanceEntityNew) {
         viewModelScope.launch {
-            val completedTask = taskInstance.copy(state = TaskState.COMPLETED)
-            repository.updateTaskInstance(completedTask)
+            repository.updateTaskInstance(
+                taskInstance.copy(state = TaskState.COMPLETED, isSynced = false)
+            )
+            repository.syncPendingInstances()
         }
     }
 

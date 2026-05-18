@@ -95,15 +95,10 @@ class RoomViewModel(private val repository: AppRepository): ViewModel(){
     // Guardado de datos editados
     fun updateRoom(newName: String, newIcon: String, newColorHex: String) {
         val currentRoom = _roomToEdit.value ?: return
-
         viewModelScope.launch {
-            val updatedRoom = currentRoom.copy(
-                name = newName,
-                icon = newIcon,
-                colorHex = newColorHex
-            )
-
+            val updatedRoom = currentRoom.copy(name = newName, icon = newIcon, colorHex = newColorHex)
             repository.updateRoomNew(updatedRoom)
+            repository.syncPendingRoomsNow()
             _roomToEdit.value = null
         }
     }

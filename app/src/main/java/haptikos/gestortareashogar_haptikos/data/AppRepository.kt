@@ -21,6 +21,8 @@ import haptikos.gestortareashogar_haptikos.data.entity.TaskWithDetails
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.network.HomeApi
 import haptikos.gestortareashogar_haptikos.network.RetrofitClient
+import haptikos.gestortareashogar_haptikos.network.RoomApi
+import haptikos.gestortareashogar_haptikos.network.TaskApi
 import haptikos.gestortareashogar_haptikos.network.UserApi
 import haptikos.gestortareashogar_haptikos.utils.getNextDueDate
 import haptikos.gestortareashogar_haptikos.utils.getNextDueDateAfter
@@ -128,7 +130,18 @@ class AppRepository(
     suspend fun updateTaskNewWithMembers(task: TaskEntityNew, memberIds: List<String>) =
         taskDao.updateTaskWithMembers(task.copy(isSynced = false), memberIds)
 
-    suspend fun deleteTaskNew(task: TaskEntityNew) = taskDao.deleteTaskBaseNew(task)
+    suspend fun deleteTaskNew(task: TaskEntityNew) {
+        // Se borra localmente
+        taskDao.deleteTaskBaseNew(task)
+
+        // Se borra en el serivdor
+        try {
+            val userId = dataStore.userIdFlow.first() ?: ""
+            RetrofitClient.getTaskApi(dataStore).deleteTask(task.id, userId)
+        } catch (e: Exception) {
+            Log.e("SYNC", "Error eliminando tarea en servidor: ${e.message}")
+        }
+    }
 
     suspend fun getTaskWithDetailsById(taskId: String) = taskDao.getTaskWithDetailsById(taskId)
 
@@ -178,7 +191,14 @@ class AppRepository(
 
     suspend fun insertRoomNew(room: RoomEntityNew) = roomDao.addNew(room)
     suspend fun updateRoomNew(room: RoomEntityNew) = roomDao.updateNew(room.copy(isSynced = false))
-    suspend fun deleteRoomNew(room: RoomEntityNew) = roomDao.deleteNew(room)
+    suspend fun deleteRoomNew(room: RoomEntityNew) {
+        roomDao.deleteNew(room)
+        try {
+            RetrofitClient.getRoomApi(dataStore).deleteRoom(room.id)
+        } catch (e: Exception) {
+            Log.e("SYNC", "Error eliminando habitación: ${e.message}")
+        }
+    }
 
     suspend fun updateHome(home: HomeEntityNew) {
         // Guardado
@@ -332,8 +352,8 @@ class AppRepository(
 
     // Creación de habitación -----------------------------------------------
     suspend fun createRoomWithSync(room: RoomEntityNew) {
-        // Guardado local
         roomDao.addNew(room.copy(isSynced = false))
+        syncPendingRoomsNow()
     }
 
 
@@ -496,4 +516,114 @@ class AppRepository(
 
     suspend fun updateTaskOnly(task: TaskEntityNew) =
         taskDao.updateTaskOnly(task.copy(isSynced = false))
+
+    suspend fun syncPendingInstances() {
+        val currentUserId = dataStore.userIdFlow.first() ?: return
+        val pendingInstances = taskInstanceDao.getAllNew().first().filter { !it.isSynced }
+
+        pendingInstances.forEach { instance ->
+            try {
+                if (instance.state == TaskState.COMPLETED) {
+                    val response = RetrofitClient.getTaskInstanceApi(dataStore)
+                        .completeInstance(instance.id, currentUserId)
+                    if (response.isSuccessful) {
+                        taskInstanceDao.updateSyncStatus(instance.id, true)
+                    }
+                    return@forEach
+                }
+            } catch (e: Exception) {
+                Log.e("SYNC", "Error sincronizando instancia ${instance.id}: ${e.message}")
+            }
+        }
+    }
+
+    suspend fun syncPendingTasksNow() {
+
+        syncPendingRoomsNow()
+
+        val pendingTasks = taskDao.getAllNew().first().filter { !it.isSynced }
+        val currentUserId = dataStore.userIdFlow.first() ?: return
+
+        pendingTasks.forEach { task ->
+            try {
+                val memberIds = taskDao.getMemberIdsForTask(task.id)
+
+                val updateResponse = RetrofitClient.getTaskApi(dataStore).updateTask(
+                    task.id,
+                    TaskApi.UpdateTaskRequest(
+                        title = task.title,
+                        description = task.description,
+                        points = task.points,
+                        priority = task.priority.name,
+                        suggestedDay = task.suggestedDay.name,
+                        recurrence = task.recurrence.name,
+                        workMode = task.workMode.name,
+                        roomId = task.roomId,
+                        memberIds = memberIds,
+                        pausedUntil = task.pausedUntil
+                    )
+                )
+
+                if (updateResponse.isSuccessful) {
+                    taskDao.updateSyncStatus(task.id, isSynced = true)
+                    return@forEach
+                }
+
+                if (updateResponse.code() == 404) {
+                    val createResponse = RetrofitClient.getTaskApi(dataStore).createTask(
+                        TaskApi.CreateTaskRequest(
+                            id = task.id,
+                            title = task.title,
+                            description = task.description,
+                            points = task.points,
+                            priority = task.priority.name,
+                            suggestedDay = task.suggestedDay.name,
+                            recurrence = task.recurrence.name,
+                            workMode = task.workMode.name,
+                            lastMemberIndex = task.lastMemberIndex,
+                            roomId = task.roomId,
+                            homeId = task.homeId,
+                            memberIds = memberIds,
+                            predetermined = task.isPredetermined,
+                            userId = currentUserId
+                        )
+                    )
+                    if (createResponse.isSuccessful) {
+                        taskDao.updateSyncStatus(task.id, isSynced = true)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("SYNC", "Error sincronizando tarea ${task.id}: ${e.message}")
+            }
+        }
+    }
+
+    suspend fun syncPendingRoomsNow() {
+        val pendingRooms = roomDao.getAllNew().first().filter { !it.isSynced }
+        val currentUserId = dataStore.userIdFlow.first() ?: return
+
+        pendingRooms.forEach { room ->
+            try {
+                val updateResponse = RetrofitClient.getRoomApi(dataStore).updateRoom(
+                    room.id,
+                    RoomApi.UpdateRoomRequest(room.name, room.icon, room.colorHex)
+                )
+                if (updateResponse.isSuccessful) {
+                    roomDao.updateNew(room.copy(isSynced = true))
+                    return@forEach
+                }
+                if (updateResponse.code() == 404) {
+                    val createResponse = RetrofitClient.getRoomApi(dataStore).createRoom(
+                        RoomApi.CreateRoomRequest(room.id, room.name, room.icon, room.colorHex, room.homeId, currentUserId)
+                    )
+                    if (createResponse.isSuccessful) {
+                        roomDao.updateNew(room.copy(isSynced = true))
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("SYNC", "Error sincronizando habitación ${room.id}: ${e.message}")
+            }
+        }
+    }
+
 }

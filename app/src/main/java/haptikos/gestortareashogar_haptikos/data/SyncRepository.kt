@@ -27,6 +27,8 @@ import haptikos.gestortareashogar_haptikos.ui.enums.RecurrenceType
 import haptikos.gestortareashogar_haptikos.ui.enums.SuggestedDay
 import haptikos.gestortareashogar_haptikos.data.enumerators.PriorityLevel
 import haptikos.gestortareashogar_haptikos.data.entity.RoomEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceMemberJoin
+import haptikos.gestortareashogar_haptikos.data.entity.TaskMemberJoin
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -89,17 +91,11 @@ class SyncRepository(
                     name = home.name,
                     description = home.description,
                     isPrivate = home.isPrivate,
-
-                    // User ID del miembro local
                     creatorId = creatorMember?.userId?.takeIf { it.isNotEmpty() } ?: currentUserId,
-
-                    // Nombre del miembro local
                     creatorName = creatorMember?.name ?: currentUserName,
                     creatorLastName = creatorMember?.lastName ?: "",
                     creatorColorHex = creatorMember?.colorHex ?: "#9E9E9E",
-
                     creatorMemberId = creatorMember?.id ?: "",
-
                     invitedUsers = emptyList()
                 )
 
@@ -161,6 +157,7 @@ class SyncRepository(
 
     private suspend fun syncPendingRooms() {
         val pendingRooms = roomDao.getAllNew().first().filter { !it.isSynced }
+        val currentUserId = dataStore.userIdFlow.first()
         Log.d("SYNC", "Rooms pendientes: ${pendingRooms.size}")
         pendingRooms.forEach { room ->
             try {
@@ -179,7 +176,7 @@ class SyncRepository(
                 // Si no existe en el servidor, se crea
                 if (updateResponse.code() == 404) {
                     val createResponse = RetrofitClient.getRoomApi(dataStore).createRoom(
-                        RoomApi.CreateRoomRequest(room.id, room.name, room.icon, room.colorHex, room.homeId)
+                        RoomApi.CreateRoomRequest(room.id, room.name, room.icon, room.colorHex, room.homeId, currentUserId)
                     )
                     Log.d("SYNC", "Room creado: ${room.name} HTTP ${createResponse.code()}")
                     if (createResponse.isSuccessful) {
@@ -195,6 +192,8 @@ class SyncRepository(
     private suspend fun syncPendingTasks() {
         val pendingTasks = taskDao.getAllNew().first().filter { !it.isSynced }
         Log.d("SYNC", "Tareas pendientes: ${pendingTasks.size}")
+        val currentUserId = dataStore.userIdFlow.first()
+
         pendingTasks.forEach { task ->
             try {
                 val memberIds = taskDao.getMemberIdsForTask(task.id)
@@ -235,7 +234,8 @@ class SyncRepository(
                         roomId = task.roomId,
                         homeId = task.homeId,
                         memberIds = memberIds,
-                        isPredetemined = task.isPredetermined
+                        predetermined = task.isPredetermined,
+                        userId = currentUserId
                     )
                     val createResponse = RetrofitClient.getTaskApi(dataStore).createTask(createRequest)
                     Log.d("SYNC", "Tarea creada: ${task.title} HTTP ${createResponse.code()}")
@@ -319,7 +319,8 @@ class SyncRepository(
                     taskId = instance.taskId,
                     dueDate = instance.dueDate,
                     state = instance.state.name,
-                    memberIds = memberIds
+                    memberIds = memberIds,
+                    userId = currentUserId
                 )
                 val response = RetrofitClient.getTaskInstanceApi(dataStore).createTaskInstance(request)
                 if (response.isSuccessful) {
@@ -374,12 +375,16 @@ class SyncRepository(
 
     suspend fun syncTasksForHome(homeId: String) {
         try {
+            syncMembersForHome(homeId)
+
             val response = RetrofitClient.getTaskApi(dataStore).getTasksByHome(homeId)
 
             if (response.isSuccessful) {
                 val remoteTasks = response.body() ?: return
 
                 appDatabase.withTransaction {
+
+                    taskInstanceDao.deleteAllByHomeId(homeId)
 
                     taskDao.deleteAllByHomeId(homeId)
 
@@ -399,17 +404,39 @@ class SyncRepository(
                                 roomId = dto.roomId,
                                 homeId = dto.homeId,
                                 isSynced = true,
-                                isPredetermined = dto.isPredetermined
+                                isPredetermined = dto.predetermined
                             )
                         )
+
+                        if (dto.memberIds.isNotEmpty()) {
+                            taskDao.addTaskMemberJoin(
+                                dto.memberIds.map { TaskMemberJoin(taskId = dto.id, memberId = it) }
+                            )
+                        }
+
+                        dto.instances.forEach { inst ->
+                            taskInstanceDao.insertInstanceWithAssignedMembers(
+                                TaskInstanceEntityNew(
+                                    id = inst.id,
+                                    taskId = inst.taskId,
+                                    dueDate = inst.dueDate,
+                                    state = TaskState.valueOf(inst.state),
+                                    isSynced = true
+                                ),
+                                inst.memberIds
+                            )
+                        }
                     }
                 }
-                Log.d("SYNC", "Tareas del hogar $homeId sincronizadas exitosamente")
+
+                Log.d("SYNC", "Tareas e instancias del hogar $homeId sincronizadas")
             }
         } catch (e: Exception) {
             Log.e("SYNC", "Error al sincronizar tareas mediante FCM", e)
         }
     }
+
+
 
     suspend fun syncRoomsForHome(homeId: String) {
         try {

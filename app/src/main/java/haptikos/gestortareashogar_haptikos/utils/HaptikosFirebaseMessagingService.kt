@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
@@ -95,7 +96,12 @@ class HaptikosFirebaseMessagingService : FirebaseMessagingService() {
         val request = OneTimeWorkRequestBuilder<SyncWorker>()
             .setInputData(data)
             .build()
-        WorkManager.getInstance(applicationContext).enqueue(request)
+        WorkManager.getInstance(applicationContext)
+            .enqueueUniqueWork(
+                "$type-$homeId",
+                ExistingWorkPolicy.KEEP,
+                request
+            )
     }
 
     private fun showNotification(title: String, body: String) {

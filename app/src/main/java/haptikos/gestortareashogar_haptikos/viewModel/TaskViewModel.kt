@@ -16,13 +16,6 @@ import kotlinx.coroutines.launch
 class TaskViewModel(private val repository: AppRepository) : ViewModel() {
 
     // Escritura
-    fun addTask(task: TaskEntityNew, memberIds: List<String>) {
-        viewModelScope.launch {
-            repository.insertTaskNew(task, memberIds)
-        }
-    }
-
-
 
     fun deleteTask(task: TaskEntityNew) {
         viewModelScope.launch {
@@ -46,6 +39,7 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
     fun addTaskNew(task: TaskEntityNew, selectedMemberIds: List<String>) {
         viewModelScope.launch {
             repository.insertTaskNew(task, selectedMemberIds)
+            repository.syncPendingTasksNow()
         }
     }
 
@@ -53,6 +47,7 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
     fun updateTaskNew(task: TaskEntityNew, selectedMemberIds: List<String>) {
         viewModelScope.launch {
             repository.updateTaskNewWithMembers(task, selectedMemberIds)
+            repository.syncPendingTasksNow()
         }
     }
 
@@ -95,16 +90,11 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
     }
 
     fun confirmTaskDeletion() {
-        val task = _taskToDelete.value
-        if (task != null) {
-            viewModelScope.launch {
-
-                // Se elimina la tarea
-                repository.deleteTaskNew(task)
-
-                _taskToDelete.value = null
-                showSuccessFeedback("Actividad eliminada", "La tarea se eliminó correctamente.")
-            }
+        val task = _taskToDelete.value ?: return
+        viewModelScope.launch {
+            repository.deleteTaskNew(task)
+            _taskToDelete.value = null
+            showSuccessFeedback("Actividad eliminada", "La tarea se eliminó correctamente.")
         }
     }
 
@@ -132,7 +122,8 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
     fun confirmPause(pausedUntil: Long) {
         val task = _taskToPause.value ?: return
         viewModelScope.launch {
-            repository.updateTaskOnly(task.copy(pausedUntil = pausedUntil))
+            repository.updateTaskOnly(task.copy(pausedUntil = pausedUntil, isSynced = false))
+            repository.syncPendingTasksNow()
             _taskToPause.value = null
             showSuccessFeedback(
                 title = "Tarea pausada",
@@ -143,7 +134,8 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
 
     fun resumeTask(task: TaskEntityNew) {
         viewModelScope.launch {
-            repository.updateTaskOnly(task.copy(pausedUntil = null))
+            repository.updateTaskOnly(task.copy(pausedUntil = null, isSynced = false))
+            repository.syncPendingTasksNow()
             showSuccessFeedback(
                 title = "Tarea reanudada",
                 subtitle = "La tarea vuelve a aparecer como pendiente."
