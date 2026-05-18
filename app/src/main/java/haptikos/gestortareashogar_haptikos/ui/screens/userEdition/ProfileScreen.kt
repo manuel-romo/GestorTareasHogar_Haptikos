@@ -1,4 +1,4 @@
-package haptikos.gestortareashogar_haptikos.ui.screens.pruebaUserEdition
+package haptikos.gestortareashogar_haptikos.ui.screens.userEdition
 
 import android.Manifest
 import android.content.Context
@@ -12,18 +12,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -54,7 +51,7 @@ import androidx.core.content.FileProvider
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.ui.components.NotificationList
 import haptikos.gestortareashogar_haptikos.ui.screens.formTask.SectionTitle
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel

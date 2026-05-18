@@ -68,8 +68,6 @@ interface HomeApi {
     @DELETE("/api/homes/{homeId}")
     suspend fun deleteHome(@Path("homeId") homeId: String): Response<Void>
 
-
-
     data class RegenerateCodeResponse(val inviteCode: String)
 
     @POST("/api/homes/{homeId}/regenerate-code")
@@ -100,7 +98,6 @@ interface HomeApi {
     )
 
 
-
     @GET("/api/homes/by-code/{inviteCode}")
     suspend fun findHomeByCode(
         @Path("inviteCode") inviteCode: String,
@@ -110,5 +107,10 @@ interface HomeApi {
     @POST("/api/homes/join")
     suspend fun joinHome(@Body request: JoinHomeRequest): Response<JoinHomeResponse>
 
+    @DELETE("/api/homes/{homeId}/members/{userId}")
+    suspend fun leaveHome(
+        @Path("homeId") homeId: String,
+        @Path("userId") userId: String
+    ): Response<Void>
 
 }

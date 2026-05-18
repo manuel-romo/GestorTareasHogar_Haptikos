@@ -134,7 +134,7 @@ fun LogInContent(
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 shape = RoundedCornerShape(topStart = 40.dp, topEnd = 40.dp),
-                color = Color.White
+                color = MaterialTheme.colorScheme.surface
             ) {
                 Column(
                     modifier = Modifier
@@ -148,12 +148,13 @@ fun LogInContent(
                         text = "¡Hola de nuevo! 👋",
                         fontSize = 24.sp,
                         fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.fillMaxWidth()
                     )
                     Text(
                         text = "Ingresa para ver tus tareas pendientes",
                         fontSize = 14.sp,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
                     )
 
@@ -170,7 +171,8 @@ fun LogInContent(
                             Icon(
                                 imageVector = ImageVector.vectorResource(id = R.drawable.ic_email),
                                 contentDescription = null,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     )
@@ -190,7 +192,8 @@ fun LogInContent(
                             Icon(
                                 imageVector = ImageVector.vectorResource(id = R.drawable.ic_padlock),
                                 contentDescription = null,
-                                modifier = Modifier.size(24.dp)
+                                modifier = Modifier.size(24.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
                         isPassword = true,
@@ -198,7 +201,7 @@ fun LogInContent(
                         trailingIcon = {
                             IconButton(
                                 onClick = {
-                                passwordVisible = !passwordVisible
+                                    passwordVisible = !passwordVisible
                                 }
                             )
                             {
@@ -207,7 +210,8 @@ fun LogInContent(
                                         if (passwordVisible) R.drawable.ic_eye_opened else R.drawable.ic_eye_closed
                                     ),
                                     contentDescription = if (passwordVisible) "Ocultar contraseña" else "Ver contraseña",
-                                    modifier = Modifier.size(24.dp)
+                                    modifier = Modifier.size(24.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -227,7 +231,7 @@ fun LogInContent(
 
                     AnimatedVisibility(visible = errorMessage != null) {
                         Text(
-                            text = errorMessage?: "Credenciales inválidas",
+                            text = errorMessage ?: "Credenciales inválidas",
                             color = MaterialTheme.colorScheme.error,
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium,
@@ -240,7 +244,6 @@ fun LogInContent(
 
                     Button(
                         onClick = {
-                            // Se valida si está cargando para evitar eniar clics dobles.
                             if (!isLoading) {
                                 onLoginClick(email, password)
                             }
@@ -252,17 +255,21 @@ fun LogInContent(
                             containerColor = MaterialTheme.colorScheme.primary
                         ),
                         shape = RoundedCornerShape(16.dp),
-
                         enabled = !isLoading
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(24.dp),
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text("Ingresar", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            Text(
+                                text = "Ingresar",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
                         }
                     }
 
@@ -271,16 +278,20 @@ fun LogInContent(
                         modifier = Modifier.padding(vertical = 20.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        HorizontalDivider(modifier = Modifier.weight(1f), color = Color.LightGray)
+                        HorizontalDivider(
+                            modifier = Modifier.weight(1f),
+                            color = MaterialTheme.colorScheme.surfaceVariant
+                        )
                         Text(
-                            " O continúa con ",
+                            text = " O continúa con ",
                             modifier = Modifier.padding(horizontal = 8.dp),
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 12.sp
                         )
                         HorizontalDivider(
                             modifier = Modifier.weight(1f),
-                            color = Color.LightGray)
+                            color = MaterialTheme.colorScheme.surfaceVariant
+                        )
                     }
 
                     // Botón de Huella
@@ -293,32 +304,39 @@ fun LogInContent(
                                     subtitle = "Usa tu huella para acceder a tus tareas",
                                     onSuccess = { onBiometricSuccess() },
                                     onFailed = { onBiometricError("Huella no reconocida. Intenta de nuevo.") },
-                                    onError = { errorMessage ->
-                                        errorMessage?.let { onBiometricError(it) }
+                                    onError = { errorMsg ->
+                                        errorMsg?.let { onBiometricError(it) }
                                     }
                                 )
                             }
                         },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, Color.LightGray)
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
 
                         Icon(
                             painter = painterResource(id = R.drawable.ic_fingerprint),
                             contentDescription = "Icono de huella",
-                            modifier = Modifier.size(24.dp)
+                            modifier = Modifier.size(24.dp),
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
 
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Escanear huella digital", color = Color.Black)
+                        Text(
+                            text = "Escanear huella digital",
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(32.dp))
 
                     // Footer
                     Row(horizontalArrangement = Arrangement.Center) {
-                        Text("¿Primera vez aquí? ", color = Color.Gray)
+                        Text(
+                            text = "¿Primera vez aquí? ",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         Text(
                             text = "Crear cuenta gratis",
                             color = MaterialTheme.colorScheme.primary,
@@ -334,7 +352,6 @@ fun LogInContent(
         }
     }
 }
-
 
 @Preview(showBackground = true)
 @Composable

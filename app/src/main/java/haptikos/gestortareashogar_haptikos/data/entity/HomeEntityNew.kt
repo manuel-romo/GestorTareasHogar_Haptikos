@@ -1,4 +1,4 @@
-package haptikos.gestortareashogar_haptikos.data.nuevasEntity
+package haptikos.gestortareashogar_haptikos.data.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

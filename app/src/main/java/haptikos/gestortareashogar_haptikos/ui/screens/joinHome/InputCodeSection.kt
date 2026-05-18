@@ -56,6 +56,15 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkGray
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkText
+import haptikos.gestortareashogar_haptikos.ui.theme.IndigoBlue
+import haptikos.gestortareashogar_haptikos.ui.theme.LightRed
+import haptikos.gestortareashogar_haptikos.ui.theme.MediumDarkGray
+import haptikos.gestortareashogar_haptikos.ui.theme.PaleBlue
+import haptikos.gestortareashogar_haptikos.ui.theme.Red
+import haptikos.gestortareashogar_haptikos.ui.theme.SilverGray
+import haptikos.gestortareashogar_haptikos.ui.theme.White
 
 @Composable
 fun InputCodeSection(
@@ -82,7 +91,9 @@ fun InputCodeSection(
     ) {
         Text(
             text = "INTRODUCE EL CÓDIGO",
-            color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+            color = MediumDarkGray,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
         )
 
@@ -132,29 +143,29 @@ fun InputCodeSection(
                             .weight(1f)
                             .aspectRatio(0.85f)
                             .padding(horizontal = 3.dp)
-                            .background(Color.White, RoundedCornerShape(8.dp))
+                            .background(White, RoundedCornerShape(8.dp))
                             .border(
                                 width = if (isCurrentBox) 2.dp else 1.dp,
-                                color = if (isCurrentBox) Color(0xFF4A68FF) else Color(0xFFE0E0E0),
+                                color = if (isCurrentBox) IndigoBlue else SilverGray,
                                 shape = RoundedCornerShape(8.dp)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
                         if (char.isNotEmpty()) {
                             Text(char, fontSize = 20.sp, fontWeight = FontWeight.Bold,
-                                color = if (isCurrentBox) Color(0xFF4A68FF) else Color.Black)
+                                color = if (isCurrentBox) IndigoBlue else DarkText)
                         } else if (isCurrentBox) {
                             // Cursor
                             Box(
                                 modifier = Modifier
                                     .width(2.dp).height(22.dp)
-                                    .background(Color(0xFF4A68FF).copy(alpha = cursorAlpha))
+                                    .background(IndigoBlue.copy(alpha = cursorAlpha))
                             )
                         }
                     }
 
                     if (i == 3) {
-                        Text("-", color = Color.Gray,
+                        Text("-", color = MediumDarkGray,
                             modifier = Modifier.padding(horizontal = 6.dp),
                             fontSize = 24.sp, fontWeight = FontWeight.Light)
                     }
@@ -164,7 +175,7 @@ fun InputCodeSection(
 
         Text(
             text = "Ej: MICA-8F2K",
-            color = Color.LightGray,
+            color = DarkGray,
             fontSize = 12.sp,
             modifier = Modifier.padding(top = 16.dp)
         )
@@ -174,24 +185,23 @@ fun InputCodeSection(
         // Alerta de Error
         if (errorMessage != null) {
             Surface(
-                color = Color(0xFFFFF5F5),
+                color = LightRed,
                 shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, Color(0xFFFFEBEE)),
+                border = BorderStroke(1.dp, Color(0xFFFFCDD2)),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Ícono de exclamación
                         Icon(
                             painter = painterResource(id = R.drawable.ic_circle_information),
                             contentDescription = "Error",
-                            tint = Color.Red,
+                            tint = Red,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = "Código incorrecto",
-                            color = Color.Red,
+                            color = Red,
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )
@@ -199,7 +209,7 @@ fun InputCodeSection(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = errorMessage,
-                        color = Color(0xFFE53935),
+                        color = Red,
                         fontSize = 14.sp,
                         modifier = Modifier.padding(start = 28.dp)
                     )
@@ -208,11 +218,10 @@ fun InputCodeSection(
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-
         val context = LocalContext.current
 
         Surface(
-            color = Color(0xFFF0F5FF),
+            color = PaleBlue,
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -222,12 +231,12 @@ fun InputCodeSection(
             ) {
                 Text(
                     text = "💡 Si tienes el código copiado, pégalo aquí.",
-                    color = Color(0xFF4A68FF), fontSize = 13.sp,
+                    color = IndigoBlue, fontSize = 13.sp,
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(Modifier.width(8.dp))
                 Surface(
-                    color = Color(0xFF4A68FF),
+                    color = IndigoBlue,
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.clickable {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -236,7 +245,7 @@ fun InputCodeSection(
                         if (cleaned.isNotEmpty()) onCodeChange(cleaned)
                     }
                 ) {
-                    Text("Pegar", color = Color.White, fontWeight = FontWeight.Bold,
+                    Text("Pegar", color = White, fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         fontSize = 13.sp)
                 }
@@ -252,14 +261,14 @@ fun InputCodeSection(
                 .fillMaxWidth()
                 .height(56.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color(0xFF4A68FF),
-                disabledContainerColor = Color(0xFFD0D6FF),
+                containerColor = IndigoBlue,
+                disabledContainerColor = PaleBlue,
                 disabledContentColor = Color(0xFF8B9FFF)
             ),
             shape = RoundedCornerShape(16.dp)
         ) {
             if (isLoading) {
-                CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                CircularProgressIndicator(color = White, modifier = Modifier.size(24.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Buscando hogar...")
             } else {

@@ -30,7 +30,7 @@ fun LogInHeader(modifier: Modifier = Modifier) {
         Surface(
             modifier = Modifier.size(80.dp),
             shape = RoundedCornerShape(20.dp),
-            color = Color.White
+            color = MaterialTheme.colorScheme.surface
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_email),
@@ -41,15 +41,15 @@ fun LogInHeader(modifier: Modifier = Modifier) {
         }
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "HomeTasks",
+            text = "Haptikos",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.White
+            color = MaterialTheme.colorScheme.onPrimary
         )
         Text(
-            text = "Tu hogar, más organizado 🏠",
+            text = "Tu hogar, más organizado \uD83C\uDFE0",
             fontSize = 16.sp,
-            color = Color.White.copy(alpha = 0.9f)
+            color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f)
         )
     }
 }

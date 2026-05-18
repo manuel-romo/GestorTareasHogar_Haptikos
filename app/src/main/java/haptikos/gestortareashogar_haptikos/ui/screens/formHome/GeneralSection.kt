@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,13 +49,17 @@ fun GeneralSection(
     onPermissionChange: (HomePermission) -> Unit
 ) {
     var isEditingName by remember { mutableStateOf(false) }
-    var currentName by remember { mutableStateOf(homeName) }
+
+    var currentName by remember(homeName) { mutableStateOf(homeName) }
 
     var showPermissionsSheet by remember { mutableStateOf(false) }
-    var selectedPermission by remember { mutableStateOf(HomePermission.CREATOR_ONLY) }
+
+    var selectedPermission by remember(editPermission) { mutableStateOf(editPermission) }
 
     Column {
         SectionTitleHeader(icon = R.drawable.ic_shield, title = "GENERAL")
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -64,83 +69,94 @@ fun GeneralSection(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
 
-                // Nombre de hogar
-                if (isEditingName) {
-                    Text("Nombre del hogar", color = Color.Gray, fontSize = 12.sp)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        OutlinedTextField(
-                            value = currentName,
-                            onValueChange = { currentName = it },
-                            modifier = Modifier.weight(1f).height(50.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFFFF8A00),
-                                unfocusedBorderColor = Color(0xFFFF8A00),
-                                focusedContainerColor = Color(0xFFFFF8F0),
-                                unfocusedContainerColor = Color(0xFFFFF8F0)
-                            ),
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        // Botón Guardar
-                        Box(
-                            modifier = Modifier
-                                .size(37.dp)
-                                .background(Color(0xFFFF8A00), RoundedCornerShape(15.dp))
-                                .clickable {
-                                    isEditingName = false
-                                    onNameSave(currentName)
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_check),
-                                contentDescription = "Guardar",
-                                tint = Color.White,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-
-                        // Botón Cancelar
-                        Box(
-                            modifier = Modifier
-                                .size(37.dp)
-                                .background(Color(0xFFF5F5F5), RoundedCornerShape(15.dp))
-                                .clickable {
-                                    isEditingName = false
-                                    currentName = homeName
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_cross),
-                                contentDescription = "Cancelar",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
-                } else {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Column(modifier = Modifier.weight(1f)) {
+                androidx.compose.animation.Crossfade(
+                    targetState = isEditingName,
+                    label = "edit_name_anim"
+                ) { editing ->
+                    if (editing) {
+                        Column {
                             Text("Nombre del hogar", color = Color.Gray, fontSize = 12.sp)
-                            Text(currentName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                OutlinedTextField(
+                                    value = currentName,
+                                    onValueChange = { currentName = it },
+                                    modifier = Modifier.weight(1f).height(50.dp),
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.primary,
+                                        focusedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.primaryContainer
+                                    ),
+                                    singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                // Botón Guardar
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            if (currentName.isNotBlank()) {
+                                                isEditingName = false
+                                                onNameSave(currentName)
+                                            }
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_check),
+                                        contentDescription = "Guardar",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(8.dp))
+
+                                // Botón Cancelar
+                                Box(
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
+                                        .clickable {
+                                            isEditingName = false
+                                            currentName = homeName
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_cross),
+                                        contentDescription = "Cancelar",
+                                        tint = Color.Gray,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
                         }
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .background(Color(0xFFF5F5F5), CircleShape)
-                                .clickable { isEditingName = true },
-                            contentAlignment = Alignment.Center
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(painterResource(R.drawable.ic_pencil), null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Nombre del hogar", color = Color.Gray, fontSize = 12.sp)
+                                Text(currentName, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(Color(0xFFF5F5F5), CircleShape)
+                                    .clickable { isEditingName = true },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(painterResource(R.drawable.ic_pencil), null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+                            }
                         }
                     }
                 }
@@ -150,13 +166,17 @@ fun GeneralSection(
                 // Permisos
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth().clickable { showPermissionsSheet = true }.padding(vertical = 4.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable { showPermissionsSheet = true }
+                        .padding(vertical = 4.dp)
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Permisos de edición", color = Color.Gray, fontSize = 12.sp)
                         Text(
                             text = "${selectedPermission.emoji} ${selectedPermission.title}",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -182,14 +202,3 @@ fun GeneralSection(
         itemSubtitle = { it.description }
     )
 }
-
-
-/*
-@Preview
-@Composable
-fun GeneralSectionPreview(){
-    GestorTareasHogar_HaptikosTheme {
-        GeneralSection("")
-    }
-}
- */

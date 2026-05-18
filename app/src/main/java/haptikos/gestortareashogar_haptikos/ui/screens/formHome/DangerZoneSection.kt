@@ -49,17 +49,19 @@ fun DangerZoneSection(
     val selectedHome by homeViewModel.selectedHome.collectAsState()
     val isDeletingHome by homeViewModel.isDeletingHome.collectAsState()
     val showSuccessFeedback by homeViewModel.showSuccessFeedback.collectAsState()
-    val biometricError by homeViewModel.biometricError.collectAsState()
+    val actionError by homeViewModel.actionError.collectAsState()
 
     Column {
         SectionTitleHeader(icon = R.drawable.ic_danger, title = "ZONA DE PELIGRO")
 
         Card(
+            onClick = { homeViewModel.initiateHomeDeletion() },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
-                .clickable { homeViewModel.initiateHomeDeletion() },
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+                .padding(top = 12.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
             shape = RoundedCornerShape(16.dp),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
@@ -70,15 +72,31 @@ fun DangerZoneSection(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .background(Color(0xFFFFF0F0), CircleShape),
+                        .background(
+                            color = MaterialTheme.colorScheme.errorContainer,
+                            shape = CircleShape
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(painterResource(R.drawable.ic_trash), null, tint = Color(0xFFFF4B4B), modifier = Modifier.size(23.dp))
+                    Icon(
+                        painter = painterResource(R.drawable.ic_trash),
+                        contentDescription = "Eliminar",
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(23.dp)
+                    )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Eliminar hogar", fontWeight = FontWeight.Bold, color = Color(0xFFFF4B4B))
-                    Text("Elimina el hogar y todos sus datos permanentemente", color = Color.Gray, fontSize = 12.sp)
+                    Text(
+                        text = "Eliminar hogar",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "Elimina el hogar y todos sus datos permanentemente",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp
+                    )
                 }
             }
         }
@@ -128,7 +146,7 @@ fun DangerZoneSection(
     }
 
     // Error
-    biometricError?.let { msg ->
+    actionError?.let { msg ->
         FeedbackBottomSheet(
             title = "Error de autenticación",
             subtitle = msg,

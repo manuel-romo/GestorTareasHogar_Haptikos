@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -21,20 +21,15 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.ui.components.NotificationList
 
 @Composable
@@ -52,7 +47,6 @@ fun NotificationsSection(
             shape = RoundedCornerShape(16.dp)
         ) {
             Column {
-                // Componente global
                 NotificationList(
                     notifyTaskReminders = home.notifyTaskReminders,
                     notifyTaskCompleted = home.notifyTaskCompleted,
@@ -63,7 +57,6 @@ fun NotificationsSection(
                     isEnabled = home.notifyAllMembers
                 )
 
-                // Sección de control global (Solo visible en Configuración de Hogar)
                 Surface(color = Color(0xFFFFF8F0)) {
                     Column {
                         NotificationMasterRow(
@@ -75,7 +68,10 @@ fun NotificationsSection(
                             activeColor = Color(0xFFFF8A00)
                         )
 
-                        HorizontalDivider(color = Color(0xFFFFE0B2), modifier = Modifier.padding(horizontal = 16.dp))
+                        HorizontalDivider(
+                            color = Color(0xFFFFE0B2),
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
 
                         NotificationMasterRow(
                             icon = R.drawable.ic_padlock,
@@ -93,8 +89,6 @@ fun NotificationsSection(
     }
 }
 
-
-
 @Composable
 fun NotificationMasterRow(
     icon: Int,
@@ -106,14 +100,24 @@ fun NotificationMasterRow(
     enabled: Boolean = true
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(
+                value = isChecked,
+                onValueChange = onCheckedChange,
+                enabled = enabled,
+                role = Role.Switch
+            )
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            modifier = Modifier.size(36.dp).background(
-                if(enabled) activeColor else Color.LightGray,
-                RoundedCornerShape(10.dp)
-            ),
+            modifier = Modifier
+                .size(36.dp)
+                .background(
+                    if(enabled) activeColor else Color.LightGray,
+                    RoundedCornerShape(10.dp)
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(painterResource(icon), null, tint = Color.White, modifier = Modifier.size(20.dp))
@@ -122,13 +126,22 @@ fun NotificationMasterRow(
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.Bold, color = if(enabled) activeColor else Color.Gray, style = MaterialTheme.typography.bodyMedium)
-            Text(desc, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+            Text(
+                title,
+                fontWeight = FontWeight.Bold,
+                color = if(enabled) activeColor else Color.Gray,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                desc,
+                color = Color.Gray,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
         Switch(
             checked = isChecked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = null,
             enabled = enabled,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,

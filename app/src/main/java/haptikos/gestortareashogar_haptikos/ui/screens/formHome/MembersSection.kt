@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.formHome
 
+import android.graphics.Color.parseColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,12 +27,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -39,7 +42,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.ui.theme.Black
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkAmber
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkBlue
+import haptikos.gestortareashogar_haptikos.ui.theme.Gray
+import haptikos.gestortareashogar_haptikos.ui.theme.LightAmber
+import haptikos.gestortareashogar_haptikos.ui.theme.LightBlue
+import haptikos.gestortareashogar_haptikos.ui.theme.LightRed
+import haptikos.gestortareashogar_haptikos.ui.theme.MediumDarkGray
+import haptikos.gestortareashogar_haptikos.ui.theme.PaleGray
+import haptikos.gestortareashogar_haptikos.ui.theme.Red
+import haptikos.gestortareashogar_haptikos.ui.theme.SilverGray
+import haptikos.gestortareashogar_haptikos.ui.theme.SmokeGray
+import haptikos.gestortareashogar_haptikos.ui.theme.White
+import haptikos.gestortareashogar_haptikos.ui.theme.WhiteGray
+import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel.MemberModel
 
 data class RoleStyles(
     val text: String,
@@ -49,54 +68,60 @@ data class RoleStyles(
 )
 
 @Composable
-fun HomeMembersSection(members: List<MemberEntityNew>) {
-    // Estados para control de diálogos
+fun MembersSection(
+    members: List<MemberModel>,
+    memberViewModel: MemberViewModel,
+    homeId: String,
+    isCreator: Boolean
+) {
     var memberToEdit by remember { mutableStateOf<MemberEntityNew?>(null) }
     var memberToDelete by remember { mutableStateOf<MemberEntityNew?>(null) }
-
 
     Column {
         SectionTitleHeader(icon = R.drawable.ic_users, title = "MIEMBROS DEL HOGAR")
 
+        Spacer(modifier = Modifier.height(8.dp))
+
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = White),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             shape = RoundedCornerShape(16.dp)
         ) {
             Column {
-                members.forEachIndexed { index, member ->
-                    val isCurrentUser = index == 0
+
+                members.forEachIndexed { index, model ->
+
+                    val taskCount by memberViewModel.getCompletedTaskCountForMember(model.member.id).collectAsState(initial = 0)
 
                     MemberItem(
-                        member = member,
-                        taskCount = (20..50).random(),
-                        isCurrentUser = isCurrentUser,
-                        onEditClick = { memberToEdit = member },
-                        onDeleteClick = { memberToDelete = member }
+                        member = model.member,
+                        taskCount = taskCount,
+                        isCurrentUser = model.isCurrentUser,
+                        isCreator = isCreator,
+                        onEditClick = { memberToEdit = model.member },
+                        onDeleteClick = { memberToDelete = model.member }
                     )
 
                     if (index < members.size - 1) {
-                        HorizontalDivider(color = Color(0xFFF0F0F0), modifier = Modifier.padding(horizontal = 16.dp))
+                        HorizontalDivider(color = WhiteGray, modifier = Modifier.padding(horizontal = 16.dp))
                     }
                 }
             }
         }
     }
 
-    // Edición
     memberToEdit?.let { member ->
         EditRoleBottomSheet(
             member = member,
             onDismissRequest = { memberToEdit = null },
             onSaveRole = { newRole ->
-                // TODO: Actualizar rol en ViewModel
+                memberViewModel.updateMemberRole(member.id, homeId, newRole)
                 memberToEdit = null
             }
         )
     }
 
-    // Eliminación
     memberToDelete?.let { member ->
         ConfirmDeleteBottomSheet(
             title = "¿Eliminar a ${member.name}?",
@@ -106,33 +131,32 @@ fun HomeMembersSection(members: List<MemberEntityNew>) {
             confirmButtonText = "Sí, eliminar",
             onDismissRequest = { memberToDelete = null },
             onConfirmDelete = {
-                // TODO eliminación de miembro
+                memberViewModel.removeMemberFromHome(member.id, homeId)
                 memberToDelete = null
             }
         )
     }
 }
 
-
 @Composable
 fun MemberRoleBadge(role: MemberRole) {
     val styles = when (role) {
         MemberRole.CREATOR -> RoleStyles(
             "Creador",
-            Color(0xFFFFECB3),
-            Color(0xFFFFA000),
+            LightAmber,
+            DarkAmber,
             R.drawable.ic_star
         )
         MemberRole.ADMIN -> RoleStyles(
             "Administrador",
-            Color(0xFFE3F2FD),
-            Color(0xFF1976D2),
+            LightBlue,
+            DarkBlue,
             R.drawable.ic_shield
         )
         MemberRole.MEMBER -> RoleStyles(
             "Miembro",
-            Color(0xFFF5F5F5),
-            Color(0xFF757575),
+            SmokeGray,
+            MediumDarkGray,
             R.drawable.ic_user
         )
     }
@@ -147,10 +171,10 @@ fun MemberRoleBadge(role: MemberRole) {
         ) {
             Icon(
                 painterResource(styles.iconRes),
-                null,
-                modifier = Modifier
-                    .size(14.dp),
-                tint = styles.contentColor)
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = styles.contentColor
+            )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = styles.text,
@@ -167,19 +191,32 @@ fun MemberItem(
     member: MemberEntityNew,
     taskCount: Int,
     isCurrentUser: Boolean,
+    isCreator: Boolean,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
+
+    val avatarColor = remember(member.colorHex) {
+        try {
+            Color(parseColor(member.colorHex))
+        } catch (e: Exception) {
+            Gray
+        }
+    }
+
     Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Avatar circular
         Box(
-            modifier = Modifier.size(48.dp).background(Color(android.graphics.Color.parseColor(member.colorHex)), CircleShape),
+            modifier = Modifier
+                .size(48.dp)
+                .background(avatarColor, CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text(member.name.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+            Text(member.name.take(1).uppercase(), color = White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
         }
 
         Spacer(modifier = Modifier.width(12.dp))
@@ -189,8 +226,17 @@ fun MemberItem(
                 Text(member.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                 if (isCurrentUser) {
                     Spacer(modifier = Modifier.width(6.dp))
-                    Surface(color = Color(0xFFFFE0B2), shape = RoundedCornerShape(4.dp)) {
-                        Text(" Tú ", color = Color(0xFFE65100), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = " Tú ",
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
                     }
                 }
             }
@@ -198,23 +244,36 @@ fun MemberItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 MemberRoleBadge(member.role)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("$taskCount tareas ✓", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Text("$taskCount tareas ✓", style = MaterialTheme.typography.bodySmall, color = MediumDarkGray)
             }
         }
 
-        if (member.role != MemberRole.CREATOR) {
+        if (isCreator && member.role != MemberRole.CREATOR) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(
-                    modifier = Modifier.size(32.dp).background(Color(0xFFF5F5F5), CircleShape).clickable { onEditClick() },
-                    contentAlignment = Alignment.Center
+                Surface(
+                    color = SmokeGray,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .clickable { onEditClick() }
                 ) {
-                    Icon(painterResource(R.drawable.ic_pencil), "Editar", modifier = Modifier.size(16.dp), tint = Color.Gray)
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(painterResource(R.drawable.ic_pencil), "Editar", modifier = Modifier.size(16.dp), tint = MediumDarkGray)
+                    }
                 }
-                Box(
-                    modifier = Modifier.size(32.dp).background(Color(0xFFFFEBEE), CircleShape).clickable { onDeleteClick() },
-                    contentAlignment = Alignment.Center
+
+                Surface(
+                    color = LightRed,
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .clickable { onDeleteClick() }
                 ) {
-                    Icon(painterResource(R.drawable.ic_user_cross), "Eliminar", modifier = Modifier.size(16.dp), tint = Color.Red)
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(painterResource(R.drawable.ic_user_cross), "Eliminar", modifier = Modifier.size(16.dp), tint = Red)
+                    }
                 }
             }
         }
@@ -229,13 +288,12 @@ fun EditRoleBottomSheet(
     onSaveRole: (MemberRole) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    // Estado local para rol seleccionado antes de guardar
-    var selectedRole by remember { mutableStateOf(member.role) }
+    var selectedRole by remember(member.role) { mutableStateOf(member.role) }
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         sheetState = sheetState,
-        containerColor = Color.White,
+        containerColor = White,
         dragHandle = { BottomSheetDefaults.DragHandle() }
     ) {
         Column(
@@ -243,7 +301,6 @@ fun EditRoleBottomSheet(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 16.dp)
         ) {
-            // Título y botón cerrar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -253,51 +310,57 @@ fun EditRoleBottomSheet(
                     text = "Cambiar rol de ${member.name}",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Black
                 )
-                Box(
+
+                Surface(
+                    color = SmokeGray,
+                    shape = CircleShape,
                     modifier = Modifier
                         .size(32.dp)
-                        .background(Color(0xFFF5F5F5), CircleShape)
-                        .clickable { onDismissRequest() },
-                    contentAlignment = Alignment.Center
+                        .clip(CircleShape)
+                        .clickable { onDismissRequest() }
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_cross),
-                        contentDescription = "Cerrar",
-                        modifier = Modifier.size(16.dp),
-                        tint = Color.Gray
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_cross),
+                            contentDescription = "Cerrar",
+                            modifier = Modifier.size(16.dp),
+                            tint = MediumDarkGray
+                        )
+                    }
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Tarjeta del usuario
+            val avatarColor = remember(member.colorHex) {
+                try { Color(parseColor(member.colorHex)) } catch (e: Exception) { Gray }
+            }
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFF8F9FA), RoundedCornerShape(12.dp))
+                    .background(PaleGray, RoundedCornerShape(12.dp))
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .background(Color(android.graphics.Color.parseColor(member.colorHex)), CircleShape),
+                        .background(avatarColor, CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(member.name.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+                    Text(member.name.take(1).uppercase(), color = White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(member.name, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            Text("ROL EN EL HOGAR", color = Color.Gray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+            Text("ROL EN EL HOGAR", color = MediumDarkGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Botones de selección de Rol
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 RoleSelectionButton(
                     modifier = Modifier.weight(1f),
@@ -317,26 +380,27 @@ fun EditRoleBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Descripción de Rol
             val description = if (selectedRole == MemberRole.ADMIN) {
                 "✏️ Puede editar tareas, habitaciones y gestionar miembros."
             } else {
                 "✅ Solo puede ver y completar sus tareas asignadas."
             }
-            Text(text = description, color = Color.Gray, fontSize = 12.sp)
+            Text(text = description, color = MediumDarkGray, fontSize = 12.sp)
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Botón Guardar
-            Box(
+            Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .background(Color(0xFFFF8A00), RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .clickable { onSaveRole(selectedRole) },
-                contentAlignment = Alignment.Center
+                color = MaterialTheme.colorScheme.primary,
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Text("✓ Guardar cambios", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Box(contentAlignment = Alignment.Center) {
+                    Text("✓ Guardar cambios", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
             }
             Spacer(modifier = Modifier.height(16.dp))
         }
@@ -351,11 +415,13 @@ fun RoleSelectionButton(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor = if (isSelected) Color(0xFFFF8A00) else Color(0xFFE0E0E0)
-    val contentColor = if (isSelected) Color(0xFFFF8A00) else Color.Gray
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else SilverGray
+    val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MediumDarkGray
 
     Surface(
-        modifier = modifier.clickable { onClick() },
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
         color = Color.Transparent

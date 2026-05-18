@@ -1,4 +1,4 @@
-package haptikos.gestortareashogar_haptikos.data.nuevasEntity
+package haptikos.gestortareashogar_haptikos.data.entity
 
 import androidx.room.Entity
 import androidx.room.ForeignKey
@@ -41,5 +41,6 @@ data class TaskEntityNew(
     val lastMemberIndex: Int = 0,
     val pausedUntil: Long? = null,
     val isSynced: Boolean = false,
-    val isDeleted: Boolean = false
+    val isDeleted: Boolean = false,
+    val isPredetermined: Boolean
 )

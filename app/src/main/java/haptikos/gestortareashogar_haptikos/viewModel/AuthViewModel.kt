@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.viewModel
 
+import android.util.Log
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -9,6 +10,7 @@ import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import haptikos.gestortareashogar_haptikos.data.SyncRepository
 import haptikos.gestortareashogar_haptikos.data.enumerators.UserGender
 import haptikos.gestortareashogar_haptikos.network.RetrofitClient
+import haptikos.gestortareashogar_haptikos.utils.FcmUtils
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -125,7 +127,6 @@ class AuthViewModel(
 
             result.onSuccess { response ->
                 val token = response.token
-                val confirmedId = response.id ?: userId
 
                 if (!token.isNullOrEmpty()) {
                     dataStore.saveSession(
@@ -137,9 +138,10 @@ class AuthViewModel(
                     syncRepository.syncAll(userId)
                     _isSuccess.value = true
 
-                    val fcmToken = dataStore.fcmTokenFlow.first()
+                    val fcmToken = FcmUtils.getToken()
                     if (!fcmToken.isNullOrEmpty()) {
                         try {
+                            dataStore.saveFcmToken(fcmToken)
                             RetrofitClient.getUserApi(dataStore).updateFcmToken(
                                 userId,
                                 mapOf("fcmToken" to fcmToken)
@@ -148,16 +150,10 @@ class AuthViewModel(
                             e.printStackTrace()
                         }
                     }
-
                 } else {
                     _errorMessage.value = "Registro exitoso, pero no se recibió token de acceso"
                 }
-            }.onFailure { error ->
-                _errorMessage.value = "Error al crear la cuenta o de conexión"
-                error.printStackTrace()
             }
-
-            _isLoading.value = false
         }
     }
 
@@ -196,9 +192,12 @@ class AuthViewModel(
 
                 _isSuccess.value = true
 
-                val fcmToken = dataStore.fcmTokenFlow.first()
+                val fcmToken = FcmUtils.getToken()
+
                 if (!fcmToken.isNullOrEmpty()) {
                     try {
+                        dataStore.saveFcmToken(fcmToken)
+
                         RetrofitClient.getUserApi(dataStore).updateFcmToken(
                             userId,
                             mapOf("fcmToken" to fcmToken)

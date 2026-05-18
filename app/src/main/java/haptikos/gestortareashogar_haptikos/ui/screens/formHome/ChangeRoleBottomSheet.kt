@@ -39,7 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

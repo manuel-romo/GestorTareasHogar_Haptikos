@@ -1,5 +1,12 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.home
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -47,8 +54,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.TaskFilter
+
 
 
 @Composable
@@ -71,7 +79,9 @@ fun DashboardHeader(
     onNavigateToCreateHome: () -> Unit,
     onNavigateToJoinHome: () -> Unit,
     onNotificationsClick: () -> Unit,
-    onRewardsClick: () -> Unit
+    onRewardsClick: () -> Unit,
+    isCollapsed: Boolean = false,
+    userIsCreator: Boolean
 ) {
     val gradientBrush = Brush.verticalGradient(
         colors = listOf(
@@ -80,6 +90,10 @@ fun DashboardHeader(
         )
     )
 
+    val bottomPadding by animateDpAsState(targetValue = if (isCollapsed) 16.dp else 24.dp, label = "bottom_padding")
+    // Animamos también el espaciador del medio para evitar saltos
+    val middleSpacerHeight by animateDpAsState(targetValue = if (isCollapsed) 16.dp else 24.dp, label = "middle_spacer")
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -87,298 +101,210 @@ fun DashboardHeader(
                 brush = gradientBrush,
                 shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
             )
-            .padding(24.dp)
+            .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = bottomPadding)
     ) {
-        // Botones superiores
+        // Selector de hogares
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Selector de Hogares
             Box {
                 var expanded by remember { mutableStateOf(false) }
 
-                // Botón que muestra el nombre del hogar seleccionado
                 Surface(
-                    color = Color(0xFFFF8A00),
+                    color = MaterialTheme.colorScheme.primary,
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.clickable { expanded = true }
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { expanded = true }
                 ) {
                     Row(Modifier.padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Icon(painterResource(id = R.drawable.ic_home), contentDescription = "Casa", modifier = Modifier.size(16.dp), tint = Color.White)
-                        Text(" $currentHomeName ", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                        Icon(painterResource(id = R.drawable.ic_dropdown), contentDescription = "Expandir", modifier = Modifier.size(16.dp), tint = Color.White)
+                        Icon(painterResource(id = R.drawable.ic_home), contentDescription = "Casa", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimary)
+                        Text(" $currentHomeName ", color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Icon(painterResource(id = R.drawable.ic_dropdown), contentDescription = "Expandir", modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onPrimary)
                     }
                 }
 
-                // Menú Desplegable
                 DropdownMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
-                    modifier = Modifier
-                        .width(280.dp)
-                        .background(Color.White, RoundedCornerShape(16.dp)),
+                    modifier = Modifier.width(280.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    containerColor = MaterialTheme.colorScheme.surface,
                     properties = PopupProperties(focusable = true)
                 ) {
-                    Text(
-                        text = "MIS HOGARES",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp,
-                        color = Color.Gray,
-                        modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp)
-                    )
+                    Text("MIS HOGARES", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp))
 
-                    // Lista de hogares
                     homesList.forEach { home ->
                         val isSelected = home.name == currentHomeName
-                        val bgColor = if (isSelected) Color(0xFFFFF3E0) else Color.Transparent
+                        val bgColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
 
                         DropdownMenuItem(
                             modifier = Modifier.background(bgColor),
                             text = {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Box(
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .background(if (isSelected) Color(0xFFFF8A00) else Color(0xFFE0E0E0), RoundedCornerShape(12.dp)),
+                                        modifier = Modifier.size(40.dp).background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp)),
                                         contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(painterResource(id = R.drawable.ic_home), contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                                    }
-
+                                    ) { Icon(painterResource(id = R.drawable.ic_home), contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(20.dp)) }
                                     Spacer(modifier = Modifier.width(12.dp))
-
                                     Column {
-                                        Text(text = home.name, fontWeight = FontWeight.Bold, color = Color.Black)
-                                        // TODO: Cruzar datos con miembros reales de hogar
-                                        Text(text = "Miembros... • Rol...", fontSize = 12.sp, color = Color.Gray)
+                                        Text(text = home.name, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                        Text(text = "Miembros... • Rol...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                     }
                                 }
                             },
-                            trailingIcon = {
-                                if (isSelected) {
-                                    Box(modifier = Modifier.size(8.dp).background(Color(0xFFFF8A00), CircleShape))
-                                }
-                            },
-                            onClick = {
-                                onHomeSelected(home)
-                                expanded = false
-                            }
+                            trailingIcon = { if (isSelected) Box(modifier = Modifier.size(8.dp).background(MaterialTheme.colorScheme.primary, CircleShape)) },
+                            onClick = { onHomeSelected(home); expanded = false }
                         )
                     }
 
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color(0xFFF0F0F0))
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.surfaceVariant)
 
-                    // Opción Crear Hogar
                     DropdownMenuItem(
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(40.dp)
-                                        .background(Color(0xFF00E676), CircleShape),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_plus),
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.tertiary, CircleShape), contentAlignment = Alignment.Center) {
+                                    Icon(painterResource(id = R.drawable.ic_plus), contentDescription = null, tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(18.dp))
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Crear hogar", fontWeight = FontWeight.Bold, color = Color.Black)
-                                    Text("Comienza un nuevo hogar", fontSize = 12.sp, color = Color.Gray)
+                                    Text("Crear hogar", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("Comienza un nuevo hogar", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         },
-                        onClick = {
-                            expanded = false
-                            onNavigateToCreateHome()
-                        }
+                        onClick = { expanded = false; onNavigateToCreateHome() }
                     )
 
-                    // Unirse a Hogar
                     DropdownMenuItem(
                         text = {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Box(modifier = Modifier.size(40.dp).background(Color(0xFF2979FF), CircleShape), contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_arrow_right),
-                                        contentDescription = null,
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
+                                Box(modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.secondary, CircleShape), contentAlignment = Alignment.Center) {
+                                    Icon(painterResource(id = R.drawable.ic_arrow_right), contentDescription = null, tint = MaterialTheme.colorScheme.surface, modifier = Modifier.size(18.dp))
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text("Unirse a un hogar", fontWeight = FontWeight.Bold, color = Color.Black)
-                                    Text("Usa un código de invitación", fontSize = 12.sp, color = Color.Gray)
+                                    Text("Unirse a un hogar", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                    Text("Usa un código de invitación", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                         },
-                        onClick = {
-                            expanded = false
-                            onNavigateToJoinHome()
-                        }
+                        onClick = { expanded = false; onNavigateToJoinHome() }
                     )
                 }
             }
 
-            // Configuración de Hogar
-            val canAccessSettings = homesList.isNotEmpty() && isHomeSelected && userHasAdminPermissions
+            // Configuración / Visualización de hogar
+            val canAccessHomeDetails = homesList.isNotEmpty() && isHomeSelected
 
-            Surface(
-                color = if (canAccessSettings) Color.White.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.05f),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.clickable(enabled = canAccessSettings) { onSettingsClick() }
-            ) {
-                Icon(
-                    painterResource(id = R.drawable.ic_configuration),
-                    contentDescription = if (canAccessSettings) "Ajustes del hogar" else "Solo el creador puede editar",
-                    modifier = Modifier.padding(8.dp).size(20.dp),
-                    tint = if (canAccessSettings) Color.White else Color.White.copy(alpha = 0.4f)
-                )
+            if (canAccessHomeDetails) {
+                Surface(
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { onSettingsClick() }
+                ) {
+                    Icon(
+                        painter = painterResource(
+                            id = if (userIsCreator) R.drawable.ic_configuration else R.drawable.ic_circle_information
+                        ),
+                        contentDescription = if (userIsCreator) "Configuración del hogar" else "Detalles del hogar",
+                        modifier = Modifier.padding(8.dp).size(20.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
         }
 
-        Spacer(Modifier.height(24.dp))
-
-        // Saludo e íconos
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        // Saludo y notificaciones
+        AnimatedVisibility(
+            visible = !isCollapsed,
+            enter = expandVertically(animationSpec = tween(200)) + fadeIn(animationSpec = tween(200)),
+            exit = shrinkVertically(animationSpec = tween(200)) + fadeOut(animationSpec = tween(200))
         ) {
-            // Saludo
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "¡Hola, $userName! 👋",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                val taskMessage = when (pendingTasksCount) {
-                    0 -> "¡Semana libre! No tienes tareas pendientes"
-                    1 -> "Tienes 1 tarea pendiente esta semana"
-                    else -> "Tienes $pendingTasksCount tareas pendientes esta semana"
-                }
-                Text(
-                    text = taskMessage,
-                    color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 14.sp
-                )
-            }
-
-            // Campana y trofeo
-            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                // Campana
-                Box {
-                    Surface(
-                        color = Color.White.copy(alpha = 0.2f),
-                        shape = CircleShape,
-                        modifier = Modifier
-                            .size(44.dp)
-                            .clickable { onNotificationsClick() }
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                painterResource(id = R.drawable.ic_bell),
-                                contentDescription = "Notificaciones",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
+            Column {
+                Spacer(Modifier.height(24.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("¡Hola, $userName! 👋", fontSize = 28.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimary)
+                        val taskMessage = when (pendingTasksCount) {
+                            0 -> "¡Semana libre! No tienes tareas pendientes"
+                            1 -> "Tienes 1 tarea pendiente esta semana"
+                            else -> "Tienes $pendingTasksCount tareas pendientes esta semana"
                         }
+                        Text(taskMessage, color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f), fontSize = 14.sp)
                     }
-                    if (hasNotifications) {
-                        Box(
-                            modifier = Modifier
-                                .size(10.dp)
-                                .background(Color.Red, CircleShape)
-                                .align(Alignment.TopEnd)
-                                .offset(x = (-2).dp, y = 2.dp)
-                        )
-                    }
-                }
 
-                // Trofeo con puntos
-                Box (
-                    modifier = Modifier.clickable { onRewardsClick() }
-                ){
-                    Surface(
-                        color = Color.White.copy(alpha = 0.2f),
-                        shape = CircleShape,
-                        modifier = Modifier.size(44.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                painterResource(id = R.drawable.ic_trophy),
-                                contentDescription = "Logros",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
+                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Box {
+                            Surface(
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                                shape = CircleShape,
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .clickable { onNotificationsClick() }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) { Icon(painterResource(id = R.drawable.ic_bell), contentDescription = "Notificaciones", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp)) }
+                            }
+                            if (hasNotifications) {
+                                Box(modifier = Modifier.size(10.dp).background(MaterialTheme.colorScheme.error, CircleShape).align(Alignment.TopEnd).offset(x = (-2).dp, y = 2.dp))
+                            }
                         }
-                    }
-                    Surface(
-                        color = Color(0xFFCDDC39),
-                        shape = CircleShape,
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .offset(x = 8.dp, y = (-4).dp)
-                            .defaultMinSize(minWidth = 20.dp, minHeight = 20.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = userPoints.toString(),
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
-                                color = Color.Black
-                            )
+
+                        Box {
+                            Surface(
+                                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
+                                shape = CircleShape,
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .clip(CircleShape)
+                                    .clickable { onRewardsClick() }
+                            ) {
+                                Box(contentAlignment = Alignment.Center) { Icon(painterResource(id = R.drawable.ic_trophy), contentDescription = "Logros", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp)) }
+                            }
+                            Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape, modifier = Modifier.align(Alignment.TopEnd).offset(x = 8.dp, y = (-4).dp).defaultMinSize(minWidth = 20.dp, minHeight = 20.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Text(text = userPoints.toString(), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.onSurface) }
+                            }
                         }
                     }
                 }
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(middleSpacerHeight))
 
-        // Buscador y filtro
+        // Búsqueda y filtros
         Surface(
-            color = Color.White,
+            color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth().height(48.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            ) {
-                Icon(painterResource(id = R.drawable.ic_search), contentDescription = "Buscar", tint = Color.Gray, modifier = Modifier.size(20.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 16.dp)) {
+                Icon(painterResource(id = R.drawable.ic_search), contentDescription = "Buscar", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
 
-                // Campo de texto
                 BasicTextField(
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
                     singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontSize = 16.sp
-                    ),
+                    textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface, fontSize = 16.sp),
                     modifier = Modifier.weight(1f),
                     decorationBox = { innerTextField ->
                         Box(contentAlignment = Alignment.CenterStart) {
-                            if (searchQuery.isEmpty()) {
-                                Text("Buscar tareas...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp)
-                            }
+                            if (searchQuery.isEmpty()) Text("Buscar tareas...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp)
                             innerTextField()
                         }
                     }
                 )
 
-                // Botón de filtro y menú
                 Box(modifier = Modifier.wrapContentSize(Alignment.TopEnd)) {
                     var showFilterMenu by remember { mutableStateOf(false) }
 
@@ -387,17 +313,19 @@ fun DashboardHeader(
                         contentDescription = "Filtrar",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier
-                            .size(20.dp)
+                            .size(28.dp)
+                            .clip(CircleShape)
                             .clickable { showFilterMenu = true }
+                            .padding(4.dp)
                     )
 
                     DropdownMenu(
                         expanded = showFilterMenu,
                         onDismissRequest = { showFilterMenu = false },
-                        modifier = Modifier.background(Color.White)
+                        shape = RoundedCornerShape(16.dp),
+                        containerColor = MaterialTheme.colorScheme.surface
                     ) {
-                        // Asignación
-                        Text("Asignación", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = Color.Gray)
+                        Text("Asignación", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         DropdownMenuItem(
                             text = { Text("Todas las tareas") },
                             onClick = { onFilterChange(currentFilter.copy(showOnlyMine = false)); showFilterMenu = false },
@@ -409,10 +337,9 @@ fun DashboardHeader(
                             trailingIcon = { if (currentFilter.showOnlyMine) Icon(painterResource(id = R.drawable.ic_check), "Activo", modifier = Modifier.size(20.dp)) else null }
                         )
 
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), color = MaterialTheme.colorScheme.surfaceVariant)
 
-                        // Estado
-                        Text("Estado", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = Color.Gray)
+                        Text("Estado", fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                         DropdownMenuItem(
                             text = { Text("Todos los estados") },
                             onClick = { onFilterChange(currentFilter.copy(status = null)); showFilterMenu = false },
@@ -433,29 +360,29 @@ fun DashboardHeader(
             }
         }
 
-        Spacer(Modifier.height(24.dp))
-
         // Barra de progreso
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = "Progreso del día",
-                color = Color.White.copy(alpha = 0.9f),
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium
-            )
-            Spacer(Modifier.height(8.dp))
-            LinearProgressIndicator(
-                progress = { dailyProgress },
-                color = Color.White,
-                trackColor = Color.White.copy(alpha = 0.3f),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(CircleShape)
-            )
+        AnimatedVisibility(
+            visible = !isCollapsed,
+            enter = expandVertically(animationSpec = tween(200)) + fadeIn(animationSpec = tween(200)),
+            exit = shrinkVertically(animationSpec = tween(200)) + fadeOut(animationSpec = tween(200))
+        ) {
+            Column {
+                Spacer(Modifier.height(24.dp))
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Text("Progreso del día", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.9f), fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    Spacer(Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { dailyProgress },
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        trackColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f),
+                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape)
+                    )
+                }
+            }
         }
     }
 }
+
 
 @Composable
 fun DaySelector(

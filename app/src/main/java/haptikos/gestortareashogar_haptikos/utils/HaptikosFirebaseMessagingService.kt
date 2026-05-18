@@ -5,54 +5,97 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import haptikos.gestortareashogar_haptikos.MainActivity
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
+import haptikos.gestortareashogar_haptikos.data.SyncRepository
 import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.NotificationEntity
+import haptikos.gestortareashogar_haptikos.data.entity.NotificationEntity
+import haptikos.gestortareashogar_haptikos.network.RetrofitClient
+import haptikos.gestortareashogar_haptikos.workers.SyncWorker
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class HaptikosFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        // Guardar token localmente para mandarlo al servidor después
+
         CoroutineScope(Dispatchers.IO).launch {
             val dataStore = DataStoreManager(applicationContext)
+            // Se guarda el token localmente
             dataStore.saveFcmToken(token)
+
+            // Actualización repentina
+            try {
+                // Se obtiene el ID del usuario actual
+                val userId = dataStore.userIdFlow.first()
+                if (!userId.isNullOrEmpty()) {
+                    RetrofitClient.getUserApi(dataStore).updateFcmToken(
+                        userId,
+                        mapOf("fcmToken" to token)
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
-
-        val title = remoteMessage.notification?.title ?: return
-        val body = remoteMessage.notification?.body ?: return
+        Log.d("FCM", "Mensaje recibido: type=${remoteMessage.data["type"]} homeId=${remoteMessage.data["homeId"]}")
         val type = remoteMessage.data["type"] ?: ""
         val homeId = remoteMessage.data["homeId"] ?: ""
+        val title = remoteMessage.data["title"]
+        val body = remoteMessage.data["body"]
 
-        // Guardar en Room local
-        CoroutineScope(Dispatchers.IO).launch {
-            val db = TaskDatabase.getDatabase(applicationContext,
-                CoroutineScope(SupervisorJob() + Dispatchers.IO))
-            db.notificationDao().insert(
-                NotificationEntity(
-                    title = title,
-                    body = body,
-                    type = type,
-                    homeId = homeId
-                )
-            )
+        val syncTypes = setOf(
+            "SYNC_MEMBERS", "NEW_MEMBER", "MEMBER_JOINED",
+            "SYNC_TASKS", "SYNC_ROOMS", "SYNC_HOME", "HOME_DELETED"
+        )
+
+        if (type in syncTypes) {
+            runSyncSilently(homeId, type)
         }
 
-        // Mostrar notificación del sistema
-        showNotification(title, body)
+        if (!title.isNullOrEmpty() && !body.isNullOrEmpty()) {
+            CoroutineScope(Dispatchers.IO).launch {
+                val db = TaskDatabase.getDatabase(
+                    applicationContext,
+                    CoroutineScope(SupervisorJob() + Dispatchers.IO)
+                )
+                db.notificationDao().insert(
+                    NotificationEntity(
+                        title = title,
+                        body = body,
+                        type = type,
+                        homeId = homeId
+                    )
+                )
+            }
+            showNotification(title, body)
+        }
+    }
+
+
+    private fun runSyncSilently(homeId: String, type: String) {
+        if (homeId.isEmpty()) return
+        val data = workDataOf("homeId" to homeId, "type" to type)
+        val request = OneTimeWorkRequestBuilder<SyncWorker>()
+            .setInputData(data)
+            .build()
+        WorkManager.getInstance(applicationContext).enqueue(request)
     }
 
     private fun showNotification(title: String, body: String) {

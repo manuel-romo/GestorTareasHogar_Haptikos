@@ -1,7 +1,6 @@
 package haptikos.gestortareashogar_haptikos.viewModel
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.intl.Locale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
@@ -9,10 +8,10 @@ import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
+import haptikos.gestortareashogar_haptikos.data.entity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.BarChartData
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.HomeStatsUiState
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.MemberStatsItem
@@ -255,9 +254,9 @@ class TaskInstanceViewModel(
 
     //Funciones para el filtrado y para las gráficas
     private fun filterInstancesByRange(
-        instances: List<haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails>,
+        instances: List<haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails>,
         range: String
-    ): List<haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails> {
+    ): List<haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails> {
         val cal = Calendar.getInstance()
         val now = cal.timeInMillis
 
@@ -278,7 +277,7 @@ class TaskInstanceViewModel(
     }
 
     private fun calculateTrendPoints(
-        instances: List<haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails>,
+        instances: List<haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails>,
         range: String
     ): List<ChartPoint> {
         val cal = Calendar.getInstance()
@@ -325,7 +324,7 @@ class TaskInstanceViewModel(
     }
 
     private fun calculateEffectiveness(
-        instances: List<haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails>
+        instances: List<haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails>
     ): Float {
         if (instances.isEmpty()) return 0f
         val completed = instances.count { it.taskInstance.state == TaskState.COMPLETED }
@@ -505,7 +504,7 @@ class TaskInstanceViewModel(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), HomeStatsUiState())
 
     private fun calculateBarChartData(
-        instances: List<haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails>,
+        instances: List<haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails>,
         range: String
     ): List<BarChartData> {
         return when (range) {

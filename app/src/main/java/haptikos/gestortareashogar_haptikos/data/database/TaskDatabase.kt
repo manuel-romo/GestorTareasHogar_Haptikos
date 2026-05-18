@@ -11,14 +11,14 @@ import haptikos.gestortareashogar_haptikos.data.dao.NotificationDao
 import haptikos.gestortareashogar_haptikos.data.dao.RoomDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskInstanceDao
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.NotificationEntity
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskMemberJoin
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceMemberJoin
+import haptikos.gestortareashogar_haptikos.data.entity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.RoomEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.NotificationEntity
+import haptikos.gestortareashogar_haptikos.data.entity.TaskMemberJoin
+import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceMemberJoin
 import kotlinx.coroutines.CoroutineScope
 
 @Database(

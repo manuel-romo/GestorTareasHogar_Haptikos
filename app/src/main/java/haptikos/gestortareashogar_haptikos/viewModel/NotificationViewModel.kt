@@ -3,7 +3,7 @@ package haptikos.gestortareashogar_haptikos.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.dao.NotificationDao
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.NotificationEntity
+import haptikos.gestortareashogar_haptikos.data.entity.NotificationEntity
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

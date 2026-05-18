@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.formTask
 
+import android.graphics.Color.parseColor
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +27,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.ui.theme.LightGray
 import kotlin.collections.forEach
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,7 +45,7 @@ fun AssignmentSection(
             .fillMaxWidth()
             .padding(bottom = if (selectedMembers.size >= 2) 24.dp else 40.dp),
         shape = RoundedCornerShape(16.dp),
-        color = LightBg,
+        color = LightGray,
         border = BorderStroke(1.dp, Color(0xFFE5E5EA))
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -83,7 +85,7 @@ fun AssignmentSection(
                             Box(
                                 modifier = Modifier
                                     .background(
-                                        color = Color(android.graphics.Color.parseColor(member.colorHex ?: "#FF4081")),
+                                        color = Color(parseColor(member.colorHex ?: "#FF4081")),
                                         shape = RoundedCornerShape(16.dp)
                                     )
                                     .padding(horizontal = 12.dp, vertical = 4.dp),

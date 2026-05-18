@@ -1,4 +1,4 @@
-package haptikos.gestortareashogar_haptikos.ui.screens.pruebaUserEdition
+package haptikos.gestortareashogar_haptikos.ui.screens.userEdition
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

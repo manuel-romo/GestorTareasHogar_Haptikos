@@ -26,7 +26,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.NotificationEntity
+import haptikos.gestortareashogar_haptikos.data.entity.NotificationEntity
+import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
+import haptikos.gestortareashogar_haptikos.ui.theme.Green
+import haptikos.gestortareashogar_haptikos.ui.theme.MediumDarkGray
+import haptikos.gestortareashogar_haptikos.ui.theme.Purple
 
 @Composable
 fun NotificationCard(notification: NotificationEntity) {
@@ -38,10 +42,10 @@ fun NotificationCard(notification: NotificationEntity) {
     }
 
     val iconColor = when (notification.type) {
-        "TASK_COMPLETED" -> Color(0xFF4CAF50)
-        "NEW_MEMBER" -> Color(0xFF9C27B0)
-        "TASK_REMINDER" -> Color(0xFFFF8A00)
-        else -> Color.Gray
+        "TASK_COMPLETED" -> Green
+        "NEW_MEMBER" -> Purple
+        "TASK_REMINDER" -> BrightOrange
+        else -> MediumDarkGray
     }
 
     val timeText = remember(notification.createdAt) {
@@ -57,7 +61,7 @@ fun NotificationCard(notification: NotificationEntity) {
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                if (!notification.isRead) Color(0xFFFFF8F0)
+                if (!notification.isRead) MaterialTheme.colorScheme.primaryContainer
                 else MaterialTheme.colorScheme.surface
             )
             .padding(horizontal = 16.dp, vertical = 12.dp),
@@ -70,7 +74,12 @@ fun NotificationCard(notification: NotificationEntity) {
                 .background(iconColor.copy(alpha = 0.15f)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(painterResource(icon), contentDescription = null, tint = iconColor, modifier = Modifier.size(24.dp))
+            Icon(
+                painterResource(icon),
+                contentDescription = null,
+                tint = iconColor,
+                modifier = Modifier.size(24.dp)
+            )
         }
 
         Spacer(Modifier.width(12.dp))
@@ -81,6 +90,7 @@ fun NotificationCard(notification: NotificationEntity) {
                     text = notification.title,
                     fontWeight = if (!notification.isRead) FontWeight.Bold else FontWeight.Normal,
                     fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 if (!notification.isRead) {
@@ -88,16 +98,25 @@ fun NotificationCard(notification: NotificationEntity) {
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(Color(0xFFFF8A00))
+                            .background(MaterialTheme.colorScheme.primary)
                     )
                 }
             }
             Spacer(Modifier.height(2.dp))
-            Text(notification.body, fontSize = 13.sp, color = Color.Gray, maxLines = 2)
+            Text(
+                text = notification.body,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2
+            )
             Spacer(Modifier.height(4.dp))
-            Text(timeText, fontSize = 11.sp, color = Color.LightGray)
+            Text(
+                text = timeText,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
         }
     }
 
-    HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 }

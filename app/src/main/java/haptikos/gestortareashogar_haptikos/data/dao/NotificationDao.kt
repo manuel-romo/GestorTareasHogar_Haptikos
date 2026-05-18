@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.NotificationEntity
+import haptikos.gestortareashogar_haptikos.data.entity.NotificationEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao

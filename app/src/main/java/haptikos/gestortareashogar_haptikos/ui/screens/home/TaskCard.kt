@@ -1,6 +1,5 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.home
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color.Companion.LightGray
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -34,13 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
-import haptikos.gestortareashogar_haptikos.ui.theme.CompletedGreen
-import haptikos.gestortareashogar_haptikos.ui.theme.LightYellow
-import haptikos.gestortareashogar_haptikos.ui.theme.PausedYellow
-import haptikos.gestortareashogar_haptikos.ui.theme.White
-import haptikos.gestortareashogar_haptikos.ui.theme.Yellow
-import haptikos.gestortareashogar_haptikos.utils.getDateString
+import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.utils.getDayName
 import haptikos.gestortareashogar_haptikos.utils.parseHexColor
 
@@ -59,7 +51,7 @@ fun TaskCard(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .clickable { onClick() },
-        colors = CardDefaults.cardColors(containerColor = White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(20.dp),
         elevation = CardDefaults.cardElevation(if (isCompleted) 0.dp else 2.dp)
     ) {
@@ -78,7 +70,7 @@ fun TaskCard(
                     .border(
                         width = 2.dp,
                         color = when {
-                            isCompleted -> CompletedGreen
+                            isCompleted -> MaterialTheme.colorScheme.tertiary
                             else -> MaterialTheme.colorScheme.outlineVariant
                         },
                         shape = CircleShape
@@ -89,7 +81,7 @@ fun TaskCard(
                     Icon(
                         painterResource(id = R.drawable.ic_check),
                         contentDescription = "Completada",
-                        tint = CompletedGreen,
+                        tint = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -133,7 +125,7 @@ fun TaskCard(
 
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = if(isCompleted) LightGray else roomBgColor
+                            color = if(isCompleted) MaterialTheme.colorScheme.surfaceVariant else roomBgColor
                         ) {
                             Text(
                                 text = " ${room.name} ",
@@ -147,7 +139,7 @@ fun TaskCard(
                         Spacer(Modifier.width(8.dp))
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = LightGray
+                            color = MaterialTheme.colorScheme.surfaceVariant
                         ) {
                             Text(
                                 text = " Casa ",
@@ -170,7 +162,7 @@ fun TaskCard(
                         Surface(shape = RoundedCornerShape(12.dp), color = memberColor) {
                             Text(
                                 text = member.name,
-                                color = White,
+                                color = MaterialTheme.colorScheme.onPrimary,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
@@ -189,10 +181,10 @@ fun TaskCard(
             ) {
                 if (!isCompleted) {
                     // Badge de puntos
-                    Surface(color = LightYellow, shape = RoundedCornerShape(8.dp)) {
+                    Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(8.dp)) {
                         Text(
                             text = " ⭐ +${taskInstance.taskDetails.task.points} ",
-                            color = Yellow,
+                            color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(4.dp)

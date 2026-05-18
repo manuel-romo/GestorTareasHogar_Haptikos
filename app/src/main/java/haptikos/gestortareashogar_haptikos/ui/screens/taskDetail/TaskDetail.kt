@@ -43,16 +43,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
+import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.ui.components.BiometricAuthBottomSheet
 import haptikos.gestortareashogar_haptikos.ui.components.FeedbackBottomSheet
 import haptikos.gestortareashogar_haptikos.ui.components.GenericMultiSelectionBottomSheet
-import haptikos.gestortareashogar_haptikos.ui.theme.CompletedGreen
 import haptikos.gestortareashogar_haptikos.utils.authenticateWithBiometric
 import haptikos.gestortareashogar_haptikos.utils.findFragmentActivity
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
@@ -78,7 +77,7 @@ fun TaskDetailScreen(
 
     var showMemberSheet by remember { mutableStateOf(false) }
     var selectedMembers by remember { mutableStateOf<Set<MemberEntityNew>>(emptySet()) }
-    var menuExpanded by remember { mutableStateOf(false) } // ← declarado antes de usarse
+    var menuExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(instanceId) {
         instanceDetails = viewModel.getInstanceWithDetailsById(instanceId)

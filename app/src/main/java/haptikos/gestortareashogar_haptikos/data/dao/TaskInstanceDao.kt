@@ -8,9 +8,9 @@ import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceMemberJoin
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceWithDetails
+import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceMemberJoin
+import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -94,5 +94,12 @@ interface TaskInstanceDao {
 
     @Query("SELECT memberId FROM task_instance_member_join WHERE taskInstanceId = :instanceId")
     suspend fun getMemberIdsForInstance(instanceId: String): List<String>
+
+    @Query("""
+        SELECT COUNT(ti.id) FROM task_instance_table_new ti
+        INNER JOIN task_instance_member_join tim ON ti.id = tim.taskInstanceId
+        WHERE tim.memberId = :memberId AND ti.state = 'COMPLETED'
+    """)
+    fun getCompletedTaskCountForMember(memberId: String): Flow<Int>
 
 }

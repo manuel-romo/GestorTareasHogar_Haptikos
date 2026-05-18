@@ -1,15 +1,21 @@
 package haptikos.gestortareashogar_haptikos.ui.components
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -23,19 +29,22 @@ fun CustomBottomNavigation(
     hasCenterFab: Boolean
 ) {
     NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 8.dp
+        containerColor = Color.White,
+        tonalElevation = 0.dp,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        // INICIO
+        val navColors = NavigationBarItemDefaults.colors(
+            selectedIconColor = MaterialTheme.colorScheme.primary,
+            selectedTextColor = MaterialTheme.colorScheme.primary,
+            indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+            unselectedIconColor = Color.Gray,
+            unselectedTextColor = Color.Gray
+        )
+
+        // Inicio
         NavigationBarItem(
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_home),
-                    contentDescription = "Inicio",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            label = { Text("Inicio") },
+            icon = { Icon(painterResource(id = R.drawable.ic_home), contentDescription = "Inicio", modifier = Modifier.size(24.dp)) },
+            label = { Text("Inicio", fontWeight = FontWeight.Medium) },
             selected = currentRoute == Screen.Home.route,
             onClick = {
                 navController.navigate(Screen.Home.route) {
@@ -43,19 +52,14 @@ fun CustomBottomNavigation(
                     launchSingleTop = true
                     restoreState = true
                 }
-            }
+            },
+            colors = navColors
         )
 
-        // HOGAR (ahora si se tiene la pantalla en local)
+        // Hogar
         NavigationBarItem(
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_stats_1),
-                    contentDescription = "Hogar",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            label = { Text("Hogar") },
+            icon = { Icon(painterResource(id = R.drawable.ic_stats_1), contentDescription = "Hogar", modifier = Modifier.size(24.dp)) },
+            label = { Text("Hogar", fontWeight = FontWeight.Medium) },
             selected = currentRoute == Screen.HomeStats.route,
             onClick = {
                 navController.navigate(Screen.HomeStats.route) {
@@ -63,23 +67,31 @@ fun CustomBottomNavigation(
                     launchSingleTop = true
                     restoreState = true
                 }
-            }
+            },
+            colors = navColors
         )
 
+        // Espacio para botón de agregar
         if (hasCenterFab) {
+            NavigationBarItem(
+                icon = { Spacer(modifier = Modifier.size(28.dp)) },
+                label = { Text("Agregar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium) },
+                selected = false,
+                onClick = { /* Asumo que la acción la maneja el FAB externo */ },
+                colors = NavigationBarItemDefaults.colors(
+                    unselectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = Color.Transparent
+                ),
+                interactionSource = remember { MutableInteractionSource() }
+            )
+        } else {
             Spacer(Modifier.weight(1f))
         }
 
-        // STATS
+        // Mis Stats
         NavigationBarItem(
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_stats_2),
-                    contentDescription = "Stats",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            label = { Text("Stats") },
+            icon = { Icon(painterResource(id = R.drawable.ic_stats_2), contentDescription = "Mis Stats", modifier = Modifier.size(24.dp)) },
+            label = { Text("Mis Stats", fontWeight = FontWeight.Medium) },
             selected = currentRoute == Screen.Stats.route,
             onClick = {
                 navController.navigate(Screen.Stats.route) {
@@ -87,28 +99,23 @@ fun CustomBottomNavigation(
                     launchSingleTop = true
                     restoreState = true
                 }
-            }
+            },
+            colors = navColors
         )
 
-        // PERFIL
+        // Perfil
         NavigationBarItem(
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_user),
-                    contentDescription = "Perfil",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            label = { Text("Perfil") },
+            icon = { Icon(painterResource(id = R.drawable.ic_user), contentDescription = "Perfil", modifier = Modifier.size(24.dp)) },
+            label = { Text("Perfil", fontWeight = FontWeight.Medium) },
             selected = currentRoute == Screen.Profile.route,
             onClick = {
                 navController.navigate(Screen.Profile.route) {
-                    // Esta configuración evita que se abran muchas pantallas iguales al dar varios clics
                     popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                     launchSingleTop = true
                     restoreState = true
                 }
-            }
+            },
+            colors = navColors
         )
     }
 }

@@ -25,6 +25,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -49,16 +50,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.PriorityLevel
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
+import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.RoomEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.TaskWithDetails
 import haptikos.gestortareashogar_haptikos.ui.components.GenericMultiSelectionBottomSheet
 import haptikos.gestortareashogar_haptikos.ui.components.GenericSelectionBottomSheet
 import haptikos.gestortareashogar_haptikos.ui.enums.SuggestedDay
 import haptikos.gestortareashogar_haptikos.ui.enums.RecurrenceType
 import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
 import haptikos.gestortareashogar_haptikos.ui.enums.TurnMode
+import haptikos.gestortareashogar_haptikos.ui.theme.BlackGray
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
@@ -78,29 +80,23 @@ fun FormTaskScreen(
     homeViewModel: HomeViewModel,
     onReturn:() -> Unit
 ){
-
     val selectedHome by homeViewModel.selectedHome.collectAsState()
     val roomList by roomViewModel.rooms.collectAsState()
-    // TODO corregir
+
     val memberList by remember(selectedHome?.id) {
         selectedHome?.let { memberViewModel.getMembersForHome(it.id) }
             ?: flowOf(emptyList())
     }.collectAsState(initial = emptyList())
 
-
-    // Se busca si la tarea existe en la BD.
     var taskToEdit by remember { mutableStateOf<TaskWithDetails?>(null) }
-    // Se busca la habitación seleccionada si se envió.
     var preselectedRoom by remember { mutableStateOf<RoomEntityNew?>(null) }
 
-    // Búsqueda de tarea recibida
     LaunchedEffect(taskId) {
         if (taskId != null) {
             taskToEdit = taskViewModel.getByIdNew(taskId)
         }
     }
 
-    // Búsqueda de habitación recibida
     LaunchedEffect(roomId, roomList) {
         if (roomId != null && roomList.isNotEmpty()) {
             preselectedRoom = roomList.find { it.id == roomId }
@@ -115,7 +111,6 @@ fun FormTaskScreen(
         isPredetermined = isPredetermined,
         onReturn = onReturn,
         onSaveTask = { name, desc, room, day, recurrence, priority, workMode, orderedMembers ->
-
             if (name.isNotBlank()) {
                 val task = TaskEntityNew(
                     id = taskToEdit?.task?.id ?: UUID.randomUUID().toString(),
@@ -127,13 +122,14 @@ fun FormTaskScreen(
                     priority = priority,
                     suggestedDay = day,
                     recurrence = recurrence,
-                    workMode = workMode
+                    workMode = workMode,
+                    isPredetermined = isPredetermined
                 )
 
                 val memberIds = orderedMembers.map { it.id }
 
                 if (taskToEdit == null) {
-                    taskViewModel.addTaskNew(task,memberIds)
+                    taskViewModel.addTaskNew(task, memberIds)
                 } else {
                     taskViewModel.updateTaskNew(task, memberIds)
                 }
@@ -142,11 +138,6 @@ fun FormTaskScreen(
         }
     )
 }
-
-// Colores
-val OrangeMain = Color(0xFFFF8A00)
-val GrayText = Color(0xFF8E8E93)
-val LightBg = Color(0xFFF9F9F9)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -157,18 +148,8 @@ fun FormatTaskContent(
     preselectedRoom: RoomEntityNew? = null,
     isPredetermined: Boolean = false,
     onReturn: () -> Unit,
-    onSaveTask: (
-        String,
-        String,
-        RoomEntityNew?,
-        SuggestedDay,
-        RecurrenceType,
-        PriorityLevel,
-        WorkMode,
-        List<MemberEntityNew>
-    ) -> Unit
+    onSaveTask: (String, String, RoomEntityNew?, SuggestedDay, RecurrenceType, PriorityLevel, WorkMode, List<MemberEntityNew>) -> Unit
 ) {
-    // Estados inicializados directamente con los datos de taskToEdit (si existe)
     var taskName by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.title ?: "") }
     var taskDescription by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.description ?: "") }
     var selectedPriority by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.priority ?: PriorityLevel.MEDIA) }
@@ -176,17 +157,14 @@ fun FormatTaskContent(
     var selectedRecurrence by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.recurrence ?: RecurrenceType.DIARIO) }
     var selectedMembers by remember(taskToEdit) { mutableStateOf(taskToEdit?.members?.toSet() ?: emptySet()) }
 
-    // Definición de habitación de tarea a editar, o la preseleccionada.
     var selectedRoom by remember(taskToEdit, preselectedRoom) { mutableStateOf(taskToEdit?.room ?: preselectedRoom) }
     var isRoomScope by remember(taskToEdit, preselectedRoom) { mutableStateOf(taskToEdit?.room != null || preselectedRoom != null) }
 
-    // Estados de equipo
     var selectedWorkMode by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.workMode ?: WorkMode.TEAM) }
     var selectedTurnMode by remember(taskToEdit) { mutableStateOf(TurnMode.RANDOM) }
 
     val orderedTurns = remember { mutableStateListOf<MemberEntityNew>() }
 
-    // Estados de menús
     var showDaySelector by remember { mutableStateOf(false) }
     var showRecurrenceSelector by remember { mutableStateOf(false) }
     var showRoomSelector by remember { mutableStateOf(false) }
@@ -196,20 +174,17 @@ fun FormatTaskContent(
         val hasName = taskName.isNotBlank()
         val hasValidRoom = if (isRoomScope) selectedRoom != null else true
         val hasMembers = selectedMembers.isNotEmpty()
-
         hasName && hasValidRoom && hasMembers
     }
 
-    // Actualiza lista de turnos automáticamente cuando cambian los miembros
     LaunchedEffect(selectedMembers) {
         orderedTurns.clear()
         orderedTurns.addAll(selectedMembers)
     }
 
-    // Estructura principal
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            // Se le envía la información al encabezado sólo si la tarea es predeterminada.
             TaskTopAppBar(
                 isEditing = taskToEdit != null,
                 roomInfo = if (isPredetermined) selectedRoom else null,
@@ -222,16 +197,7 @@ fun FormatTaskContent(
                 isSaveEnabled = isFormValid,
                 onReturn = onReturn,
                 onSaveClick = {
-                    onSaveTask(
-                        taskName,
-                        taskDescription,
-                        selectedRoom,
-                        selectedDay,
-                        selectedRecurrence,
-                        selectedPriority,
-                        selectedWorkMode,
-                        orderedTurns.toList()
-                    )
+                    onSaveTask(taskName, taskDescription, selectedRoom, selectedDay, selectedRecurrence, selectedPriority, selectedWorkMode, orderedTurns.toList())
                 }
             )
         }
@@ -240,15 +206,12 @@ fun FormatTaskContent(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.White)
                 .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-
             BasicInfoSection(taskName, { taskName = it }, taskDescription, { taskDescription = it })
 
-            // Se oculta el selector de habitación si es predeterminada
             if (!isPredetermined) {
                 ScopeSection(isRoomScope, { isRoomScope = it }, selectedRoom) { showRoomSelector = true }
             } else {
@@ -278,7 +241,6 @@ fun FormatTaskContent(
         }
     }
 
-    // Menús emergentes
     TaskBottomSheets(
         showDaySelector = showDaySelector,
         onDismissDay = { showDaySelector = false },
@@ -314,10 +276,9 @@ fun TaskTopAppBar(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(OrangeMain)
+                .background(MaterialTheme.colorScheme.primary)
                 .padding(top = 16.dp, bottom = 24.dp)
         ) {
-            // Fila de navegación
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(horizontal = 16.dp)
@@ -326,14 +287,14 @@ fun TaskTopAppBar(
                     onClick = { onReturn() },
                     modifier = Modifier
                         .size(32.dp)
-                        .background(Color.White.copy(alpha = 0.2f), shape = CircleShape)
+                        .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f), shape = CircleShape)
                 ) {
-                    Icon(painterResource(id = R.drawable.ic_back), "Atrás", tint = Color.White, modifier = Modifier.size(16.dp))
+                    Icon(painterResource(id = R.drawable.ic_back), "Atrás", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
                     text = if (isEditing) "Editar tarea" else "Nueva tarea",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp
                 )
@@ -341,23 +302,21 @@ fun TaskTopAppBar(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Información de habitación
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 shape = RoundedCornerShape(16.dp),
-                color = Color.White.copy(alpha = 0.2f)
+                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Icono de la habitación
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .background(Color.White, CircleShape),
+                            .background(MaterialTheme.colorScheme.surface, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = roomInfo.icon, fontSize = 20.sp)
@@ -365,20 +324,18 @@ fun TaskTopAppBar(
 
                     Spacer(modifier = Modifier.width(12.dp))
 
-                    // Textos
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Habitación", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
-                        Text(roomInfo.name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Habitación", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f), fontSize = 12.sp)
+                        Text(roomInfo.name, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
 
-                    // Etiqueta "Predeterminada"
                     Surface(
-                        color = Color.White.copy(alpha = 0.3f),
+                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f),
                         shape = RoundedCornerShape(20.dp)
                     ) {
                         Text(
                             text = "Predeterminada",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onPrimary,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
@@ -392,7 +349,6 @@ fun TaskTopAppBar(
             title = {
                 Text(
                     text = if (isEditing) "Editar tarea" else "Nueva tarea",
-                    color = Color.White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp
                 )
@@ -403,20 +359,19 @@ fun TaskTopAppBar(
                     modifier = Modifier
                         .padding(start = 20.dp)
                         .size(32.dp)
-                        .background(Color.White.copy(alpha = 0.2f), shape = CircleShape)
+                        .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f), shape = CircleShape)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_back),
                         contentDescription = "Atrás",
-                        tint = Color.White,
                         modifier = Modifier.size(16.dp)
                     )
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = OrangeMain,
-                titleContentColor = Color.White,
-                navigationIconContentColor = Color.White
+                containerColor = MaterialTheme.colorScheme.primary,
+                titleContentColor = MaterialTheme.colorScheme.onPrimary,
+                navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
             )
         )
     }
@@ -429,15 +384,19 @@ fun TaskBottomBar(
     onSaveClick:() -> Unit,
     isSaveEnabled: Boolean = true
 ) {
-    Surface(color = Color.White, shadowElevation = 8.dp, modifier = Modifier.navigationBarsPadding()) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 8.dp,
+        modifier = Modifier.navigationBarsPadding()
+    ) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             Button(
                 onClick = { onReturn() },
                 modifier = Modifier.weight(1f).height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF2F2F7)),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 shape = RoundedCornerShape(12.dp)
             ) {
-                Text("Cancelar", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
 
             Button(
@@ -445,14 +404,13 @@ fun TaskBottomBar(
                 enabled = isSaveEnabled,
                 modifier = Modifier.weight(1f).height(50.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = OrangeMain,
-                    disabledContainerColor = OrangeMain.copy(alpha = 0.5f)
+                    containerColor = MaterialTheme.colorScheme.primary,
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
                     text = if (isEditing) "Guardar" else "Crear tarea",
-                    color = if (isSaveEnabled) Color.White else Color.White.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -461,21 +419,32 @@ fun TaskBottomBar(
     }
 }
 
-// Secciones de formulario
 @Composable
 fun BasicInfoSection(name: String, onNameChange: (String) -> Unit, desc: String, onDescChange: (String) -> Unit) {
     FormLabel(text = "NOMBRE DE LA TAREA *", iconRes = R.drawable.ic_t_text)
     OutlinedTextField(
-        value = name, onValueChange = onNameChange, placeholder = { Text("Nombre de la tarea", color = Color.LightGray) },
+        value = name, onValueChange = onNameChange, placeholder = { Text("Nombre de la tarea", color = MaterialTheme.colorScheme.outline) },
         modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp), shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = OrangeMain, unfocusedBorderColor = Color(0xFFE5E5EA), unfocusedContainerColor = LightBg, focusedContainerColor = Color.White), singleLine = true
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            focusedContainerColor = MaterialTheme.colorScheme.surface
+        ),
+        singleLine = true
     )
 
     FormLabel(text = "DESCRIPCIÓN BREVE", iconRes = R.drawable.ic_lines)
     OutlinedTextField(
-        value = desc, onValueChange = onDescChange, placeholder = { Text("Descripción de la tarea", color = Color.LightGray) },
+        value = desc, onValueChange = onDescChange, placeholder = { Text("Descripción de la tarea", color = MaterialTheme.colorScheme.outline) },
         modifier = Modifier.fillMaxWidth().height(120.dp).padding(bottom = 24.dp), shape = RoundedCornerShape(12.dp),
-        colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = OrangeMain, unfocusedBorderColor = Color(0xFFE5E5EA), unfocusedContainerColor = LightBg, focusedContainerColor = Color.White), maxLines = 4
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            focusedContainerColor = MaterialTheme.colorScheme.surface
+        ),
+        maxLines = 4
     )
 }
 
@@ -492,22 +461,39 @@ fun ScopeSection(
     Row(modifier = Modifier.padding(top = 12.dp, bottom = 24.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(text = if (isRoomScope) "🚪" else "🏠", fontSize = 14.sp)
         Spacer(modifier = Modifier.width(6.dp))
-        Text(text = if (isRoomScope) "La tarea pertenece a una habitación concreta." else "La tarea aplica a todo el hogar, sin habitación específica.", color = GrayText, fontSize = 12.sp)
+        Text(
+            text = if (isRoomScope) "La tarea pertenece a una habitación concreta." else "La tarea aplica a todo el hogar, sin habitación específica.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 12.sp
+        )
     }
 
     if (isRoomScope) {
-        Surface(modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).clickable { onOpenRoomMenu() }, shape = RoundedCornerShape(16.dp), color = LightBg, border = BorderStroke(1.dp, Color(0xFFE5E5EA))) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).clickable { onOpenRoomMenu() },
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        ) {
             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(40.dp).background(Color(0xFFE3F2FD), CircleShape), contentAlignment = Alignment.Center) {
+                Box(
+                    modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
                     if (selectedRoom != null) Text(text = selectedRoom.icon, fontSize = 20.sp)
-                    else Icon(painterResource(id = R.drawable.ic_location), contentDescription = null, tint = Color(0xFF2196F3), modifier = Modifier.size(20.dp))
+                    else Icon(painterResource(id = R.drawable.ic_location), contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(20.dp))
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Habitación", color = GrayText, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Text(text = selectedRoom?.name ?: "Selecciona una habitación", color = if (selectedRoom != null) Color.Black else Color.LightGray, fontSize = 14.sp, fontWeight = if (selectedRoom != null) FontWeight.Bold else FontWeight.Normal)
+                    Text("Habitación", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = selectedRoom?.name ?: "Selecciona una habitación",
+                        color = if (selectedRoom != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.outline,
+                        fontSize = 14.sp,
+                        fontWeight = if (selectedRoom != null) FontWeight.Bold else FontWeight.Normal
+                    )
                 }
-                Icon(painterResource(id = R.drawable.ic_arrow_right), contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(16.dp))
+                Icon(painterResource(id = R.drawable.ic_arrow_right), contentDescription = null, tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(16.dp))
             }
         }
     }
@@ -516,14 +502,59 @@ fun ScopeSection(
 @Composable
 fun ScheduleSection(selectedDay: SuggestedDay, selectedRecurrence: RecurrenceType, onOpenDayMenu: () -> Unit, onOpenRecurrenceMenu: () -> Unit) {
     SectionTitle("PROGRAMACIÓN")
-    Surface(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp), shape = RoundedCornerShape(16.dp), color = LightBg, border = BorderStroke(1.dp, Color(0xFFF0F0F0))) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+    ) {
         Column {
+            // Nota: Aquí asumo que ScheduleOptionRow acepta colores por parámetro.
+            // Si no, puedes cambiarlos también a MaterialTheme internamente.
             ScheduleOptionRow(iconBgColor = Color(0xFFFFF0E0), iconColor = Color(0xFFFF9800), iconRes = R.drawable.ic_calendar, title = "Día sugerido", value = selectedDay.displayName, valuePrefix = "${selectedDay.icon} ", onClick = onOpenDayMenu)
-            HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
             ScheduleOptionRow(iconBgColor = Color(0xFFF3E5F5), iconColor = Color(0xFF9C27B0), iconRes = R.drawable.ic_recurrency, title = "Recurrencia", value = selectedRecurrence.displayName, valuePrefix = "${selectedRecurrence.icon} ", onClick = onOpenRecurrenceMenu)
         }
     }
 }
+
+
+@Composable
+fun SectionTitle(title: String, paddingBottom: androidx.compose.ui.unit.Dp = 12.dp) {
+    Text(
+        text = title,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        fontWeight = FontWeight.Bold,
+        fontSize = 12.sp,
+        letterSpacing = 1.sp,
+        modifier = Modifier.padding(bottom = paddingBottom)
+    )
+}
+
+@Composable
+fun FormLabel(text: String, iconRes: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.padding(bottom = 8.dp)
+    ) {
+        Icon(
+            painter = painterResource(id = iconRes),
+            contentDescription = null,
+            modifier = Modifier.size(14.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = text,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp,
+            letterSpacing = 1.sp
+        )
+    }
+}
+
+
 
 @Composable
 fun PrioritySection(selectedPriority: PriorityLevel, onPriorityChange: (PriorityLevel) -> Unit) {
@@ -532,7 +563,7 @@ fun PrioritySection(selectedPriority: PriorityLevel, onPriorityChange: (Priority
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(painterResource(id = R.drawable.ic_star), contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(12.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text("Afecta los puntos ganados", color = GrayText, fontSize = 12.sp)
+            Text("Afecta los puntos ganados", color = BlackGray, fontSize = 12.sp)
         }
     }
     Row(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -540,13 +571,6 @@ fun PrioritySection(selectedPriority: PriorityLevel, onPriorityChange: (Priority
             PriorityCard(priority = priority, isSelected = selectedPriority == priority, onClick = { onPriorityChange(priority) }, modifier = Modifier.weight(1f))
         }
     }
-}
-
-
-// Otras funciones de utilidad
-@Composable
-fun SectionTitle(title: String, paddingBottom: androidx.compose.ui.unit.Dp = 12.dp) {
-    Text(text = title, color = GrayText, fontWeight = FontWeight.Bold, fontSize = 12.sp, letterSpacing = 1.sp, modifier = Modifier.padding(bottom = paddingBottom))
 }
 
 
@@ -622,97 +646,3 @@ fun TaskBottomSheets(
         )
     }
 }
-
-@Composable
-fun FormLabel(text: String, iconRes: Int) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(bottom = 8.dp)
-    ) {
-        Icon(
-            painter = painterResource(id = iconRes),
-            contentDescription = null,
-            modifier = Modifier.size(14.dp),
-            tint = Color(0xFF8E8E93)
-        )
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = text,
-            color = Color(0xFF8E8E93),
-            fontWeight = FontWeight.Bold,
-            fontSize = 12.sp,
-            letterSpacing = 1.sp
-        )
-    }
-}
-
-/**
-@Preview(showBackground = true)
-@Composable
-fun NewTaskScreenPreview_Agregar() {
-    val rooms = listOf(
-        RoomEntityNew(id = 1, name = "Cocina", icon = "🍳", colorHex = "#FF5252"),
-        RoomEntityNew(id = 2, name = "Sala", icon = "🛋️", colorHex = "#448AFF"),
-        RoomEntityNew(id = 3, name = "Baños", icon = "🚿", colorHex = "#4CAF50")
-    )
-
-    val members = listOf(
-        MemberEntityNew(id = 1, name = "María", lastName = "López", colorHex = "#F014A8", MemberRole.MEMBER),
-        MemberEntityNew(id = 2, name = "Juan", lastName = "Pérez", colorHex = "#2979FF", MemberRole.MEMBER)
-    )
-
-    GestorTareasHogar_HaptikosTheme {
-        NewTaskContent(
-            roomList = rooms,
-            memberList = members,
-            taskToEdit = null,
-            onReturn = {},
-            onSaveTask = { _, _, _, _, _, _, _, _ -> }
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun NewTaskScreenPreview_Editar() {
-    val rooms = listOf(
-        RoomEntityNew(id = 1, name = "Cocina", icon = "🍳", colorHex = "#FF5252"),
-        RoomEntityNew(id = 2, name = "Sala", icon = "🛋️", colorHex = "#448AFF")
-    )
-
-    val members = listOf(
-        MemberEntityNew(id = 1, name = "María", lastName = "López", colorHex = "#F014A8", role = MemberRole.MEMBER),
-        MemberEntityNew(id = 2, name = "Juan", lastName = "Pérez", colorHex = "#2979FF", role = MemberRole.MEMBER)
-    )
-
-    val tareaBase = TaskEntityNew(
-        id = 10,
-        title = "Limpiar la cocina a fondo",
-        description = "Usar desengrasante en la estufa",
-        roomId = 1,
-        points = 20,
-        priority = PriorityLevel.ALTA,
-        suggestedDay = SuggestedDay.SABADO,
-        recurrence = RecurrenceType.SEMANAL,
-        workMode = WorkMode.TEAM
-    )
-
-    val tareaConDetalles = TaskWithDetails(
-        task = tareaBase,
-        room = rooms[0],
-        members = members
-    )
-
-    GestorTareasHogar_HaptikosTheme {
-        NewTaskContent(
-            roomList = rooms,
-            memberList = members,
-            taskToEdit = tareaConDetalles,
-            onReturn = {},
-            onSaveTask = { _, _, _, _, _, _, _, _ -> }
-        )
-    }
-}
-
-
-*/

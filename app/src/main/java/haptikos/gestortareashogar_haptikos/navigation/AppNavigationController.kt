@@ -44,7 +44,7 @@ import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.HomeStatsScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.joinHome.JoinHomeScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.LogInScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.SignUpScreen
-import haptikos.gestortareashogar_haptikos.ui.screens.pruebaUserEdition.ProfileScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.userEdition.ProfileScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.taskDetail.TaskDetailScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.notifications.NotificationsScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.rewards.RewardsScreen
@@ -239,8 +239,18 @@ fun AppNavigation(
                 )
             }
 
-            composable(Screen.NewTask.route) {
+            composable(
+                route = "${Screen.NewTask.route}?roomId={roomId}",
+                arguments = listOf(navArgument("roomId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                })
+            ) { backStackEntry ->
+                val roomId = backStackEntry.arguments?.getString("roomId")
                 FormTaskScreen(
+                    roomId = roomId,
+                    isPredetermined = false,
                     roomViewModel = roomViewModel,
                     taskViewModel = taskViewModel,
                     memberViewModel = memberViewModel,
@@ -320,6 +330,19 @@ fun AppNavigation(
                     },
                     onNavigateToNewPredeterminedTask = { roomId ->
                         navController.navigate("${Screen.NewPredeterminedTask.route}/$roomId")
+                    },
+                    onLeaveHome = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToEditTask = { taskId ->
+                        navController.navigate("${Screen.EditTask.route}/$taskId")
+                    },
+                    onNavigateToNewTask = { roomId ->
+                        if (roomId != null) {
+                            navController.navigate("${Screen.NewTask.route}?roomId=$roomId")
+                        } else {
+                            navController.navigate(Screen.NewTask.route)
+                        }
                     }
                 )
             }

@@ -3,17 +3,13 @@ package haptikos.gestortareashogar_haptikos.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
-import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskInstanceEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
-import haptikos.gestortareashogar_haptikos.utils.getDayName
+import haptikos.gestortareashogar_haptikos.data.entity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.TaskWithDetails
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -117,4 +113,43 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
             repository.completeTaskInstance(taskInstance)
         }
     }
+
+
+    // Estados para pausa
+    private val _taskToPause = MutableStateFlow<TaskEntityNew?>(null)
+    val taskToPause = _taskToPause.asStateFlow()
+
+    // Acciones
+
+    fun initiatePause(task: TaskEntityNew) {
+        _taskToPause.value = task
+    }
+
+    fun cancelPause() {
+        _taskToPause.value = null
+    }
+
+    fun confirmPause(pausedUntil: Long) {
+        val task = _taskToPause.value ?: return
+        viewModelScope.launch {
+            repository.updateTaskOnly(task.copy(pausedUntil = pausedUntil))
+            _taskToPause.value = null
+            showSuccessFeedback(
+                title = "Tarea pausada",
+                subtitle = "La tarea no aparecerá como pendiente durante el periodo indicado."
+            )
+        }
+    }
+
+    fun resumeTask(task: TaskEntityNew) {
+        viewModelScope.launch {
+            repository.updateTaskOnly(task.copy(pausedUntil = null))
+            showSuccessFeedback(
+                title = "Tarea reanudada",
+                subtitle = "La tarea vuelve a aparecer como pendiente."
+            )
+        }
+    }
+
+
 }

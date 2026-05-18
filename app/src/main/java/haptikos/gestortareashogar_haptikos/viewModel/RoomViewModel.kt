@@ -3,7 +3,7 @@ package haptikos.gestortareashogar_haptikos.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.RoomEntityNew
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

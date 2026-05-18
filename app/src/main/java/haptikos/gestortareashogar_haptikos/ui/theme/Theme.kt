@@ -13,27 +13,41 @@ import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
     primary = Orange,
+    onPrimary = White,
+    primaryContainer = LightYellow,
     secondary = LightOrange,
+    secondaryContainer = YellowGreen,
+    tertiary = Green,
     surfaceVariant = Gray,
+    onSurfaceVariant = DarkGray,
     errorContainer = LightRed,
+    error = Red,
     background = LightGray,
-    surface = LightGray
+    onBackground = Black,
+    surface = White,
+    onSurface = Black
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Orange,
+    onPrimary = White,
+    primaryContainer = LightYellow,
     secondary = LightOrange,
+    secondaryContainer = YellowGreen,
+    tertiary = Green,
     surfaceVariant = Gray,
+    onSurfaceVariant = DarkGray,
     errorContainer = LightRed,
+    error = Red,
     background = LightGray,
-    surface = LightGray
-
+    onBackground = Black,
+    surface = White,
+    onSurface = Black
 )
 
 @Composable
 fun GestorTareasHogar_HaptikosTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
@@ -42,7 +56,6 @@ fun GestorTareasHogar_HaptikosTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }

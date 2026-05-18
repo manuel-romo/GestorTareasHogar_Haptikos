@@ -6,7 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.RoomEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.RoomEntityNew
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -26,5 +26,8 @@ interface RoomDao {
 
     @Delete
     suspend fun deleteNew(room: RoomEntityNew)
+
+    @Query("DELETE FROM room_table_new WHERE homeId = :homeId")
+    suspend fun deleteAllByHomeId(homeId: String)
 
 }

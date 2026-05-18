@@ -4,16 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
-import haptikos.gestortareashogar_haptikos.data.SyncRepository
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.helpers.UserSuggestion
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.network.HomeApi
-import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import haptikos.gestortareashogar_haptikos.ui.screens.createHome.InvitedUser
-import haptikos.gestortareashogar_haptikos.utils.NetworkConnectivityObserver
 import haptikos.gestortareashogar_haptikos.utils.generateUniqueId
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -214,8 +211,8 @@ class HomeViewModel(
     private val _showSuccessFeedback = MutableStateFlow(false)
     val showSuccessFeedback = _showSuccessFeedback.asStateFlow()
 
-    private val _biometricError = MutableStateFlow<String?>(null)
-    val biometricError = _biometricError.asStateFlow()
+    private val _actionError = MutableStateFlow<String?>(null)
+    val actionError = _actionError.asStateFlow()
 
     // Funciones de control
     fun initiateHomeDeletion() { _isDeletingHome.value = true }
@@ -223,21 +220,29 @@ class HomeViewModel(
 
     fun confirmDeletion() {
         val homeToDelete = _selectedHome.value ?: return
-        viewModelScope.launch {
-            try {
-                repository.deleteHomeWithSync(homeToDelete)
 
-                _selectedHome.value = null
+        viewModelScope.launch {
+            _isDeletingHome.value = false
+
+            try {
+                val success = repository.deleteHomeWithSync(homeToDelete)
+
+                if (success) {
+                    _showSuccessFeedback.value = true
+                    _selectedHome.value = null
+                } else {
+                    _actionError.value = "No se pudo conectar al servidor. Revisa tu conexión a internet e inténtalo de nuevo."
+                }
 
             } catch (e: Exception) {
-                _biometricError.value = "Error al eliminar"
+                _actionError.value = "Ocurrió un error inesperado al intentar eliminar el hogar."
             }
         }
     }
 
     fun dismissSuccessFeedback() { _showSuccessFeedback.value = false }
-    fun dismissBiometricError() { _biometricError.value = null }
-    fun showBiometricError(msg: String) { _biometricError.value = msg }
+    fun dismissBiometricError() { _actionError.value = null }
+    fun showBiometricError(msg: String) { _actionError.value = msg }
 
 
     // Sugerencia y Búsqueda de usuarios
@@ -310,14 +315,25 @@ class HomeViewModel(
         viewModelScope.launch {
             _joinState.value = JoinHomeState.Searching
             val formattedCode = "${currentCode.take(4)}-${currentCode.takeLast(4)}"
-            val preview = repository.findHomeByCode(formattedCode)
 
-            if (preview == null) {
+            val response = repository.findHomeByCode(formattedCode)
+
+            if (response == null) {
                 _joinState.value = JoinHomeState.Error("No encontramos ningún hogar con ese código. Verifica con el creador del hogar.")
                 return@launch
             }
 
-            _joinState.value = JoinHomeState.Found(preview, preview.isAlreadyMember)
+            val previewInfo = HomePreviewInfo(
+                id = response.id,
+                name = response.name,
+                creatorName = response.creatorName,
+                memberCount = response.memberCount,
+                taskCount = response.taskCount,
+                pendingCount = response.pendingCount,
+                isAlreadyMember = response.isAlreadyMember
+            )
+
+            _joinState.value = JoinHomeState.Found(previewInfo, previewInfo.isAlreadyMember)
         }
     }
 
@@ -384,5 +400,59 @@ class HomeViewModel(
                 }
         }
     }
+
+
+    val currentUserRole: StateFlow<MemberRole?> = combine(
+        selectedHome,
+        repository.allMembersNew,
+        dataStore.userIdFlow
+    ) { currentHome, members, userId ->
+        if (currentHome == null || userId.isEmpty()) {
+            null
+        } else {
+            members.find { it.homeId == currentHome.id && it.userId == userId }?.role
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val isCurrentUserCreator: StateFlow<Boolean> = currentUserRole
+        .map { it == MemberRole.CREATOR }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    val canCurrentUserEditTasks: StateFlow<Boolean> = combine(
+        selectedHome,
+        currentUserRole
+    ) { home, role ->
+        if (home == null || role == null) {
+            false
+        } else {
+            when (home.editPermission) {
+                HomePermission.CREATOR_ONLY -> role == MemberRole.CREATOR
+                HomePermission.ADMINS -> role == MemberRole.CREATOR || role == MemberRole.ADMIN
+                HomePermission.ALL_MEMBERS -> true
+                else -> false
+            }
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun leaveCurrentHome(onSuccess: () -> Unit) {
+        val currentHome = _selectedHome.value ?: return
+
+        viewModelScope.launch {
+            try {
+                val userId = dataStore.userIdFlow.first()
+                val success = repository.leaveHomeWithSync(currentHome.id, userId)
+
+                if (success) {
+                    _selectedHome.value = null
+                    onSuccess()
+                } else {
+                    _actionError.value = "No se pudo abandonar el hogar. Intenta de nuevo."
+                }
+            } catch (e: Exception) {
+                _actionError.value = "Ocurrió un error inesperado."
+            }
+        }
+    }
+
 
 }

@@ -7,9 +7,7 @@ plugins {
 
 android {
     namespace = "haptikos.gestortareashogar_haptikos"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "haptikos.gestortareashogar_haptikos"
@@ -53,6 +51,8 @@ dependencies {
     implementation(libs.androidx.room.common)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.ui.graphics)
+    ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.compose.foundation)
@@ -69,6 +69,7 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("androidx.work:work-runtime-ktx:2.9.0")
     implementation(libs.androidx.ui)
     implementation(libs.androidx.compose.remote.creation.core)
     implementation(libs.androidx.compose.animation)
@@ -79,7 +80,6 @@ dependencies {
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.animation)
     implementation(libs.androidx.work.runtime.ktx)
-    ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -88,7 +88,6 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
-
 
 configurations.all {
     resolutionStrategy {

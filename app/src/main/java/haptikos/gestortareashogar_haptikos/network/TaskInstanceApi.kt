@@ -2,7 +2,10 @@ package haptikos.gestortareashogar_haptikos.network
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface TaskInstanceApi {
     data class CreateTaskInstanceRequest(
@@ -15,4 +18,10 @@ interface TaskInstanceApi {
 
     @POST("/api/tasks/instances")
     suspend fun createTaskInstance(@Body request: CreateTaskInstanceRequest): Response<Void>
+
+    @PATCH("/api/tasks/instances/{instanceId}/complete")
+    suspend fun completeInstance(
+        @Path("instanceId") instanceId: String,
+        @Query("userId") userId: String
+    ): Response<Void>
 }

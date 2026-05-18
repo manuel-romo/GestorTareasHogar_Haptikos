@@ -39,9 +39,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import haptikos.gestortareashogar_haptikos.R
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.ui.enums.TurnMode
 import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
+import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkText
+import haptikos.gestortareashogar_haptikos.ui.theme.LightAmber
+import haptikos.gestortareashogar_haptikos.ui.theme.LightYellow
+import haptikos.gestortareashogar_haptikos.ui.theme.PaleGray
+import haptikos.gestortareashogar_haptikos.ui.theme.SmokeGray
+import haptikos.gestortareashogar_haptikos.ui.theme.White
+import haptikos.gestortareashogar_haptikos.ui.theme.WhiteGray
 
 @Composable
 fun WorkModeSection(
@@ -51,35 +59,50 @@ fun WorkModeSection(
     onMoveTurn: (Int, Int) -> Unit
 ) {
     SectionTitle("MODO DE TRABAJO")
-    Surface(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp), shape = RoundedCornerShape(16.dp), color = LightBg, border = BorderStroke(1.dp, Color(0xFFE5E5EA))) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = PaleGray,
+        border = BorderStroke(1.dp, WhiteGray)
+    ) {
         Row(modifier = Modifier.padding(8.dp)) {
-            WorkModeButton("En equipo", "🤝", selectedWorkMode == WorkMode.TEAM, OrangeMain, Modifier.weight(1f)) { onWorkModeChange(WorkMode.TEAM) }
+            WorkModeButton("En equipo", "🤝", selectedWorkMode == WorkMode.TEAM, BrightOrange, Modifier.weight(1f)) { onWorkModeChange(WorkMode.TEAM) }
             Spacer(modifier = Modifier.width(8.dp))
-            WorkModeButton("Dividir días", "✂️", selectedWorkMode == WorkMode.SPLIT, OrangeMain, Modifier.weight(1f)) { onWorkModeChange(WorkMode.SPLIT) }
+            WorkModeButton("Dividir días", "✂️", selectedWorkMode == WorkMode.SPLIT, BrightOrange, Modifier.weight(1f)) { onWorkModeChange(WorkMode.SPLIT) }
         }
     }
 
     if (selectedWorkMode == WorkMode.TEAM) {
-        Surface(modifier = Modifier.fillMaxWidth().padding(bottom = 40.dp), shape = RoundedCornerShape(12.dp), color = Color(0xFFFFF8E1), border = BorderStroke(1.dp, Color(0xFFFFECB3))) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 40.dp),
+            shape = RoundedCornerShape(12.dp),
+            color = LightYellow,
+            border = BorderStroke(1.dp, LightAmber)
+        ) {
             Row(modifier = Modifier.padding(16.dp)) {
                 Text(text = "🤝", fontSize = 16.sp)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "Todos los miembros realizan la tarea juntos el mismo día.", color = OrangeMain, fontSize = 14.sp)
+                Text(text = "Todos los miembros realizan la tarea juntos el mismo día.", color = BrightOrange, fontSize = 14.sp)
             }
         }
     } else {
-        Surface(modifier = Modifier.fillMaxWidth().padding(bottom = 40.dp), shape = RoundedCornerShape(16.dp), color = Color(0xFFFFF3E0), border = BorderStroke(1.dp, Color(0xFFFFCC80))) {
+        Surface(
+            modifier = Modifier.fillMaxWidth().padding(bottom = 40.dp),
+            shape = RoundedCornerShape(16.dp),
+            color = LightYellow,
+            border = BorderStroke(1.dp, LightAmber)
+        ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("¿CÓMO ASIGNAR LOS TURNOS?", color = OrangeMain, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.padding(bottom = 12.dp))
+                Text("¿CÓMO ASIGNAR LOS TURNOS?", color = BrightOrange, fontWeight = FontWeight.Bold, fontSize = 12.sp, modifier = Modifier.padding(bottom = 12.dp))
                 Row(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
-                    WorkModeButton("Al azar", "🎲", selectedTurnMode == TurnMode.RANDOM, OrangeMain, Modifier.weight(1f)) { onTurnModeChange(TurnMode.RANDOM) }
+                    WorkModeButton("Al azar", "🎲", selectedTurnMode == TurnMode.RANDOM, BrightOrange, Modifier.weight(1f)) { onTurnModeChange(TurnMode.RANDOM) }
                     Spacer(modifier = Modifier.width(8.dp))
-                    WorkModeButton("Manual", "✋", selectedTurnMode == TurnMode.MANUAL, OrangeMain, Modifier.weight(1f)) { onTurnModeChange(TurnMode.MANUAL) }
+                    WorkModeButton("Manual", "✋", selectedTurnMode == TurnMode.MANUAL, BrightOrange, Modifier.weight(1f)) { onTurnModeChange(TurnMode.MANUAL) }
                 }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text("ORDEN DE TURNOS", color = OrangeMain, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("ORDEN DE TURNOS", color = BrightOrange, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                     if (selectedTurnMode == TurnMode.RANDOM) {
-                        Text("Barajar 🎲", color = OrangeMain, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.clickable { onShuffleTurns() })
+                        Text("Barajar 🎲", color = BrightOrange, fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.clickable { onShuffleTurns() })
                     }
                 }
                 Spacer(modifier = Modifier.height(12.dp))
@@ -100,7 +123,7 @@ fun WorkModeSection(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(if (selectedTurnMode == TurnMode.RANDOM) "🎲" else "✋", fontSize = 14.sp)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (selectedTurnMode == TurnMode.RANDOM) "El orden se generó al azar. Toca «Barajar» para cambiar." else "Arrastra las filas para reordenar los turnos.", color = OrangeMain, fontSize = 12.sp)
+                    Text(if (selectedTurnMode == TurnMode.RANDOM) "El orden se generó al azar. Toca «Barajar» para cambiar." else "Arrastra las filas para reordenar los turnos.", color = BrightOrange, fontSize = 12.sp)
                 }
             }
         }
@@ -114,12 +137,13 @@ fun WorkModeButton(
     isSelected: Boolean,
     activeColor: Color,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit) {
+    onClick: () -> Unit
+) {
     Surface(
         onClick = onClick,
         modifier = modifier.height(44.dp),
         shape = RoundedCornerShape(12.dp),
-        color = if (isSelected) Color.White else Color(0xFFF2F2F7),
+        color = if (isSelected) White else SmokeGray,
         border = BorderStroke(1.dp, if (isSelected) activeColor else Color.Transparent)
     ) {
 
@@ -130,7 +154,7 @@ fun WorkModeButton(
                 text,
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
-                color = if (isSelected) activeColor else Color.Black
+                color = if (isSelected) activeColor else DarkText
             )
         }
     }
@@ -154,14 +178,12 @@ fun ReorderableMemberItem(
     val currentItemsCount by rememberUpdatedState(itemsCount)
     val currentOnMove by rememberUpdatedState(onMove)
 
-    // Variable con modificadores base
     var cardModifier = Modifier
         .fillMaxWidth()
         .padding(bottom = 8.dp)
         .zIndex(if (isDragging) 1f else 0f)
         .graphicsLayer { translationY = offsetY }
 
-    // Se agrega el arrastre solo si está en modo manual
     if (isManual) {
         cardModifier = cardModifier.pointerInput(member.name) {
             detectVerticalDragGestures(
@@ -183,29 +205,27 @@ fun ReorderableMemberItem(
         }
     }
 
-    // La variable completa se envía a Surface
     Surface(
         modifier = cardModifier,
         shape = RoundedCornerShape(12.dp),
-        color = Color.White,
+        color = White,
         shadowElevation = if (isDragging) 8.dp else 0.dp
     ) {
         Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(28.dp)
-                    .background(Color(0xFFF2F2F7), CircleShape),
+                    .background(SmokeGray, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Text("${index + 1}", fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Texto de Semana y Nombre
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "SEMANA ${index + 1}",
-                    color = OrangeMain,
+                    color = BrightOrange,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Black,
                     letterSpacing = 0.5.sp
@@ -214,7 +234,7 @@ fun ReorderableMemberItem(
                     text = member.name,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = Color.Black
+                    color = DarkText
                 )
             }
 

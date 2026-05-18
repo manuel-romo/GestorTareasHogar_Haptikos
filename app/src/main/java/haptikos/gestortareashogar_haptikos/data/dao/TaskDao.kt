@@ -7,9 +7,9 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskMemberJoin
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.TaskWithDetails
+import haptikos.gestortareashogar_haptikos.data.entity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.TaskMemberJoin
+import haptikos.gestortareashogar_haptikos.data.entity.TaskWithDetails
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -75,5 +75,13 @@ interface TaskDao {
 
     @Query("SELECT memberId FROM task_member_join WHERE taskId = :taskId")
     suspend fun getMemberIdsForTask(taskId: String): List<String>
+
+    @Query("DELETE FROM task_table_new WHERE homeId = :homeId")
+    suspend fun deleteAllByHomeId(homeId: String)
+
+    @Transaction
+    suspend fun updateTaskOnly(task: TaskEntityNew) {
+        updateTaskBaseNew(task)
+    }
 
 }

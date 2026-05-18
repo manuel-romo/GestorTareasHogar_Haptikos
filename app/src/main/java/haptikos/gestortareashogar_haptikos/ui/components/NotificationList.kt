@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.ui.components
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -18,6 +20,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -76,7 +80,15 @@ fun NotificationEmojiRow(
     enabled: Boolean = true
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .toggleable(
+                value = isChecked,
+                onValueChange = onCheckedChange,
+                enabled = enabled,
+                role = Role.Switch
+            )
+            .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(modifier = Modifier.size(36.dp), contentAlignment = Alignment.Center) {
@@ -84,12 +96,21 @@ fun NotificationEmojiRow(
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.Bold, color = if(enabled) Color.Black else Color.Gray, style = MaterialTheme.typography.bodyMedium)
-            Text(desc, color = Color.Gray, style = MaterialTheme.typography.bodySmall)
+            Text(
+                title,
+                fontWeight = FontWeight.Bold,
+                color = if (enabled) Color.Black else Color.Gray,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                desc,
+                color = Color.Gray,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
         Switch(
             checked = isChecked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = null,
             enabled = enabled,
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,

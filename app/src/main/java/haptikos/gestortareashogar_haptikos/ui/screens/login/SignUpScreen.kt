@@ -56,6 +56,7 @@ import haptikos.gestortareashogar_haptikos.data.enumerators.UserGender
 import haptikos.gestortareashogar_haptikos.ui.components.CustomTextField
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import androidx.compose.material3.SelectableDates
+import androidx.compose.ui.input.key.type
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -168,8 +169,17 @@ fun SignUpScreen(
                             label = "Género",
                             placeholder = "Selecciona tu género",
                             readOnly = true,
-                            modifier = Modifier.menuAnchor(),
-                            leadingIcon = { Icon(painter = painterResource(id = R.drawable.ic_gender), contentDescription = null, modifier = Modifier.size(24.dp)) },
+                            modifier = Modifier.menuAnchor(
+                                type = ExposedDropdownMenuAnchorType.PrimaryNotEditable,
+                                enabled = true
+                            ),
+                            leadingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_gender),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded) }
                         )
 

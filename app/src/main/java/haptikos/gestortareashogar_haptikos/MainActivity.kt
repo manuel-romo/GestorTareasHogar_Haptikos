@@ -41,12 +41,13 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import kotlin.getValue
+import android.content.pm.ActivityInfo
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         enableEdgeToEdge()
-
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
         val database by lazy{ TaskDatabase.getDatabase(this, applicationScope)}
@@ -84,6 +85,7 @@ class MainActivity : FragmentActivity() {
         )
         // KEEP para que si ya existe un WorkManager con ese nombre no se reemplace
 
+
         val syncRepository by lazy {
             SyncRepository(
                 dataStore = dataStoreManager,
@@ -102,7 +104,7 @@ class MainActivity : FragmentActivity() {
         val taskViewModel: TaskViewModel by viewModels { TaskViewModelFactory(repository) }
         val taskInstanceViewModel: TaskInstanceViewModel by viewModels { TaskInstanceViewModelFactory(repository, dataStoreManager) }
         val roomViewModel: RoomViewModel by viewModels { RoomViewModelFactory(repository) }
-        val memberViewModel: MemberViewModel by viewModels { MemberViewModelFactory(repository) }
+        val memberViewModel: MemberViewModel by viewModels { MemberViewModelFactory(repository, dataStoreManager) }
         val homeViewModel: HomeViewModel by viewModels { HomeViewModelFactory(repository, dataStoreManager) }
         val profileViewModel: ProfileViewModel by viewModels { ProfileViewModelFactory(repository, dataStoreManager) }
         val syncViewModel: SyncViewModel by viewModels { SyncViewModelFactory(application, syncRepository) }
@@ -169,9 +171,11 @@ class RoomViewModelFactory(private val repository: AppRepository): ViewModelProv
     }
 }
 
-class MemberViewModelFactory(private val repository: AppRepository): ViewModelProvider.Factory{
+class MemberViewModelFactory(
+    private val repository: AppRepository,
+    private val dataStore: DataStoreManager): ViewModelProvider.Factory{
     override fun <T: ViewModel> create(modelClass: Class<T>): T{
-        return MemberViewModel(repository) as T
+        return MemberViewModel(repository, dataStore) as T
     }
 }
 

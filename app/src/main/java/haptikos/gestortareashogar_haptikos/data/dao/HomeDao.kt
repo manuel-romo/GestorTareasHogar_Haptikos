@@ -6,8 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.HomeEntityNew
-import haptikos.gestortareashogar_haptikos.data.nuevasEntity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.HomeEntityNew
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -16,7 +15,7 @@ interface HomeDao {
     fun getAllHomes(): Flow<List<HomeEntityNew>>
 
     @Query("SELECT * FROM home_table_new WHERE id = :homeId")
-    suspend fun getHomeById(homeId: Int): HomeEntityNew?
+    suspend fun getHomeById(homeId: String): HomeEntityNew?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHome(home: HomeEntityNew): Long
@@ -27,8 +26,8 @@ interface HomeDao {
     @Query("UPDATE home_table_new SET inviteCode = :inviteCode, isSynced = :isSynced WHERE id = :homeId")
     suspend fun updateInviteCodeAndSync(homeId: String, inviteCode: String?, isSynced: Boolean)
 
+    @Query("DELETE FROM home_table_new WHERE id = :homeId")
+    suspend fun deleteHomeById(homeId: String)
 
-    @Delete
-    suspend fun deleteHome(home: HomeEntityNew)
 
 }
