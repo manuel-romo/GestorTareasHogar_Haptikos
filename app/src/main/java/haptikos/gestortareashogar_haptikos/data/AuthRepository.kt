@@ -3,6 +3,7 @@ package haptikos.gestortareashogar_haptikos.data
 import haptikos.gestortareashogar_haptikos.data.enumerators.UserGender
 import haptikos.gestortareashogar_haptikos.network.AuthApi
 import haptikos.gestortareashogar_haptikos.network.RetrofitClient
+import retrofit2.HttpException
 
 class AuthRepository {
 
@@ -12,7 +13,7 @@ class AuthRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Error de credenciales"))
+                Result.failure(HttpException(response))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -27,7 +28,7 @@ class AuthRepository {
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {
-                Result.failure(Exception("Error al registrar"))
+                Result.failure(HttpException(response))
             }
         } catch (e: Exception) {
             Result.failure(e)

@@ -24,10 +24,10 @@ import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 
 @Composable
-fun AccountActionItem(title: String, subtitle: String, iconRes: Int) {
+fun AccountActionItem(title: String, subtitle: String, iconRes: Int, onClick: () -> Unit = {}) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable { }.padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier = Modifier.fillMaxWidth().clickable { }.padding(vertical = 12.dp).clickable { onClick() },
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(modifier = Modifier.size(40.dp).background(Color(0xFFF8F9FA), CircleShape), contentAlignment = Alignment.Center) {
             Icon(

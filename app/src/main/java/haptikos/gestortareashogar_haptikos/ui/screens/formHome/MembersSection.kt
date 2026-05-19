@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.ui.components.MemberAvatar
 import haptikos.gestortareashogar_haptikos.ui.theme.Black
 import haptikos.gestortareashogar_haptikos.ui.theme.DarkAmber
 import haptikos.gestortareashogar_haptikos.ui.theme.DarkBlue
@@ -210,14 +211,7 @@ fun MemberItem(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .background(avatarColor, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(member.name.take(1).uppercase(), color = White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-        }
+        MemberAvatar(member = member, size = 48.dp)
 
         Spacer(modifier = Modifier.width(12.dp))
 

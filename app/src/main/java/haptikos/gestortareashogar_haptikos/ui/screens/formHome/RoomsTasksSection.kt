@@ -54,6 +54,7 @@ import haptikos.gestortareashogar_haptikos.data.entity.TaskEntityNew
 import haptikos.gestortareashogar_haptikos.data.entity.TaskWithDetails
 import haptikos.gestortareashogar_haptikos.ui.components.BiometricAuthBottomSheet
 import haptikos.gestortareashogar_haptikos.ui.components.FeedbackBottomSheet
+import haptikos.gestortareashogar_haptikos.ui.components.MemberAvatar
 import haptikos.gestortareashogar_haptikos.ui.enums.RecurrenceType
 import haptikos.gestortareashogar_haptikos.ui.enums.SuggestedDay
 import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
@@ -592,9 +593,7 @@ fun TaskItem(
     val members = taskDetail.members
     val isTeam = members.size > 1
 
-    val uiMembers = members.map { m ->
-        Pair(m.name.take(1).uppercase(), parseHexColor(m.colorHex))
-    }
+
     val membersText = members.joinToString(", ") { it.name }.ifEmpty { "Sin asignar" }
 
     // Fecha de pausa formateada
@@ -695,39 +694,18 @@ fun TaskItem(
             }
 
             // Miembros asignados
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_users),
-                    contentDescription = null,
-                    tint = SilverGray,
-                    modifier = Modifier.size(14.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy((-6).dp)) {
-                    uiMembers.forEach { (initial, color) ->
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(color)
-                                .border(1.dp, MaterialTheme.colorScheme.surface, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                initial,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+            Row(horizontalArrangement = Arrangement.spacedBy((-6).dp)) {
+                members.forEach { member ->
+                    Box(
+                        modifier = Modifier.border(
+                            1.dp,
+                            MaterialTheme.colorScheme.surface,
+                            CircleShape
+                        )
+                    ) {
+                        MemberAvatar(member = member, size = 20.dp)
                     }
                 }
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = membersText,
-                    color = MediumDarkGray,
-                    fontSize = 12.sp
-                )
             }
         }
 

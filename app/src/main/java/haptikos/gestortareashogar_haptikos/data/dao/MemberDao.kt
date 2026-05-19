@@ -50,4 +50,10 @@ interface MemberDao {
     @Query("DELETE FROM member_table_new WHERE homeId = :homeId AND userId = :userId")
     suspend fun deleteMemberByHomeAndUser(homeId: String, userId: String)
 
+    @Query("SELECT id FROM member_table_new WHERE homeId = :homeId")
+    suspend fun getAllIdsByHomeId(homeId: String): List<String>
+
+    @Query("DELETE FROM member_table_new WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<String>): Int
+
 }

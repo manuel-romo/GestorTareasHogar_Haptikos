@@ -13,7 +13,8 @@ interface SyncApi {
         val lastName: String,
         val colorHex: String,
         val role: String,
-        val status: String
+        val status: String,
+        val profilePicUrl: String?
     )
 
     data class HomeSyncDto(

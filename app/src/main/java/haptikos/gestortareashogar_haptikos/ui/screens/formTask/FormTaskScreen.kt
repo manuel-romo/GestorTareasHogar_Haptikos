@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -296,11 +297,18 @@ fun TaskTopAppBar(isEditing: Boolean = false, roomInfo: RoomEntityNew? = null, o
                 IconButton(
                     onClick = { onReturn() },
                     modifier = Modifier
-                        .size(32.dp)
+                        .padding(start = 8.dp)
+                        .size(36.dp)
                         .background(White.copy(alpha = 0.2f), CircleShape)
                 ) {
-                    Icon(painterResource(id = R.drawable.ic_back), "Atrás", tint = White, modifier = Modifier.size(16.dp))
+                    Icon(
+                        painterResource(id = R.drawable.ic_back),
+                        "Atrás",
+                        tint = White,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
+
                 Spacer(modifier = Modifier.width(20.dp))
                 Text(
                     text = if (isEditing) "Editar tarea" else "Nueva tarea",
@@ -335,30 +343,38 @@ fun TaskTopAppBar(isEditing: Boolean = false, roomInfo: RoomEntityNew? = null, o
             }
         }
     } else {
-        TopAppBar(
-            title = {
-                Text(if (isEditing) "Editar tarea" else "Nueva tarea", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-            },
-            navigationIcon = {
-                IconButton(
-                    onClick = { onReturn() },
-                    modifier = Modifier
-                        .padding(start = 20.dp)
-                        .size(32.dp)
-                        .background(White.copy(alpha = 0.2f), CircleShape)
-                ) {
-                    Icon(painterResource(id = R.drawable.ic_back), "Atrás", modifier = Modifier.size(16.dp))
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = Color.Transparent,
-                titleContentColor = White,
-                navigationIconContentColor = White
-            ),
-            modifier = Modifier.background(
-                brush = Brush.verticalGradient(colors = listOf(BrightOrange, Orange))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    brush = Brush.verticalGradient(colors = listOf(BrightOrange, Orange))
+                )
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp, vertical = 20.dp)
+        ) {
+            // Flecha a la izquierda
+            IconButton(
+                onClick = { onReturn() },
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(36.dp)
+                    .background(White.copy(alpha = 0.2f), CircleShape)
+            ) {
+                Icon(
+                    painterResource(id = R.drawable.ic_back),
+                    "Atrás",
+                    tint = White,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+            Text(
+                text = if (isEditing) "Editar tarea" else "Nueva tarea",
+                color = White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 20.sp,
+                modifier = Modifier.align(Alignment.Center)
             )
-        )
+        }
     }
 }
 

@@ -345,7 +345,7 @@ fun CreateHomeStep3Content(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(user.avatarColor), // Asumo que es un objeto Color, si es hex necesitas parsearlo
+                                    .background(user.avatarColor),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(user.avatarInitials, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)

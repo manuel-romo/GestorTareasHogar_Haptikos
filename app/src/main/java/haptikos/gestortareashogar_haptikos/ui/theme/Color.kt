@@ -15,6 +15,8 @@ val LightRed = Color(0xFFFFEBEE)
 val Amber = Color(0xFFFFB300)
 val Green = Color(0xFF4CAF50)
 
+val LightGreen = Color(0xFF86E18A)
+
 val White = Color(0xFFFFFFFF)
 
 val LightYellow = Color(0xFFFFF8E1)

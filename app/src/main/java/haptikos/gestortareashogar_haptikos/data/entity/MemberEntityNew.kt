@@ -28,6 +28,7 @@ data class MemberEntityNew(
     val lastName: String,
     val colorHex: String,
     val role: MemberRole,
+    val profilePicUrl: String? = null,
 
     val homeId: String,
     val status: MemberStatus,

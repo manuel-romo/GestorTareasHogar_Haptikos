@@ -1,6 +1,7 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,7 +60,8 @@ fun HomeScreen(
     onNavigateToCreateHome:() -> Unit,
     onNavigateToJoinHome: () -> Unit,
     onNotificationsClick: () -> Unit,
-    onRewardsClick: () -> Unit
+    onRewardsClick: () -> Unit,
+    onNavigateToHistory: () -> Unit
 ){
 
     val isOffline by syncViewModel.isOffline.collectAsState()
@@ -106,7 +108,8 @@ fun HomeScreen(
         onRewardsClick = onRewardsClick,
         isOffline = isOffline,
         hasNotifications = hasNotifications,
-        userIsCreator = userIsCreator
+        userIsCreator = userIsCreator,
+        onNavigateToHistory = onNavigateToHistory
     )
 }
 
@@ -133,7 +136,8 @@ fun HomeContent(
     onRewardsClick: () -> Unit,
     isOffline: Boolean,
     hasNotifications: Boolean,
-    userIsCreator:Boolean
+    userIsCreator:Boolean,
+    onNavigateToHistory: () -> Unit
 ) {
     val tareasPendientes = tasks.filter { it.taskInstance.state == TaskState.PENDING }
     val tareasCompletadas = tasks.filter { it.taskInstance.state == TaskState.COMPLETED }
@@ -149,11 +153,7 @@ fun HomeContent(
 
     val isCollapsed by remember {
         derivedStateOf {
-            if (totalVisibleTasks <= 3) {
-                false
-            } else {
-                listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 50
-            }
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 100
         }
     }
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -265,7 +265,8 @@ fun HomeContent(
                             text = "Ver historial >",
                             color = MaterialTheme.colorScheme.primary,
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.clickable { onNavigateToHistory() }
                         )
                     }
                 }

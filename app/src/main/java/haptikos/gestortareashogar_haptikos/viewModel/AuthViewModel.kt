@@ -18,17 +18,18 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 import kotlin.onSuccess
+import retrofit2.HttpException
 
 class AuthViewModel(
     private val authRepository: AuthRepository,
     private val syncRepository: SyncRepository,
     private val dataStore: DataStoreManager
 ) : ViewModel() {
-
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -42,7 +43,7 @@ class AuthViewModel(
     val isLoggedIn = dataStore.isLoggedInFlow.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = false
+        initialValue = null
     )
 
     val userName = dataStore.usernameFlow.stateIn(
@@ -129,12 +130,7 @@ class AuthViewModel(
                 val token = response.token
 
                 if (!token.isNullOrEmpty()) {
-                    dataStore.saveSession(
-                        userId = userId,
-                        username = name,
-                        token = token,
-                        email = email
-                    )
+                    dataStore.saveSession(userId = userId, username = name, token = token, email = email)
                     syncRepository.syncAll(userId)
                     _isSuccess.value = true
 
@@ -142,10 +138,7 @@ class AuthViewModel(
                     if (!fcmToken.isNullOrEmpty()) {
                         try {
                             dataStore.saveFcmToken(fcmToken)
-                            RetrofitClient.getUserApi(dataStore).updateFcmToken(
-                                userId,
-                                mapOf("fcmToken" to fcmToken)
-                            )
+                            RetrofitClient.getUserApi(dataStore).updateFcmToken(userId, mapOf("fcmToken" to fcmToken))
                         } catch (e: Exception) {
                             e.printStackTrace()
                         }
@@ -153,7 +146,12 @@ class AuthViewModel(
                 } else {
                     _errorMessage.value = "Registro exitoso, pero no se recibió token de acceso"
                 }
+            }.onFailure { error ->
+                _errorMessage.value = parseThrowableError(error, isSignUp = true)
+                error.printStackTrace()
             }
+
+            _isLoading.value = false
         }
     }
 
@@ -181,34 +179,21 @@ class AuthViewModel(
                 val token = loginResponse.token ?: ""
                 val userEmail = loginResponse.email ?: ""
 
-                dataStore.saveSession(
-                    userId = userId,
-                    username = username,
-                    token = token,
-                    email = userEmail
-                )
-
+                dataStore.saveSession(userId = userId, username = username, token = token, email = userEmail)
                 syncRepository.syncAll(userId)
-
                 _isSuccess.value = true
 
                 val fcmToken = FcmUtils.getToken()
-
                 if (!fcmToken.isNullOrEmpty()) {
                     try {
                         dataStore.saveFcmToken(fcmToken)
-
-                        RetrofitClient.getUserApi(dataStore).updateFcmToken(
-                            userId,
-                            mapOf("fcmToken" to fcmToken)
-                        )
+                        RetrofitClient.getUserApi(dataStore).updateFcmToken(userId, mapOf("fcmToken" to fcmToken))
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
                 }
-
             }.onFailure { error ->
-                _errorMessage.value = "Correo o contraseña incorrectos o error de red"
+                _errorMessage.value = parseThrowableError(error, isSignUp = false)
                 error.printStackTrace()
             }
 
@@ -227,7 +212,7 @@ class AuthViewModel(
     }
 
     fun loginWithBiometrics() {
-        if (isLoggedIn.value) {
+        if (isLoggedIn.value == true) {
             viewModelScope.launch {
                 val userId = dataStore.userIdFlow.first()
                 if (userId.isNotEmpty()) {
@@ -246,4 +231,21 @@ class AuthViewModel(
         _errorMessage.value = error
     }
 
+    private fun parseThrowableError(error: Throwable, isSignUp: Boolean = false): String {
+        return when (error) {
+            is IOException -> "No se ha podido conectar al servidor"
+
+            is HttpException -> {
+                when (error.code()) {
+                    401 -> "Correo o contraseña incorrectos"
+                    404 -> if (isSignUp) "Ruta no encontrada" else "Esta cuenta no está registrada"
+                    409 -> "Este correo ya está registrado con otra cuenta"
+                    400 -> "Los datos enviados son incorrectos"
+                    500 -> "El servidor está experimentando problemas. Intenta más tarde"
+                    else -> "Error en el servidor (${error.code()})"
+                }
+            }
+            else -> error.localizedMessage ?: "Ocurrió un error inesperado. Inténtalo de nuevo"
+        }
+    }
 }

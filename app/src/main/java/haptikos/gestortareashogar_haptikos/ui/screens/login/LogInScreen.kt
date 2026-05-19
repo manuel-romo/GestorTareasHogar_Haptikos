@@ -107,9 +107,9 @@ fun LogInContent(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    val hasAuthError = errorMessage == "Correo o contraseña incorrectos" ||
-            errorMessage == "Llena todos los campos" ||
-            errorMessage == "Por favor, ingresa un correo válido"
+    val hasAuthError = errorMessage != null &&
+            !errorMessage.contains("internet") &&
+            !errorMessage.contains("servidor")
 
     val context = LocalContext.current
     val activity = context.findFragmentActivity()
@@ -168,11 +168,11 @@ fun LogInContent(
                         placeholder = "correo@ejemplo.com",
                         isError = hasAuthError,
                         leadingIcon = {
+                            // FIX: Se removió el 'tint' fijo para permitir el comportamiento dinámico
                             Icon(
                                 imageVector = ImageVector.vectorResource(id = R.drawable.ic_email),
                                 contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     )
@@ -189,11 +189,11 @@ fun LogInContent(
                         placeholder = "********",
                         isError = hasAuthError,
                         leadingIcon = {
+                            // FIX: Se removió el 'tint' fijo
                             Icon(
                                 imageVector = ImageVector.vectorResource(id = R.drawable.ic_padlock),
                                 contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                modifier = Modifier.size(24.dp)
                             )
                         },
                         isPassword = true,
@@ -203,15 +203,14 @@ fun LogInContent(
                                 onClick = {
                                     passwordVisible = !passwordVisible
                                 }
-                            )
-                            {
+                            ) {
+                                // FIX: Se removió el 'tint' fijo del ojo
                                 Icon(
                                     painter = painterResource(
                                         if (passwordVisible) R.drawable.ic_eye_opened else R.drawable.ic_eye_closed
                                     ),
                                     contentDescription = if (passwordVisible) "Ocultar contraseña" else "Ver contraseña",
-                                    modifier = Modifier.size(24.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         }
@@ -314,7 +313,6 @@ fun LogInContent(
                         shape = RoundedCornerShape(16.dp),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
-
                         Icon(
                             painter = painterResource(id = R.drawable.ic_fingerprint),
                             contentDescription = "Icono de huella",

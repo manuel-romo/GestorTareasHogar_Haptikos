@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails
+import haptikos.gestortareashogar_haptikos.ui.components.MemberAvatar
 import haptikos.gestortareashogar_haptikos.utils.getDayName
 import haptikos.gestortareashogar_haptikos.utils.parseHexColor
 
@@ -155,19 +156,9 @@ fun TaskCard(
                 Spacer(Modifier.height(8.dp))
 
                 // Fila de Miembros
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy((-6).dp)) {
                     taskInstance.assignedMembers.forEach { member ->
-                        val memberColor = parseHexColor(member.colorHex)
-
-                        Surface(shape = RoundedCornerShape(12.dp), color = memberColor) {
-                            Text(
-                                text = member.name,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                            )
-                        }
+                        MemberAvatar(member = member, size = 28.dp)
                     }
                 }
             }

@@ -36,6 +36,10 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -52,7 +56,8 @@ import haptikos.gestortareashogar_haptikos.ui.screens.rewards.InfoCard
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.ui.components.CustomBottomNavigation
 
-//Algunos modelos
+// Algunos modelos
+
 data class HomeStatsItem(
     val homeName: String,
     val completedTasks: Int,
@@ -63,13 +68,11 @@ data class HomeStatsItem(
     val iconBgColor: Color
 )
 
-//Estructura para un punto en la gráfica de tendencia
 data class ChartPoint(
     val label: String,
     val value: Float
 )
 
-//Estructura para la comparativa por hogar
 data class HomeComparisonData(
     val homeName: String,
     val completedCount: Int,
@@ -84,111 +87,214 @@ data class UserStatsUiState(
     val streakDays: Int = 0,
     val selectedRange: String = "Año",
     val homeStats: List<HomeStatsItem> = emptyList(),
-    //Datos necesarios para pintar la gráfica
     val trendChartPoints: List<ChartPoint> = emptyList(),
     val homeComparisonPoints: List<HomeComparisonData> = emptyList()
 )
 
-//Composable para hacer la pantalla de Stats de usuario
+// Pantalla principal
+
 @Composable
 fun UserStatsScreen(
     viewModel: TaskInstanceViewModel,
-    userName: String,
     onBackClick: () -> Unit
 ) {
     val uiState by viewModel.userStats.collectAsState()
     val selectedRange by viewModel.selectedTimeRange.collectAsState()
+    val userName by viewModel.userName.collectAsState()
+    var homesExpanded by remember { mutableStateOf(false) }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { /*Agregar hogar*/ },
-                containerColor = Color(0xFFFF7000),
-                shape = CircleShape,
-                modifier = Modifier
-                    .size(64.dp)
-                    .offset(y = 50.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFFF7F9FA))
+            .verticalScroll(rememberScrollState())
+    ) {
+        UserStatsHeader(
+            userName = userName,
+            completedCount = uiState.completedCount,
+            effectiveness = uiState.effectiveness,
+            streakDays = uiState.streakDays,
+            onBackClick = onBackClick
+        )
+
+        TimeRangeSelector(selectedRange) { viewModel.updateTimeRange(it) }
+
+        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+
+            // Selector de Hogares
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
+                color = Color.White
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_plus),
-                    contentDescription = "Agregar",
-                    modifier = Modifier.size(28.dp),
-                    tint = Color.White
+                Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("🏠", fontSize = 20.sp)
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Todos los hogares", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text("${uiState.homeStats.size} hogares activos", color = Color.Gray, fontSize = 12.sp)
+                    }
+                    Icon(painterResource(R.drawable.ic_dropdown), null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                }
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Mis hogares
+            InfoCard(title = "Mis hogares", iconId = R.drawable.ic_home_orange) {
+                val visibleHomes = if (homesExpanded) uiState.homeStats else uiState.homeStats.take(2)
+                visibleHomes.forEach { home -> HomeStatItem(home) }
+
+                if (uiState.homeStats.size > 2) {
+                    TextButton(
+                        onClick = { homesExpanded = !homesExpanded },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            if (homesExpanded) "Ver menos" else "Ver ${uiState.homeStats.size - 2} más",
+                            color = Color(0xFFFF8A00),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            }
+            
+            Spacer(Modifier.height(20.dp))
+
+            // Tendencia
+            InfoCard(title = "Tendencia de tareas completadas", iconId = R.drawable.ic_bolt) {
+                TaskTrendLineChart(points = uiState.trendChartPoints)
+            }
+
+            Spacer(Modifier.height(20.dp))
+
+            // Comparativa
+            InfoCard(title = "Comparativa por hogar", iconId = R.drawable.ic_home_orange) {
+                HomeTaskBarChart(
+                    data = uiState.homeComparisonPoints,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
-        },
-        floatingActionButtonPosition = FabPosition.Center,
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = padding.calculateBottomPadding())
-                .background(Color(0xFFF7F9FA))
-                .verticalScroll(rememberScrollState())
-        ) {
-            //Llamada al Header para colocarlo
-            UserStatsHeader(
-                userName = userName,
-                completedCount = uiState.completedCount,
-                effectiveness = uiState.effectiveness,
-                streakDays = uiState.streakDays,
-                onBackClick = onBackClick
+
+            Spacer(Modifier.height(20.dp))
+
+            SummaryGrid(uiState)
+        }
+
+        Spacer(Modifier.height(100.dp))
+    }
+}
+
+// Gráficas
+@Composable
+fun TaskTrendLineChart(points: List<ChartPoint>) {
+    val chartColor = Color(0xFFFF6D00)
+    val gridColor = Color(0xFFEEEEEE)
+
+    Canvas(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .padding(top = 16.dp, bottom = 24.dp)
+    ) {
+        val width = size.width
+        val height = size.height
+        val spacingX = if (points.size > 1) width / (points.size - 1) else width
+        val maxVal = 100f
+
+        (0..4).forEach { i ->
+            val y = height - (height * (i * 25f / maxVal))
+            drawLine(gridColor, Offset(0f, y), Offset(width, y), 1.dp.toPx())
+        }
+
+        val path = Path()
+        val fillPath = Path()
+
+        points.forEachIndexed { index, point ->
+            val x = index * spacingX
+            val y = height - (height * (point.value / maxVal))
+            if (index == 0) {
+                path.moveTo(x, y)
+                fillPath.moveTo(x, height)
+                fillPath.lineTo(x, y)
+            } else {
+                path.lineTo(x, y)
+                fillPath.lineTo(x, y)
+            }
+            if (index == points.size - 1) {
+                fillPath.lineTo(x, height)
+                fillPath.close()
+            }
+
+            drawContext.canvas.nativeCanvas.drawText(
+                point.label, x, height + 16.dp.toPx(),
+                android.graphics.Paint().apply {
+                    color = Color.Gray.toArgb()
+                    textSize = 10.sp.toPx()
+                    textAlign = android.graphics.Paint.Align.CENTER
+                }
+            )
+        }
+
+        drawPath(fillPath, Brush.verticalGradient(listOf(chartColor.copy(0.2f), Color.Transparent)))
+        drawPath(path, chartColor, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round))
+    }
+}
+
+@Composable
+fun HomeTaskBarChart(
+    data: List<HomeComparisonData>,
+    modifier: Modifier = Modifier
+) {
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(220.dp)
+            .padding(top = 16.dp, bottom = 28.dp)
+    ) {
+        val width = size.width
+        val height = size.height
+        val barWidth = 30.dp.toPx()
+        val spacingX = width / (data.size + 1)
+        val maxVal = data.maxOfOrNull { (it.completedCount + it.pendingCount).toFloat() }
+            ?.coerceAtLeast(1f) ?: 1f
+
+        data.forEachIndexed { index, item ->
+            val x = (index + 1) * spacingX
+            val totalTasks = (item.completedCount + item.pendingCount).toFloat()
+            val totalHeight = (totalTasks / maxVal) * height
+            val completedHeight = (item.completedCount / maxVal) * height
+
+            // Barra pendiente
+            drawRoundRect(
+                item.pendingColor,
+                Offset(x - barWidth / 2, height - totalHeight),
+                Size(barWidth, totalHeight),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx())
+            )
+            // Barra completada
+            drawRoundRect(
+                item.color,
+                Offset(x - barWidth / 2, height - completedHeight),
+                Size(barWidth, completedHeight),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx())
             )
 
-            //Selector de tiempo (Año, Mes, Semana)
-            TimeRangeSelector(selectedRange) { viewModel.updateTimeRange(it) }
-
-            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-
-                //Selector de Hogares
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
-                    color = Color.White
-                ) {
-                    Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text("🏠", fontSize = 20.sp)
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text("Todos los hogares", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                            Text("${uiState.homeStats.size} miembros · Varios", color = Color.Gray, fontSize = 12.sp)
-                        }
-                        Icon(painterResource(R.drawable.ic_dropdown), null, tint = Color.Gray, modifier = Modifier.size(16.dp))
-                    }
+            drawContext.canvas.nativeCanvas.drawText(
+                item.homeName, x, height + 18.dp.toPx(),
+                android.graphics.Paint().apply {
+                    color = Color.Gray.toArgb()
+                    textSize = 10.sp.toPx()
+                    textAlign = android.graphics.Paint.Align.CENTER
                 }
-
-                Spacer(Modifier.height(24.dp))
-
-                //Sección Mis Hogares
-                InfoCard(title = "Mis hogares", iconId = R.drawable.ic_home_orange) {
-                    uiState.homeStats.forEach { home ->
-                        HomeStatItem(home)
-                    }
-                }
-
-                //Sección de tendencia de tareas completadas
-                InfoCard(title = "Tendencia de tareas completadas", iconId = R.drawable.ic_bolt) {
-                    TaskTrendLineChart(points = uiState.trendChartPoints)
-                }
-
-                Spacer(Modifier.height(24.dp))
-
-                //Sección de Comparativa
-                InfoCard(title = "Comparativa por hogar", iconId = R.drawable.ic_home_orange) {
-                    HomeTaskBarChart(data = uiState.homeComparisonPoints)
-                }
-
-                Spacer(Modifier.height(24.dp))
-
-                //Sección porcentajes generales
-                SummaryGrid(uiState)
-
-            }
-            Spacer(Modifier.height(100.dp))
+            )
         }
     }
 }
+
+// Componentes
 
 @Composable
 fun SummaryGrid(uiState: UserStatsUiState) {
@@ -303,9 +409,7 @@ fun HomeStatItem(home: HomeStatsItem) {
                     fontSize = 14.sp
                 )
             }
-
             Spacer(modifier = Modifier.height(8.dp))
-
             LinearProgressIndicator(
                 progress = { home.progress },
                 modifier = Modifier
@@ -315,9 +419,7 @@ fun HomeStatItem(home: HomeStatsItem) {
                 color = home.color,
                 trackColor = Color(0xFFF0F0F0)
             )
-
             Spacer(modifier = Modifier.height(6.dp))
-
             Text(
                 text = "${home.completedTasks} de ${home.totalTasks} tareas",
                 color = Color.Gray,
@@ -354,534 +456,6 @@ fun TimeRangeSelector(selected: String, onSelected: (String) -> Unit) {
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
-            }
-        }
-    }
-}
-
-@Composable
-fun TaskTrendLineChart(points: List<ChartPoint>) {
-    val chartColor = Color(0xFFFF6D00)
-    val gridColor = Color(0xFFEEEEEE)
-
-    Canvas(modifier =
-        Modifier
-            .fillMaxWidth()
-            .height(180.dp).
-            padding(top = 16.dp)
-    ) {
-        val width = size.width
-        val height = size.height
-        val spacingX = if (points.size > 1) width / (points.size - 1) else width
-        val maxVal = 100f
-
-        (0..4).forEach { i ->
-            val y = height - (height * (i * 25f / maxVal))
-            drawLine(gridColor, Offset(0f, y), Offset(width, y), 1.dp.toPx())
-        }
-
-        val path = Path()
-        val fillPath = Path()
-
-        points.forEachIndexed { index, point ->
-            val x = index * spacingX
-            val y = height - (height * (point.value / maxVal))
-            if (index == 0) {
-                path.moveTo(x, y)
-                fillPath.moveTo(x, height)
-                fillPath.lineTo(x, y)
-            } else {
-                path.lineTo(x, y)
-                fillPath.lineTo(x, y)
-            }
-            if (index == points.size - 1) {
-                fillPath.lineTo(x, height)
-                fillPath.close()
-            }
-
-            //Etiquetas con los meses, días del mes o días de la semana
-            drawContext.canvas.nativeCanvas.drawText(
-                point.label, x, height + 20.dp.toPx(),
-                android.graphics.Paint().apply { color = Color.Gray.toArgb(); textSize = 10.sp.toPx(); textAlign = android.graphics.Paint.Align.CENTER }
-            )
-        }
-
-        drawPath(fillPath, Brush.verticalGradient(listOf(chartColor.copy(0.2f), Color.Transparent)))
-        drawPath(path, chartColor, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round))
-    }
-}
-
-@Composable
-fun HomeTaskBarChart(data: List<HomeComparisonData>) {
-    Canvas(modifier = Modifier.fillMaxWidth().height(200.dp).padding(top = 16.dp)) {
-        val width = size.width
-        val height = size.height
-        val barWidth = 30.dp.toPx()
-        val spacingX = width / (data.size + 1)
-        val maxVal = 500f
-
-        data.forEachIndexed { index, item ->
-            val x = (index + 1) * spacingX
-            val totalTasks = (item.completedCount + item.pendingCount).toFloat()
-            val totalHeight = (totalTasks / maxVal) * height
-            val completedHeight = (item.completedCount / maxVal) * height
-
-            //Barra Pendiente
-            drawRoundRect(item.pendingColor,
-                Offset(x - barWidth/2,
-                    height - totalHeight),
-                Size(barWidth, totalHeight),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx())
-            )
-            //Barra Completada
-            drawRoundRect(item.color,
-                Offset(x - barWidth/2,
-                    height - completedHeight),
-                Size(barWidth, completedHeight),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(6.dp.toPx())
-            )
-
-            drawContext.canvas.nativeCanvas.drawText(
-                item.homeName, x, height + 20.dp.toPx(),
-                android.graphics.Paint().apply { color = Color.Gray.toArgb(); textSize = 10.sp.toPx(); textAlign = android.graphics.Paint.Align.CENTER }
-            )
-        }
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true, name = "Vista Año")
-@Composable
-fun UserStatsScreenPreview() {
-    //Mock la lista de hogares con los colores y fondos exactos de la imagen
-    val mockHomeStats = listOf(
-        HomeStatsItem(
-            homeName = "Mi Casa",
-            completedTasks = 524,
-            totalTasks = 612,
-            progress = 0.86f,
-            color = Color(0xFFFF6D00),
-            icon = "🏡",
-            iconBgColor = Color(0xFFFFF3E0)
-        ),
-        HomeStatsItem(
-            homeName = "Casa de Mamá",
-            completedTasks = 368,
-            totalTasks = 396,
-            progress = 0.93f,
-            color = Color(0xFFA143F4),
-            icon = "👸",
-            iconBgColor = Color(0xFFF3E5F5)
-        ),
-        HomeStatsItem(
-            homeName = "Apartamento",
-            completedTasks = 116,
-            totalTasks = 216,
-            progress = 0.54f,
-            color = Color(0xFF2196F3),
-            icon = "🏢",
-            iconBgColor = Color(0xFFE3F2FD)
-        )
-    )
-    // Mock de puntos para la gráfica de tendencia (Imagen 7 superior)
-    val mockTrendPoints = listOf(
-        ChartPoint("Ene", 80f),
-        ChartPoint("Feb", 72f),
-        ChartPoint("Mar", 88f),
-        ChartPoint("Abr", 90f),
-        ChartPoint("May", 85f),
-        ChartPoint("Jun", 78f),
-        ChartPoint("Jul", 82f),
-        ChartPoint("Ago", 91f),
-        ChartPoint("Sep", 76f),
-        ChartPoint("Oct", 84f),
-        ChartPoint("Nov", 88f),
-        ChartPoint("Dic", 93f)
-    )
-
-    //Mock de datos para la comparativa por hogar (Imagen 7 inferior)
-    val mockHomeComparison = listOf(
-        HomeComparisonData(
-            homeName = "Mi Casa",
-            completedCount = 524,
-            pendingCount = 88,
-            color = Color(0xFFFF6D00),
-            pendingColor = Color(0xFFFF6D00).copy(alpha = 0.3f)
-        ),
-        HomeComparisonData(
-            homeName = "Casa de Mamá",
-            completedCount = 368,
-            pendingCount = 28,
-            color = Color(0xFFA143F4),
-            pendingColor = Color(0xFFA143F4).copy(alpha = 0.3f)
-        ),
-        HomeComparisonData(
-            homeName = "Apartamento",
-            completedCount = 116, pendingCount = 100,
-            color = Color(0xFF2196F3),
-            pendingColor = Color(0xFF2196F3).copy(alpha = 0.3f)
-        )
-    )
-
-    //Mock el estado de la UI para el año
-    val mockUiState = UserStatsUiState(
-        completedCount = 104,
-        effectiveness = 84,
-        streakDays = 7,
-        homeStats = mockHomeStats,
-        trendChartPoints = mockTrendPoints,
-        homeComparisonPoints = mockHomeComparison
-    )
-    haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
-        Scaffold(
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = {},
-                    containerColor = Color(0xFFFF7000),
-                    shape = CircleShape,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .offset(y = 50.dp)
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_plus),
-                        contentDescription = "Agregar",
-                        modifier = Modifier.size(28.dp),
-                        tint = Color.White
-                    )
-                }
-            },
-            floatingActionButtonPosition = FabPosition.Center,
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = padding.calculateBottomPadding())
-                    .background(Color(0xFFF7F9FA))
-                    .verticalScroll(rememberScrollState())
-            ) {
-                UserStatsHeader(
-                    userName = "María",
-                    completedCount = mockUiState.completedCount,
-                    effectiveness = mockUiState.effectiveness,
-                    streakDays = mockUiState.streakDays,
-                    onBackClick = {}
-                )
-                //Selector de tiempo
-                TimeRangeSelector(selected = "Año", onSelected = {})
-                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                    //Selector de Hogares
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        border = BorderStroke(1.dp, Color(0xFFEEEEEE)),
-                        color = Color.White
-                    ) {
-                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("🏠", fontSize = 20.sp)
-                            Spacer(Modifier.width(12.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text("Todos los hogares", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("12 miembros · Varios", color = Color.Gray, fontSize = 12.sp)
-                            }
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_dropdown),
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(24.dp))
-                    InfoCard(title = "Mis hogares", iconId = R.drawable.ic_home_orange) {
-                        mockHomeStats.forEach { home ->
-                            HomeStatItem(home)
-                        }
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    //Sección Tendencia
-                    InfoCard(title = "Tendencia de tareas completadas", iconId = R.drawable.ic_bolt) {
-                        TaskTrendLineChart(points = mockTrendPoints)
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    //Sección Comparativa
-                    InfoCard(title = "Comparativa por hogar", iconId = R.drawable.ic_home_orange) {
-                        HomeTaskBarChart(data = mockHomeComparison)
-                    }
-
-                    Spacer(Modifier.height(24.dp))
-
-                    //Sección porcentajes generales
-                    SummaryGrid(mockUiState)
-                }
-                Spacer(Modifier.height(100.dp))
-            }
-        }
-    }
-}
-
-//Segundo preview para la vista de Mes
-@Preview(showBackground = true, showSystemUi = true, name = "Vista Mes")
-@Composable
-fun UserStatsScreenMonthPreview() {
-    val mockHomeStatsMonth = listOf(
-        HomeStatsItem(
-            "Mi Casa",
-            45,
-            50,
-            0.90f,
-            Color(0xFFFF6D00),
-            "🏡",
-            Color(0xFFFFF3E0)
-        ),
-        HomeStatsItem(
-            "Casa de Mamá",
-            20,
-            25,
-            0.80f,
-            Color(0xFFA143F4),
-            "👸",
-            Color(0xFFF3E5F5)
-        ),
-        HomeStatsItem(
-            "Apartamento",
-            10,
-            30,
-            0.33f,
-            Color(0xFF2196F3),
-            "🏢",
-            Color(0xFFE3F2FD)
-        )
-    )
-
-    val mockTrendPointsMonth = listOf(
-        ChartPoint("1", 40f),
-        ChartPoint("5", 65f),
-        ChartPoint("10", 50f),
-        ChartPoint("15", 80f),
-        ChartPoint("20", 75f),
-        ChartPoint("25", 90f),
-        ChartPoint("30", 85f)
-    )
-
-    val mockHomeComparisonMonth = listOf(
-        HomeComparisonData(
-            "Mi Casa",
-            45,
-            5,
-            Color(0xFFFF6D00),
-            Color(0xFFFF6D00).copy(alpha = 0.3f)
-        ),
-        HomeComparisonData(
-            "Casa Mamá",
-            20,
-            5,
-            Color(0xFFA143F4),
-            Color(0xFFA143F4).copy(alpha = 0.3f)
-        ),
-        HomeComparisonData(
-            "Apto",
-            10,
-            20,
-            Color(0xFF2196F3),
-            Color(0xFF2196F3).copy(alpha = 0.3f)
-        )
-    )
-
-    val mockUiStateMonth = UserStatsUiState(
-        completedCount = 75,
-        effectiveness = 82,
-        streakDays = 31,
-        homeStats = mockHomeStatsMonth,
-        trendChartPoints = mockTrendPointsMonth,
-        homeComparisonPoints = mockHomeComparisonMonth
-    )
-
-    haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
-        Scaffold(
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = {},
-                    containerColor = Color(0xFFFF7000),
-                    shape = CircleShape,
-                    modifier = Modifier.size(64.dp).offset(y = 50.dp)
-                ) {
-                    Icon(painterResource(id = R.drawable.ic_plus), "Agregar", Modifier.size(28.dp), tint = Color.White)
-                }
-            },
-            floatingActionButtonPosition = FabPosition.Center,
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = padding.calculateBottomPadding())
-                    .background(Color(0xFFF7F9FA))
-                    .verticalScroll(rememberScrollState())
-            ) {
-                UserStatsHeader("María", 75, 82, 31, {})
-                TimeRangeSelector(selected = "Mes", onSelected = {})
-                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Color(0xFFEEEEEE)), color = Color.White) {
-                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("🏠", fontSize = 20.sp); Spacer(Modifier.width(12.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text("Todos los hogares", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("3 hogares activos", color = Color.Gray, fontSize = 12.sp)
-                            }
-                            Icon(painterResource(id = R.drawable.ic_dropdown), null, tint = Color.Gray, modifier = Modifier.size(16.dp))
-                        }
-                    }
-                    Spacer(Modifier.height(24.dp))
-                    InfoCard(title = "Mis hogares (Mes)", iconId = R.drawable.ic_home_orange) {
-                        mockHomeStatsMonth.forEach { HomeStatItem(it) }
-                    }
-                    Spacer(Modifier.height(24.dp))
-                    InfoCard(title = "Tendencia de tareas (Mes)", iconId = R.drawable.ic_bolt) {
-                        TaskTrendLineChart(points = mockTrendPointsMonth)
-                    }
-                    Spacer(Modifier.height(24.dp))
-                    InfoCard(title = "Comparativa por hogar (Mes)", iconId = R.drawable.ic_home_orange) {
-                        HomeTaskBarChart(data = mockHomeComparisonMonth)
-                    }
-                    Spacer(Modifier.height(24.dp))
-                    SummaryGrid(mockUiStateMonth)
-                }
-                Spacer(Modifier.height(100.dp))
-            }
-        }
-    }
-}
-
-//Tercer preview para la vista de Semana
-@Preview(showBackground = true, showSystemUi = true, name = "Vista Semana")
-@Composable
-fun UserStatsScreenWeekPreview() {
-    val mockHomeStatsWeek = listOf(
-        HomeStatsItem(
-            "Mi Casa",
-            12,
-            15,
-            0.80f,
-            Color(0xFFFF6D00),
-            "🏡",
-            Color(0xFFFFF3E0)
-        ),
-        HomeStatsItem(
-            "Casa de Mamá",
-            8,
-            8,
-            1.00f,
-            Color(0xFFA143F4),
-            "👸",
-            Color(0xFFF3E5F5)
-        ),
-        HomeStatsItem(
-            "Apartamento",
-            4,
-            10,
-            0.40f,
-            Color(0xFF2196F3),
-            "🏢",
-            Color(0xFFE3F2FD)
-        )
-    )
-
-    val mockTrendPointsWeek = listOf(
-        ChartPoint("Lun", 60f),
-        ChartPoint("Mar", 85f),
-        ChartPoint("Mié", 70f),
-        ChartPoint("Jue", 90f),
-        ChartPoint("Vie", 75f),
-        ChartPoint("Sáb", 95f),
-        ChartPoint("Dom", 80f)
-    )
-
-    val mockHomeComparisonWeek = listOf(
-        HomeComparisonData(
-            "Mi Casa",
-            12,
-            3,
-            Color(0xFFFF6D00),
-            Color(0xFFFF6D00).copy(alpha = 0.3f)
-        ),
-        HomeComparisonData(
-            "Casa Mamá",
-            8,
-            0,
-            Color(0xFFA143F4),
-            Color(0xFFA143F4).copy(alpha = 0.3f)
-        ),
-        HomeComparisonData(
-            "Apto",
-            4,
-            6,
-            Color(0xFF2196F3),
-            Color(0xFF2196F3).copy(alpha = 0.3f)
-        )
-    )
-
-    val mockUiStateWeek = UserStatsUiState(
-        completedCount = 24,
-        effectiveness = 73,
-        streakDays = 5,
-        homeStats = mockHomeStatsWeek,
-        trendChartPoints = mockTrendPointsWeek,
-        homeComparisonPoints = mockHomeComparisonWeek
-    )
-
-    haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
-        Scaffold(
-            floatingActionButton = {
-                FloatingActionButton(
-                    onClick = {},
-                    containerColor = Color(0xFFFF7000),
-                    shape = CircleShape,
-                    modifier = Modifier.size(64.dp).offset(y = 50.dp)
-                ) {
-                    Icon(painterResource(id = R.drawable.ic_plus), "Agregar", Modifier.size(28.dp), tint = Color.White)
-                }
-            },
-            floatingActionButtonPosition = FabPosition.Center,
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(bottom = padding.calculateBottomPadding())
-                    .background(Color(0xFFF7F9FA))
-                    .verticalScroll(rememberScrollState())
-            ) {
-                UserStatsHeader("María", 24, 73, 5, {})
-                TimeRangeSelector(selected = "Semana", onSelected = {})
-                Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-                    Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), border = BorderStroke(1.dp, Color(0xFFEEEEEE)), color = Color.White) {
-                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("🏠", fontSize = 20.sp); Spacer(Modifier.width(12.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text("Todos los hogares", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("3 hogares activos", color = Color.Gray, fontSize = 12.sp)
-                            }
-                            Icon(painterResource(id = R.drawable.ic_dropdown), null, tint = Color.Gray, modifier = Modifier.size(16.dp))
-                        }
-                    }
-                    Spacer(Modifier.height(24.dp))
-                    InfoCard(title = "Mis hogares (Semana)", iconId = R.drawable.ic_home_orange) {
-                        mockHomeStatsWeek.forEach { HomeStatItem(it) }
-                    }
-                    Spacer(Modifier.height(24.dp))
-                    InfoCard(title = "Tendencia de tareas (Semana)", iconId = R.drawable.ic_bolt) {
-                        TaskTrendLineChart(points = mockTrendPointsWeek)
-                    }
-                    Spacer(Modifier.height(24.dp))
-                    InfoCard(title = "Comparativa por hogar (Semana)", iconId = R.drawable.ic_home_orange) {
-                        HomeTaskBarChart(data = mockHomeComparisonWeek)
-                    }
-                    Spacer(Modifier.height(24.dp))
-                    SummaryGrid(mockUiStateWeek)
-                }
-                Spacer(Modifier.height(100.dp))
             }
         }
     }

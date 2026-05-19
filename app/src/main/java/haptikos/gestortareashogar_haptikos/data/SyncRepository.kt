@@ -326,6 +326,7 @@ class SyncRepository(
                                     colorHex = memberDto.colorHex,
                                     role = MemberRole.valueOf(memberDto.role),
                                     status = MemberStatus.valueOf(memberDto.status),
+                                    profilePicUrl = memberDto.profilePicUrl,
                                     isSynced = true
                                 )
                             )
@@ -346,7 +347,10 @@ class SyncRepository(
         pendingInstances.forEach { instance ->
             try {
                 if (instance.state == TaskState.COMPLETED) {
-                    val response = RetrofitClient.getTaskInstanceApi(dataStore).completeInstance(instance.id, currentUserId)
+                    val response = RetrofitClient.getTaskInstanceApi(dataStore).completeInstance(
+                        instance.id,
+                        currentUserId,
+                        instance.completedAt ?: System.currentTimeMillis())
                     if (response.isSuccessful) {
                         taskInstanceDao.updateSyncStatus(instance.id, isSynced = true)
                     }
@@ -359,6 +363,7 @@ class SyncRepository(
                     taskId = instance.taskId,
                     dueDate = instance.dueDate,
                     state = instance.state.name,
+                    completedAt = instance.completedAt,
                     memberIds = memberIds,
                     userId = currentUserId
                 )
@@ -376,37 +381,36 @@ class SyncRepository(
     suspend fun syncMembersForHome(homeId: String) {
         try {
             val response = RetrofitClient.getMemberApi(dataStore).getMembersByHome(homeId)
-
             if (response.isSuccessful) {
-                val remoteMembers = response.body()
+                val remoteMembers = response.body() ?: return
 
-                if (remoteMembers != null) {
-                    // Mapeo de datos recibidos
-                    val localMembers = remoteMembers.map { dto ->
-                        MemberEntityNew(
-                            id = dto.id,
-                            userId = dto.userId ?: "",
-                            homeId = dto.homeId,
-                            name = dto.name,
-                            lastName = dto.lastName ?: "",
-                            colorHex = dto.colorHex ?: "#9E9E9E",
-                            role = MemberRole.valueOf(dto.role ?: "MEMBER"),
-                            status = MemberStatus.valueOf(dto.status ?: "ACTIVE"),
-                            isSynced = true
-                        )
-                    }
-
-                    appDatabase.withTransaction {
-
-                        memberDao.deleteAllByHomeId(homeId)
-                        localMembers.forEach { member ->
-                            memberDao.addNew(member)
-                        }
-                    }
-                    Log.d("SYNC", "Miembros del hogar $homeId sincronizados exitosamente por FCM")
+                val localMembers = remoteMembers.map { dto ->
+                    MemberEntityNew(
+                        id = dto.id,
+                        userId = dto.userId ?: "",
+                        homeId = dto.homeId,
+                        name = dto.name,
+                        lastName = dto.lastName ?: "",
+                        colorHex = dto.colorHex ?: "#9E9E9E",
+                        role = MemberRole.valueOf(dto.role ?: "MEMBER"),
+                        status = MemberStatus.valueOf(dto.status ?: "ACTIVE"),
+                        profilePicUrl = dto.profilePicUrl,
+                        isSynced = true
+                    )
                 }
-            } else {
-                Log.e("SYNC", "Error HTTP al traer miembros: ${response.code()}")
+
+                appDatabase.withTransaction {
+                    localMembers.forEach { member ->
+                        memberDao.addNew(member)
+                    }
+                    // Elimina solo los que el servidor ya no devuelve
+                    val remoteIds = localMembers.map { it.id }.toSet()
+                    val localIds = memberDao.getAllIdsByHomeId(homeId)
+                    val toDelete = localIds.filter { it !in remoteIds }
+                    if (toDelete.isNotEmpty()) {
+                        memberDao.deleteByIds(toDelete)
+                    }
+                }
             }
         } catch (e: Exception) {
             Log.e("SYNC", "Error al sincronizar miembros del hogar $homeId", e)
@@ -424,13 +428,11 @@ class SyncRepository(
                 val remoteTasks = response.body() ?: return
 
                 appDatabase.withTransaction {
-                    // 1. Borrar en orden correcto respetando FKs
                     taskInstanceDao.deleteAllByHomeId(homeId)
-                    taskDao.deleteAllMemberJoinsByHomeId(homeId)  // <-- agregar esto
                     taskDao.deleteAllByHomeId(homeId)
 
-                    // 2. Insertar tareas
                     remoteTasks.forEach { dto ->
+
                         taskDao.addTaskNew(
                             TaskEntityNew(
                                 id = dto.id,
@@ -456,6 +458,7 @@ class SyncRepository(
                             )
                         }
 
+
                         dto.instances.forEach { inst ->
                             taskInstanceDao.insertInstanceWithAssignedMembers(
                                 TaskInstanceEntityNew(
@@ -463,6 +466,7 @@ class SyncRepository(
                                     taskId = inst.taskId,
                                     dueDate = inst.dueDate,
                                     state = TaskState.valueOf(inst.state),
+                                    completedAt = inst.completedAt,
                                     isSynced = true
                                 ),
                                 inst.memberIds

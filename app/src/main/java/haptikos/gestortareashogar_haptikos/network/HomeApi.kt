@@ -113,4 +113,16 @@ interface HomeApi {
         @Path("userId") userId: String
     ): Response<Void>
 
+    @POST("api/homes/{homeId}/invite-email")
+    suspend fun inviteByEmail(
+        @Path("homeId") homeId: String,
+        @Body request: InviteEmailRequest
+    ): Response<Map<String, String>>
+
+    data class InviteEmailRequest(
+        val email: String,
+        val homeName: String,
+        val inviteCode: String
+    )
+
 }

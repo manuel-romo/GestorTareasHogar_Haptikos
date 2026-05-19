@@ -15,7 +15,8 @@ interface TaskInstanceApi {
         val dueDate: Long,
         val state: String,
         val memberIds: List<String>,
-        val userId: String = ""
+        val userId: String = "",
+        val completedAt: Long? = null
     )
 
     data class TaskInstanceNetworkDto(
@@ -23,7 +24,8 @@ interface TaskInstanceApi {
         val taskId: String,
         val dueDate: Long,
         val state: String,
-        val memberIds: List<String>
+        val memberIds: List<String>,
+        val completedAt: Long? = null
     )
 
     @POST("/api/tasks/instances")
@@ -32,7 +34,8 @@ interface TaskInstanceApi {
     @PATCH("/api/tasks/instances/{instanceId}/complete")
     suspend fun completeInstance(
         @Path("instanceId") instanceId: String,
-        @Query("userId") userId: String
+        @Query("userId") userId: String,
+        @Query("completedAt") completedAt: Long
     ): Response<Void>
 
 

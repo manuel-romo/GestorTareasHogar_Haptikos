@@ -7,6 +7,7 @@ import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.helpers.UserSuggestion
 import haptikos.gestortareashogar_haptikos.data.entity.HomeEntityNew
+import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.network.HomeApi
 import haptikos.gestortareashogar_haptikos.ui.screens.createHome.InvitedUser
@@ -251,46 +252,51 @@ class HomeViewModel(
 
     // Sugerencia y Búsqueda de usuarios
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery = _searchQuery.asStateFlow()
-
-    private val _suggestedUsers = MutableStateFlow<List<UserSuggestion>>(emptyList())
-    val suggestedUsers = _suggestedUsers.asStateFlow()
 
     private var allSuggestedUsers: List<UserSuggestion> = emptyList()
 
-    private fun loadSuggestedUsers() {
-        viewModelScope.launch {
-            try {
-                // Simulamos carga de datos
-                val users = listOf(
-                    UserSuggestion("1", "Juan Pérez", "@juan.perez", "#2962FF"),
-                    UserSuggestion("2", "Ana Gómez", "@ana.gomez", "#AA00FF"),
-                    UserSuggestion("3", "Pedro Ramírez", "@pedro.r", "#00C853"),
-                    UserSuggestion("4", "Sofía Torres", "@sofi.torres", "#E91E63")
-                )
-                allSuggestedUsers = users
-                _suggestedUsers.value = users
-            } catch (e: Exception) { }
-        }
-    }
+    val suggestedUsers: StateFlow<List<MemberEntityNew>> = combine(
+        repository.allMembersNew,
+        dataStore.userIdFlow
+    ) { members, currentUserId ->
+        // Todos los miembros de todos los hogares excepto el usuario actual
+        members.filter { it.userId != currentUserId && !it.isDeleted }
+            .distinctBy { it.userId }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
 
     fun onSearchQueryChanged(query: String) {
         _searchQuery.value = query
+    }
 
-        if (query.isBlank()) {
-            _suggestedUsers.value = allSuggestedUsers
-            return
-        }
+    // Estado para feedback del envío de correo
+    private val _inviteEmailState = MutableStateFlow<InviteEmailState>(InviteEmailState.Idle)
+    val inviteEmailState = _inviteEmailState.asStateFlow()
 
-        // Búsqueda lógica
+    sealed class InviteEmailState {
+        object Idle : InviteEmailState()
+        object Loading : InviteEmailState()
+        object Success : InviteEmailState()
+        data class Error(val message: String) : InviteEmailState()
+    }
+
+    fun sendInviteEmail(email: String) {
+        val homeId = _selectedHome.value?.id ?: return
+        val homeName = _selectedHome.value?.name ?: return
+        val inviteCode = _selectedHome.value?.inviteCode ?: return
+
         viewModelScope.launch {
-            val filteredList = allSuggestedUsers.filter {
-                it.fullName.contains(query, ignoreCase = true) ||
-                        it.username.contains(query, ignoreCase = true)
-            }
-            _suggestedUsers.value = filteredList
+            _inviteEmailState.value = InviteEmailState.Loading
+            val success = repository.sendInviteEmail(homeId, email, homeName, inviteCode)
+            _inviteEmailState.value = if (success) InviteEmailState.Success
+            else InviteEmailState.Error("No se pudo enviar el correo")
         }
+    }
+
+    fun resetInviteEmailState() {
+        _inviteEmailState.value = InviteEmailState.Idle
     }
 
     // Flujo para unirse a un hogar -------------------------------------------------------------- -
@@ -392,7 +398,6 @@ class HomeViewModel(
     }
 
     init {
-        loadSuggestedUsers()
         viewModelScope.launch {
             allHomes
                 .filter { it.isNotEmpty() }

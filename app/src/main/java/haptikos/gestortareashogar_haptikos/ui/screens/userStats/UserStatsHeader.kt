@@ -1,6 +1,7 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.userStats
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -28,20 +29,31 @@ fun UserStatsHeader(
         modifier = Modifier
             .fillMaxWidth()
             .background(gradient)
-            .padding(top = 40.dp, bottom = 24.dp, start = 24.dp, end = 24.dp)
+            .statusBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 20.dp)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(modifier = Modifier.fillMaxWidth()) {
             IconButton(
                 onClick = onBackClick,
-                modifier = Modifier.background(Color.White.copy(0.2f), RoundedCornerShape(12.dp))
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .size(36.dp)
+                    .background(Color.White.copy(0.2f), CircleShape)
             ) {
-                Icon(painterResource(R.drawable.ic_back), null, tint = Color.White)
+                Icon(
+                    painterResource(R.drawable.ic_back),
+                    null,
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp)
+                )
             }
-            Spacer(Modifier.width(16.dp))
-            Column {
-                Text("Mis Estadísticas", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                Text("Hola, $userName 👋", color = Color.White.copy(0.8f), fontSize = 14.sp)
-            }
+            Text(
+                "Mis Estadísticas",
+                color = Color.White,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
 
         Spacer(Modifier.height(24.dp))

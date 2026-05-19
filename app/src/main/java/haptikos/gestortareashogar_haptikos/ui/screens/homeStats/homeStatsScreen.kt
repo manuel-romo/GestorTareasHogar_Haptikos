@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,7 +27,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import haptikos.gestortareashogar_haptikos.R
+import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.ui.components.CustomBottomNavigation
+import haptikos.gestortareashogar_haptikos.ui.components.MemberAvatar
 import haptikos.gestortareashogar_haptikos.ui.screens.rewards.InfoCard
 import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
 import haptikos.gestortareashogar_haptikos.ui.theme.MediumDarkGray
@@ -42,10 +45,10 @@ data class BarChartData(
 )
 
 data class MemberStatsItem(
+    val memberEntity: MemberEntityNew,
     val name: String,
     val completedTasks: Int,
-    val totalTasks: Int,
-    val color: Color
+    val totalTasks: Int
 ) {
     val progress: Float = if (totalTasks > 0) completedTasks.toFloat() / totalTasks else 0f
     val percentage: Int = (progress * 100).toInt()
@@ -108,16 +111,6 @@ fun HomeStatsContent(
 
     Scaffold(
         containerColor = Color(0xFFF8F9FA),
-        // Acá se integra el bottom navigation en la pantalla
-        bottomBar = {
-            if (navController != null) {
-                CustomBottomNavigation(
-                    navController = navController,
-                    currentRoute = haptikos.gestortareashogar_haptikos.navigation.Screen.HomeStats.route,
-                    hasCenterFab = canCreateTasks
-                )
-            }
-        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -125,7 +118,6 @@ fun HomeStatsContent(
                 .verticalScroll(rememberScrollState())
                 .padding(padding)
         ) {
-            // Header que ahora si recibe el porcentaje real
             HomeStatsHeader(
                 homeName = "Estadísticas del Hogar",
                 percentage = "${state.effectiveness}",
@@ -343,24 +335,54 @@ fun DistributionProgressItem(label: String, percentage: Int, color: Color) {
 
 @Composable
 fun MemberStatItem(member: MemberStatsItem) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-        Box(modifier = Modifier.size(42.dp).background(member.color, CircleShape), contentAlignment = Alignment.Center) {
-            Text(text = member.name.take(1).uppercase(), color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-        }
+    val color = remember(member.memberEntity.colorHex) {
+        try { Color(android.graphics.Color.parseColor(member.memberEntity.colorHex)) }
+        catch (e: Exception) { Color.Gray }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        MemberAvatar(member = member.memberEntity, size = 42.dp)
+
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                Text(text = member.name, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF2D3142))
-                Text(text = "${member.percentage}%", color = member.color, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = member.memberEntity.name,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color(0xFF2D3142)
+                )
+                Text(
+                    text = "${member.percentage}%",
+                    color = color,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
             }
             Spacer(modifier = Modifier.height(8.dp))
-            LinearProgressIndicator(progress = { member.progress }, modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape), color = member.color, trackColor = Color(0xFFF0F0F0))
+            LinearProgressIndicator(
+                progress = { member.progress },
+                modifier = Modifier.fillMaxWidth().height(10.dp).clip(CircleShape),
+                color = color,
+                trackColor = Color(0xFFF0F0F0)
+            )
         }
         Spacer(modifier = Modifier.width(16.dp))
-        Text(text = "${member.completedTasks}/${member.totalTasks}", color = Color.Gray, fontSize = 14.sp, modifier = Modifier.width(45.dp))
+        Text(
+            text = "${member.completedTasks}/${member.totalTasks}",
+            color = Color.Gray,
+            fontSize = 14.sp,
+            modifier = Modifier.width(45.dp)
+        )
     }
 }
-
 @Composable
 fun MemberStatsCard(members: List<MemberStatsItem>, mvpName: String) {
     Surface(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp), color = Color.White, shadowElevation = 2.dp) {
@@ -398,141 +420,5 @@ fun RoomStatsCard(rooms: List<RoomStatsItem>) {
                 }
             }
         }
-    }
-}
-
-// Preview para sección "Año"
-@Preview(showBackground = true, showSystemUi = true, name = "Análisis Anual - Datos Mock")
-@Composable
-fun HomeStatsYearOnlyPreview() {
-    val yearData = listOf(
-        BarChartData("Ene", 110f, 15f),
-        BarChartData("Feb", 95f, 20f),
-        BarChartData("Mar", 130f, 10f),
-        BarChartData("Abr", 125f, 30f),
-        BarChartData("May", 140f, 5f),
-        BarChartData("Jun", 115f, 25f),
-        BarChartData("Jul", 100f, 40f),
-        BarChartData("Ago", 110f, 20f),
-        BarChartData("Sep", 120f, 15f),
-        BarChartData("Oct", 135f, 10f),
-        BarChartData("Nov", 145f, 5f),
-        BarChartData("Dic", 90f, 50f)
-    )
-
-    val yearState = HomeStatsUiState(
-        selectedRange = "Año",
-        effectiveness = 82,
-        completedCount = 1515,
-        pendingCount = 245,
-        membersCount = 5,
-        barChartData = yearData,
-        members = listOf(
-            MemberStatsItem("Yuri", 450, 500, Color(0xFFFF6D00)),
-            MemberStatsItem("María", 420, 480, Color(0xFFE91E63)),
-            MemberStatsItem("Pedro", 300, 400, Color(0xFF2196F3)),
-            MemberStatsItem("Ana", 200, 210, Color(0xFF9C27B0)),
-            MemberStatsItem("Juan", 145, 170, Color(0xFF00C853))
-        ),
-        rooms = listOf(
-            RoomStatsItem("Cocina", 400, 450),
-            RoomStatsItem("Sala", 350, 350),
-            RoomStatsItem("Baños", 300, 420),
-            RoomStatsItem("Jardín", 250, 300),
-            RoomStatsItem("Recámaras", 215, 240)
-        )
-    )
-
-    val mockUserName = "SeS"
-
-    haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
-        HomeStatsContent(
-            userName = mockUserName,
-            state = yearState,
-            onRangeSelected = {},
-            onBackClick = {}
-        )
-    }
-}
-
-// Preview para la sección de "Mes"
-@Preview(showBackground = true, showSystemUi = true, name = "Análisis Mensual - Datos Mock")
-@Composable
-fun HomeStatsMonthOnlyPreview() {
-    val monthData = listOf(
-        BarChartData("Sem 1", 25f, 5f),
-        BarChartData("Sem 2", 18f, 12f),
-        BarChartData("Sem 3", 30f, 2f),
-        BarChartData("Sem 4", 22f, 8f)
-    )
-
-    val monthState = HomeStatsUiState(
-        selectedRange = "Mes",
-        effectiveness = 78,
-        completedCount = 95,
-        pendingCount = 27,
-        membersCount = 3,
-        barChartData = monthData,
-        members = listOf(
-            MemberStatsItem("Yuri", 40, 45, Color(0xFFFF6D00)),
-            MemberStatsItem("María", 35, 40, Color(0xFFE91E63)),
-            MemberStatsItem("Pedro", 20, 37, Color(0xFF2196F3))
-        ),
-        rooms = listOf(
-            RoomStatsItem("Cocina", 30, 35),
-            RoomStatsItem("Baños", 25, 30),
-            RoomStatsItem("Sala", 40, 57)
-        )
-    )
-
-    haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
-        HomeStatsContent(
-            userName = "Yuri",
-            state = monthState,
-            onRangeSelected = {},
-            onBackClick = {}
-        )
-    }
-}
-
-// Preview para la sección de "Semana"
-@Preview(showBackground = true, showSystemUi = true, name = "Análisis Semanal - Datos Mock")
-@Composable
-fun HomeStatsWeekOnlyPreview() {
-    val weekData = listOf(
-        BarChartData("Lun", 4f, 1f),
-        BarChartData("Mar", 3f, 0f),
-        BarChartData("Mié", 5f, 2f),
-        BarChartData("Jue", 2f, 1f),
-        BarChartData("Vie", 6f, 0f),
-        BarChartData("Sáb", 4f, 3f),
-        BarChartData("Dom", 1f, 0f)
-    )
-
-    val weekState = HomeStatsUiState(
-        selectedRange = "Semana",
-        effectiveness = 75,
-        completedCount = 25,
-        pendingCount = 7,
-        membersCount = 2,
-        barChartData = weekData,
-        members = listOf(
-            MemberStatsItem("Yuri", 15, 18, Color(0xFFFF6D00)),
-            MemberStatsItem("María", 10, 14, Color(0xFFE91E63))
-        ),
-        rooms = listOf(
-            RoomStatsItem("Cocina", 10, 12),
-            RoomStatsItem("Sala", 8, 8),
-            RoomStatsItem("Baños", 7, 12)
-        )
-    )
-
-    haptikos.gestortareashogar_haptikos.ui.theme.GestorTareasHogar_HaptikosTheme {
-        HomeStatsContent(
-            userName = "Yuri",
-            state = weekState,
-            onRangeSelected = {},
-            onBackClick = {}
-        )
     }
 }

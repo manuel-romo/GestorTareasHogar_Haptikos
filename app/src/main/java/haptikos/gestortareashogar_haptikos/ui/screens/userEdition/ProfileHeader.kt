@@ -49,6 +49,7 @@ fun ProfileHeader(
     homeCount: Int,
     tasksDoneCount: Int,
     isUpdatingName: Boolean = false,
+    isUploadingPhoto: Boolean = false,
     onNameChangeConfirmed: (String) -> Unit,
     onCameraClick: () -> Unit
 ) {
@@ -105,6 +106,20 @@ fun ProfileHeader(
                         tint = Color.White,
                         modifier = Modifier.size(50.dp)
                     )
+                }
+                if (isUploadingPhoto) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .background(Color.Black.copy(alpha = 0.4f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(28.dp),
+                            color = Color.White,
+                            strokeWidth = 2.5.dp
+                        )
+                    }
                 }
             }
 

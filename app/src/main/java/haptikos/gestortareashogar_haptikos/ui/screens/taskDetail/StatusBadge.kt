@@ -19,37 +19,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
+import haptikos.gestortareashogar_haptikos.ui.theme.White
+import haptikos.gestortareashogar_haptikos.ui.theme.Amber
+import haptikos.gestortareashogar_haptikos.ui.theme.Green
 
 @Composable
 fun StatusBadge(state: TaskState) {
-
-    val (text, dotColor) = when(state) {
-        TaskState.PENDING -> "Pendiente" to Color(0xFFFFB74D)
-        TaskState.COMPLETED -> "Completada" to Color(0xFF81C784)
+    val (text, dotColor) = when (state) {
+        TaskState.PENDING -> "Pendiente" to Amber
+        TaskState.COMPLETED -> "Completada" to Green
     }
-
-    Surface(
-        color = Color.White.copy(alpha = 0.2f),
-        shape = RoundedCornerShape(16.dp)
-    ) {
+    Surface(color = White.copy(alpha = 0.2f), shape = RoundedCornerShape(16.dp)) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .background(dotColor, CircleShape)
-            )
+            Box(modifier = Modifier.size(8.dp).background(dotColor, CircleShape))
             Spacer(Modifier.width(8.dp))
-
-            Text(
-                text = text,
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Text(text, color = White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
     }
 }

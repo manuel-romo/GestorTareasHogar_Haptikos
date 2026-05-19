@@ -92,4 +92,7 @@ interface TaskDao {
     """)
     suspend fun deleteAllMemberJoinsByHomeId(homeId: String)
 
+    @Query("DELETE FROM task_member_join WHERE taskId = :taskId")
+    suspend fun deleteTaskMemberJoinsForTask(taskId: String)
+
 }

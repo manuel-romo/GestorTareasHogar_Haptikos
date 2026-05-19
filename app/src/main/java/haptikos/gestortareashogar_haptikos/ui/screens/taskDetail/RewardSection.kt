@@ -26,36 +26,47 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
+import haptikos.gestortareashogar_haptikos.ui.theme.Amber
+import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkAmber
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkText
+import haptikos.gestortareashogar_haptikos.ui.theme.LightAmber
+import haptikos.gestortareashogar_haptikos.ui.theme.LightYellow
+import haptikos.gestortareashogar_haptikos.ui.theme.MediumDarkGray
+import haptikos.gestortareashogar_haptikos.ui.theme.Orange
+import haptikos.gestortareashogar_haptikos.ui.theme.White
 
 @Composable
 fun RewardSection(basePoints: Int, priorityBonus: Int, priorityName: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        color = Color(0xFFFFF9C4).copy(alpha = 0.3f),
-        border = BorderStroke(1.dp, Color(0xFFFFF176).copy(alpha = 0.5f))
+        color = LightYellow,
+        border = BorderStroke(1.dp, LightAmber)
     ) {
         Row(
             Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(painterResource(R.drawable.ic_star), null, tint = Color(0xFFFFB300), modifier = Modifier.size(20.dp))
+                    Icon(painterResource(R.drawable.ic_star), null, tint = Amber, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("RECOMPENSA AL COMPLETAR", fontWeight = FontWeight.ExtraBold, color = Color(0xFF827717), fontSize = 12.sp)
+                    Text("RECOMPENSA AL COMPLETAR", fontWeight = FontWeight.ExtraBold, color = DarkAmber, fontSize = 11.sp, letterSpacing = 0.5.sp)
                 }
                 Spacer(Modifier.height(12.dp))
-                Text("• Puntos base: +$basePoints pts", color = Color.DarkGray, fontSize = 13.sp)
-
-                Text("• Bono prioridad $priorityName: +$priorityBonus pts", color = Color(0xFFE53935), fontSize = 13.sp)
+                Text("• Puntos base: +$basePoints pts", color = DarkText, fontSize = 13.sp)
+                Text("• Bono prioridad $priorityName: +$priorityBonus pts", color = Orange, fontSize = 13.sp)
             }
-            // Círculo de puntos totales
-            Box(Modifier.size(64.dp).background(Color.White, CircleShape), contentAlignment = Alignment.Center) {
+            Spacer(Modifier.width(16.dp))
+            Box(
+                Modifier.size(64.dp).background(White, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("+${basePoints + priorityBonus}", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFFFF8A00))
-                    Text("pts", fontSize = 10.sp, color = Color.Gray)
+                    Text("+${basePoints + priorityBonus}", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = BrightOrange)
+                    Text("pts", fontSize = 10.sp, color = MediumDarkGray)
                 }
             }
         }

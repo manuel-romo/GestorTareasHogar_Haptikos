@@ -47,9 +47,13 @@ class ProfileViewModel(
         initialValue = true
     )
 
+    private val _isUploadingPhoto = MutableStateFlow(false)
+    val isUploadingPhoto: StateFlow<Boolean> = _isUploadingPhoto.asStateFlow()
+
     fun uploadPhoto(uri: Uri, context: Context) {
         viewModelScope.launch {
 
+            _isUploadingPhoto.value = true
             val currentUserId = dataStore.userIdFlow.first()
 
             // Se convierte la URI a un archivo File temporal
@@ -58,6 +62,8 @@ class ProfileViewModel(
             tempFile.outputStream().use { output -> inputStream?.copyTo(output) }
 
             val resultUrl = repository.uploadProfilePicture(currentUserId, tempFile)
+
+            _isUploadingPhoto.value = false
 
             if (resultUrl != null) {
                 // Éxito. La UI se actualizará sola si está leyendo profilePicUrlFlow del DataStore.

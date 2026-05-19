@@ -514,7 +514,13 @@ class AppRepository(
 
     // Completar instancia de tarea -----------------------------------------------------
     suspend fun completeTaskInstance(taskInstance: TaskInstanceEntityNew) {
-        taskInstanceDao.update(taskInstance.copy(state = TaskState.COMPLETED, isSynced = false))
+        taskInstanceDao.update(
+            taskInstance.copy(
+                state = TaskState.COMPLETED,
+                completedAt = System.currentTimeMillis(),
+                isSynced = false
+            )
+        )
     }
 
     // Abandonar hogar ---------------------------------------------------------------------
@@ -551,7 +557,7 @@ class AppRepository(
             try {
                 if (instance.state == TaskState.COMPLETED) {
                     val response = RetrofitClient.getTaskInstanceApi(dataStore)
-                        .completeInstance(instance.id, currentUserId)
+                        .completeInstance(instance.id, currentUserId, instance.completedAt ?: System.currentTimeMillis())
                     if (response.isSuccessful) {
                         taskInstanceDao.updateSyncStatus(instance.id, true)
                     }
@@ -673,6 +679,18 @@ class AppRepository(
             }
         } catch (e: Exception) {
             Log.e("SYNC", "Error sincronizando hogar: ${e.message}")
+        }
+    }
+
+    suspend fun sendInviteEmail(homeId: String, email: String, homeName: String, inviteCode: String): Boolean {
+        return try {
+            val response = RetrofitClient.getHomeApi(dataStore).inviteByEmail(
+                homeId,
+                HomeApi.InviteEmailRequest(email, homeName, inviteCode)
+            )
+            response.isSuccessful
+        } catch (e: Exception) {
+            false
         }
     }
 

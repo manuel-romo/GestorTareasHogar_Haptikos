@@ -3,6 +3,8 @@ package haptikos.gestortareashogar_haptikos.ui.components
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +33,7 @@ fun CustomBottomNavigation(
     NavigationBar(
         containerColor = Color.White,
         tonalElevation = 0.dp,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)
     ) {
         val navColors = NavigationBarItemDefaults.colors(
             selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -43,7 +45,13 @@ fun CustomBottomNavigation(
 
         // Inicio
         NavigationBarItem(
-            icon = { Icon(painterResource(id = R.drawable.ic_home), contentDescription = "Inicio", modifier = Modifier.size(24.dp)) },
+            icon = {
+                Icon(
+                    painterResource(id = R.drawable.ic_home),
+                    contentDescription = "Inicio",
+                    modifier = Modifier.size(27.dp)
+                )
+            },
             label = { Text("Inicio", fontWeight = FontWeight.Medium) },
             selected = currentRoute == Screen.Home.route,
             onClick = {
@@ -58,7 +66,13 @@ fun CustomBottomNavigation(
 
         // Hogar
         NavigationBarItem(
-            icon = { Icon(painterResource(id = R.drawable.ic_stats_1), contentDescription = "Hogar", modifier = Modifier.size(24.dp)) },
+            icon = {
+                Icon(
+                    painterResource(id = R.drawable.ic_stats_1),
+                    contentDescription = "Hogar",
+                    modifier = Modifier.size(27.dp)
+                )
+            },
             label = { Text("Hogar", fontWeight = FontWeight.Medium) },
             selected = currentRoute == Screen.HomeStats.route,
             onClick = {
@@ -71,26 +85,42 @@ fun CustomBottomNavigation(
             colors = navColors
         )
 
-        // Espacio para botón de agregar
-        if (hasCenterFab) {
-            NavigationBarItem(
-                icon = { Spacer(modifier = Modifier.size(28.dp)) },
-                label = { Text("Agregar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium) },
-                selected = false,
-                onClick = { /* Asumo que la acción la maneja el FAB externo */ },
-                colors = NavigationBarItemDefaults.colors(
-                    unselectedTextColor = MaterialTheme.colorScheme.primary,
-                    indicatorColor = Color.Transparent
-                ),
-                interactionSource = remember { MutableInteractionSource() }
-            )
-        } else {
-            Spacer(Modifier.weight(1f))
-        }
+        // Centro
+        NavigationBarItem(
+            icon = { Spacer(modifier = Modifier.size(24.dp)) },
+            label = {
+                if (hasCenterFab) {
+                    Text(
+                        "Agregar",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Medium
+                    )
+                } else {
+                    Spacer(Modifier.height(0.dp))
+                }
+            },
+            selected = false,
+            onClick = { },
+            colors = NavigationBarItemDefaults.colors(
+                selectedIconColor = Color.Transparent,
+                unselectedIconColor = Color.Transparent,
+                indicatorColor = Color.Transparent,
+                selectedTextColor = Color.Transparent,
+                unselectedTextColor = Color.Transparent
+            ),
+            interactionSource = remember { MutableInteractionSource() },
+            enabled = hasCenterFab
+        )
 
         // Mis Stats
         NavigationBarItem(
-            icon = { Icon(painterResource(id = R.drawable.ic_stats_2), contentDescription = "Mis Stats", modifier = Modifier.size(24.dp)) },
+            icon = {
+                Icon(
+                    painterResource(id = R.drawable.ic_stats_2),
+                    contentDescription = "Mis Stats",
+                    modifier = Modifier.size(24.dp)
+                )
+            },
             label = { Text("Mis Stats", fontWeight = FontWeight.Medium) },
             selected = currentRoute == Screen.Stats.route,
             onClick = {
@@ -105,7 +135,13 @@ fun CustomBottomNavigation(
 
         // Perfil
         NavigationBarItem(
-            icon = { Icon(painterResource(id = R.drawable.ic_user), contentDescription = "Perfil", modifier = Modifier.size(24.dp)) },
+            icon = {
+                Icon(
+                    painterResource(id = R.drawable.ic_user),
+                    contentDescription = "Perfil",
+                    modifier = Modifier.size(20.dp)
+                )
+            },
             label = { Text("Perfil", fontWeight = FontWeight.Medium) },
             selected = currentRoute == Screen.Profile.route,
             onClick = {

@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.login
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
+import coil.compose.AsyncImage
 
 @Composable
 fun LogInHeader(modifier: Modifier = Modifier) {
@@ -32,11 +34,12 @@ fun LogInHeader(modifier: Modifier = Modifier) {
             shape = RoundedCornerShape(20.dp),
             color = MaterialTheme.colorScheme.surface
         ) {
-            Icon(
-                painter = painterResource(id = R.drawable.ic_email),
-                contentDescription = "Icono de correo",
-                modifier = Modifier.padding(16.dp).size(40.dp),
-                tint = MaterialTheme.colorScheme.primary
+            Image(
+                painter = painterResource(R.drawable.logo_app),
+                contentDescription = "Logo de Haptikos",
+                modifier = Modifier
+                    .padding(8.dp)
+                    .size(64.dp)
             )
         }
         Spacer(modifier = Modifier.height(16.dp))

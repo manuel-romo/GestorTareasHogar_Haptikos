@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -70,7 +71,9 @@ fun ProfileScreen(
     memberViewModel: MemberViewModel,
     taskInstanceViewModel: TaskInstanceViewModel,
     context: Context = LocalContext.current,
-    onNavigateToLogin: () -> Unit
+    onNavigateToLogin: () -> Unit,
+    onNavigateToHistory: () -> Unit,
+    onNavigateToRewards: () -> Unit
 ) {
     // Estados de autenticación
     val userName by authViewModel.userName.collectAsState()
@@ -90,6 +93,8 @@ fun ProfileScreen(
     val userRemindersPref by profileViewModel.notifyReminders.collectAsState(initial = true)
     val userCompletedPref by profileViewModel.notifyCompleted.collectAsState(initial = true)
     val userNewMembersPref by profileViewModel.notifyNewMembers.collectAsState(initial = true)
+
+    val isUploadingPhoto by profileViewModel.isUploadingPhoto.collectAsState()
 
 
     // Manejo de la subida de fotos
@@ -152,6 +157,7 @@ fun ProfileScreen(
         userRemindersPref = userRemindersPref,
         userCompletedPref = userCompletedPref,
         userNewMembersPref = userNewMembersPref,
+        isUploadingPhoto = isUploadingPhoto,
         onRemindersChange = { newValue ->
             profileViewModel.updateNotificationPreference("reminders", newValue)
         },
@@ -160,7 +166,9 @@ fun ProfileScreen(
         },
         onNewMembersChange = { newValue ->
             profileViewModel.updateNotificationPreference("newMembers", newValue)
-        }
+        },
+        onNavigateToHistory = onNavigateToHistory,
+        onNavigateToRewards = onNavigateToRewards
     )
 }
 
@@ -182,10 +190,14 @@ fun ProfileContent(
     userRemindersPref: Boolean,
     userCompletedPref: Boolean,
     userNewMembersPref: Boolean,
+    isUploadingPhoto: Boolean,
     onRemindersChange: (Boolean) -> Unit,
     onCompletedChange: (Boolean) -> Unit,
-    onNewMembersChange: (Boolean) -> Unit
-) {
+    onNewMembersChange: (Boolean) -> Unit,
+    onNavigateToHistory: () -> Unit,
+    onNavigateToRewards: () -> Unit
+
+    ) {
     var showImageSourceDialog by remember { mutableStateOf(false) }
 
     val tempCameraUri = remember {
@@ -228,6 +240,7 @@ fun ProfileContent(
                     homeCount = totalHomesCount,
                     tasksDoneCount = tasksDoneCount,
                     isUpdatingName = isUpdatingName,
+                    isUploadingPhoto = isUploadingPhoto,
                     onNameChangeConfirmed = onNameChanged,
                     onCameraClick = { showImageSourceDialog = true }
                 )
@@ -258,9 +271,26 @@ fun ProfileContent(
                 if (userHomes.isEmpty()) {
                     Text("Aún no perteneces a ningún hogar.", color = Color.Gray)
                 } else {
-                    userHomes.forEach { home ->
+                    var homesExpanded by remember { mutableStateOf(false) }
+                    val visibleHomes = if (homesExpanded) userHomes else userHomes.take(2)
+
+                    visibleHomes.forEach { home ->
                         HomeProfileItem(home)
                         Spacer(modifier = Modifier.height(12.dp))
+                    }
+
+                    if (userHomes.size > 2) {
+                        TextButton(
+                            onClick = { homesExpanded = !homesExpanded },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                if (homesExpanded) "Ver menos" else "Ver ${userHomes.size - 2} más",
+                                color = Color(0xFFFF8A00),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        }
                     }
                 }
 
@@ -328,8 +358,14 @@ fun ProfileContent(
                 Spacer(modifier = Modifier.height(24.dp))
                 SectionTitle("CUENTA")
                 Spacer(modifier = Modifier.height(16.dp))
-                AccountActionItem("Recompensas", "Puntos, niveles e insignias", R.drawable.ic_trophy)
-                AccountActionItem("Historial", "Tareas completadas", R.drawable.ic_history)
+                AccountActionItem(
+                    "Recompensas", "Puntos, niveles e insignias", R.drawable.ic_trophy,
+                    onClick = onNavigateToRewards
+                )
+                AccountActionItem(
+                    "Historial", "Tareas completadas", R.drawable.ic_history,
+                    onClick = onNavigateToHistory
+                )
                 Spacer(modifier = Modifier.height(32.dp))
 
                 OutlinedButton(
