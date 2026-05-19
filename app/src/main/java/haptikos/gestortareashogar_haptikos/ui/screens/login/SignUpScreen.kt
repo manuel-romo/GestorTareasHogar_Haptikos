@@ -22,6 +22,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.DropdownMenuItem
@@ -32,6 +33,7 @@ import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -57,6 +59,10 @@ import haptikos.gestortareashogar_haptikos.ui.components.CustomTextField
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import androidx.compose.material3.SelectableDates
 import androidx.compose.ui.input.key.type
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkText
+import haptikos.gestortareashogar_haptikos.ui.theme.Orange
+import haptikos.gestortareashogar_haptikos.ui.theme.SilverGray
+import haptikos.gestortareashogar_haptikos.ui.theme.White
 import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -91,7 +97,7 @@ fun SignUpScreen(
     val maxAgeYear = currentYear - 120
 
     val datePickerState = rememberDatePickerState(
-        initialDisplayMode = DisplayMode.Input,
+        initialDisplayMode = DisplayMode.Picker,
         selectableDates = object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
                 val limitMin = Calendar.getInstance()
@@ -193,7 +199,10 @@ fun SignUpScreen(
                                     onClick = {
                                         gender = selectionOption
                                         genderExpanded = false
-                                    }
+                                    },
+                                    colors = MenuDefaults.itemColors(
+                                        textColor = DarkText
+                                    )
                                 )
                             }
                         }
@@ -359,9 +368,34 @@ fun SignUpScreen(
                         },
                         dismissButton = {
                             TextButton(onClick = { showDatePicker = false }) { Text("Cancelar") }
-                        }
+                        },
                     ) {
-                        DatePicker(state = datePickerState)
+                        Surface(
+                            color = White,
+                            shape = RoundedCornerShape(28.dp)
+                        ) {
+                            DatePicker(
+                                state = datePickerState,
+                                colors = DatePickerDefaults.colors(
+                                    containerColor = White,
+                                    titleContentColor = Orange,
+                                    headlineContentColor = DarkText,
+                                    weekdayContentColor = DarkText,
+                                    subheadContentColor = DarkText,
+                                    navigationContentColor = Orange,
+                                    yearContentColor = DarkText,
+                                    disabledYearContentColor = Color.Gray,
+                                    selectedYearContentColor = White,
+                                    selectedYearContainerColor = Orange,
+                                    dayContentColor = DarkText,
+                                    disabledDayContentColor = SilverGray,
+                                    selectedDayContentColor = White,
+                                    selectedDayContainerColor = Orange,
+                                    todayContentColor = Orange,
+                                    todayDateBorderColor = Orange
+                                )
+                            )
+                        }
                     }
                 }
 
