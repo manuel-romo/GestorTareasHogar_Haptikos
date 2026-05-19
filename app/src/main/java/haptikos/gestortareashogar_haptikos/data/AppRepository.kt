@@ -201,9 +201,9 @@ class AppRepository(
     }
 
     suspend fun updateHome(home: HomeEntityNew) {
-        // Guardado
         val homeToSave = home.copy(isSynced = false)
         homeDao.updateHome(homeToSave)
+        syncHomeNow(home)
     }
 
     suspend fun deleteHomeById(homeId: String) = homeDao.deleteHomeById(homeId)
@@ -232,7 +232,6 @@ class AppRepository(
         invitedUsers: List<HomeApi.InvitedUserDto> = emptyList(),
         defaultInviteColor: String
     ): String? {
-        // Preparación de entidades locales
         val newHome = HomeEntityNew(
             id = homeId,
             name = homeName,
@@ -243,7 +242,6 @@ class AppRepository(
         )
 
         val creatorMemberId = UUID.randomUUID().toString()
-
         val creatorMember = MemberEntityNew(
             id = creatorMemberId,
             userId = creatorId,
@@ -277,9 +275,37 @@ class AppRepository(
             invitedMembers.forEach { memberDao.addNew(it) }
         }
 
-        // El código será recibido por Sync
-        return null
+        // Sincronizar inmediatamente con el servidor
+        return try {
+            val request = HomeApi.CreateHomeRequest(
+                id = homeId,
+                name = homeName,
+                description = homeDescription,
+                isPrivate = isPrivate,
+                creatorId = creatorId,
+                creatorName = creatorName,
+                creatorLastName = creatorLastName,
+                creatorColorHex = creatorColorHex,
+                creatorMemberId = creatorMemberId,
+                invitedUsers = invitedUsers
+            )
 
+            val response = RetrofitClient.getHomeApi(dataStore).createHome(request)
+
+            if (response.isSuccessful) {
+                val inviteCode = response.body()?.inviteCode
+                homeDao.updateInviteCodeAndSync(homeId, inviteCode, isSynced = true)
+                memberDao.markMembersAsSynced(homeId)
+                Log.d("SYNC", "Hogar creado en servidor con código: $inviteCode")
+                inviteCode
+            } else {
+                Log.e("SYNC", "Error creando hogar: ${response.code()} - ${response.errorBody()?.string()}")
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("SYNC", "Excepción creando hogar: ${e.message}")
+            null
+        }
     }
 
     suspend fun updateHomeSyncStatus(homeId: String, inviteCode: String?, isSynced: Boolean) {
@@ -623,6 +649,30 @@ class AppRepository(
             } catch (e: Exception) {
                 Log.e("SYNC", "Error sincronizando habitación ${room.id}: ${e.message}")
             }
+        }
+    }
+
+    private suspend fun syncHomeNow(home: HomeEntityNew) {
+        try {
+            val response = RetrofitClient.getHomeApi(dataStore).updateHome(
+                home.id,
+                HomeApi.UpdateHomeRequest(
+                    name = home.name,
+                    description = home.description,
+                    isPrivate = home.isPrivate,
+                    editPermission = home.editPermission.name,
+                    notifyTaskReminders = home.notifyTaskReminders,
+                    notifyTaskCompleted = home.notifyTaskCompleted,
+                    notifyNewMembers = home.notifyNewMembers,
+                    notifyAllMembers = home.notifyAllMembers,
+                    forceSettings = home.forceSettings
+                )
+            )
+            if (response.isSuccessful) {
+                homeDao.updateHome(home.copy(isSynced = true))
+            }
+        } catch (e: Exception) {
+            Log.e("SYNC", "Error sincronizando hogar: ${e.message}")
         }
     }
 

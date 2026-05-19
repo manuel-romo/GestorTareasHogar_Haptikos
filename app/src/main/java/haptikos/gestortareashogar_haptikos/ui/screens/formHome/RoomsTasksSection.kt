@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.formHome
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -64,12 +65,7 @@ import haptikos.gestortareashogar_haptikos.ui.theme.LightYellow
 import haptikos.gestortareashogar_haptikos.ui.theme.MediumDarkGray
 import haptikos.gestortareashogar_haptikos.ui.theme.PaleBlue
 import haptikos.gestortareashogar_haptikos.ui.theme.Purple
-import haptikos.gestortareashogar_haptikos.ui.theme.Red
 import haptikos.gestortareashogar_haptikos.ui.theme.SilverGray
-import haptikos.gestortareashogar_haptikos.ui.theme.SmokeGray
-import haptikos.gestortareashogar_haptikos.ui.theme.SoftRed
-import haptikos.gestortareashogar_haptikos.ui.theme.White
-import haptikos.gestortareashogar_haptikos.ui.theme.WhiteGray
 import haptikos.gestortareashogar_haptikos.utils.authenticateWithBiometric
 import haptikos.gestortareashogar_haptikos.utils.findFragmentActivity
 import haptikos.gestortareashogar_haptikos.utils.parseHexColor
@@ -92,6 +88,15 @@ fun RoomsTasksSection(
     isCreator: Boolean,
     canEditTasks: Boolean
 ) {
+
+    LaunchedEffect(homeId) {
+        roomViewModel.setHomeId(homeId)
+    }
+
+    LaunchedEffect(canEditTasks, isCreator) {
+        Log.d("PERMISOS", "canEditTasks=$canEditTasks | isCreator=$isCreator")
+    }
+
     val context          = LocalContext.current
     val fragmentActivity = context.findFragmentActivity()
 
@@ -157,8 +162,10 @@ fun RoomsTasksSection(
         rooms.forEach { room ->
 
             // Separación de categorías
-            val roomTasksAll     = allTasksWithDetails.filter { it.task.roomId == room.id }
-            val predetermined    = roomTasksAll.filter { it.task.isPredetermined }
+            val roomTasksAll = allTasksWithDetails.filter {
+                it.task.roomId == room.id && it.task.homeId == homeId
+            }
+            val predetermined = roomTasksAll.filter { it.task.isPredetermined }
             val nonPredetermined = roomTasksAll.filter { !it.task.isPredetermined }
 
             RoomExpandableCard(
@@ -179,6 +186,44 @@ fun RoomsTasksSection(
                 onAddTask = { onNavigateToNewTask(room.id) }
             )
             Spacer(modifier = Modifier.height(12.dp))
+        }
+
+        val tasksWithoutRoom = allTasksWithDetails.filter {
+            it.task.homeId == homeId && it.task.roomId == null
+        }
+
+        if (tasksWithoutRoom.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            SectionTitleHeader(
+                icon = R.drawable.ic_sparkles,
+                title = "TAREAS GENERALES"
+            )
+            val predetermined = tasksWithoutRoom.filter { it.task.isPredetermined }
+            val nonPredetermined = tasksWithoutRoom.filter { !it.task.isPredetermined }
+
+            RoomExpandableCard(
+                room = RoomEntityNew(
+                    id = "general",
+                    name = "General",
+                    icon = "🏠",
+                    colorHex = "#9E9E9E",
+                    homeId = homeId
+                ),
+                predeterminedTasks = predetermined,
+                nonPredeterminedTasks = nonPredetermined,
+                isCreator = isCreator,
+                canEditTasks = canEditTasks,
+                onDeleteRoomClick = {},
+                onEditRoomClick = {},
+                onEditPredeterminedTask = { task -> onNavigateToEditPredeterminedTask(task.id) },
+                onDeletePredeterminedTask = { task -> taskViewModel.initiateTaskDeletion(task) },
+                onAddPredeterminedTask = {},
+                onEditTask = { task -> onNavigateToEditTask(task.id) },
+                onDeleteTask = { task -> taskViewModel.initiateTaskDeletion(task) },
+                onPauseTask = { task -> taskViewModel.initiatePause(task) },
+                onResumeTask = { task -> taskViewModel.resumeTask(task) },
+                onAddTask = { onNavigateToNewTask(null) }
+            )
         }
 
         // Botón agregar habitación
@@ -412,7 +457,8 @@ fun RoomExpandableCard(
                 }
 
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (isCreator || canEditTasks) {
+                    // Editar/eliminar habitación
+                    if (isCreator) {
                         SmallIconButton(
                             iconRes = R.drawable.ic_pencil,
                             bgColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -444,20 +490,19 @@ fun RoomExpandableCard(
                     )
 
                     // Tareas predeterminadas
-                    if (isCreator) {
+                    if (isCreator || predeterminedTasks.isNotEmpty()) {
                         TaskSubsectionHeader(
                             title = "PREDETERMINADAS",
                             color = MaterialTheme.colorScheme.primary
                         )
-
                         if (predeterminedTasks.isEmpty()) {
-                            EmptyTasksHint("Sin tareas predeterminadas.")
+                            if (isCreator) EmptyTasksHint("Sin tareas predeterminadas.")
                         } else {
                             predeterminedTasks.forEach { detail ->
                                 TaskItem(
                                     taskDetail = detail,
                                     isPredetermined = true,
-                                    canEdit = true,
+                                    canEdit = isCreator,
                                     canPause = false,
                                     showPauseChip = false,
                                     onEditClick = { onEditPredeterminedTask(detail.task) },
@@ -466,13 +511,13 @@ fun RoomExpandableCard(
                                 )
                             }
                         }
-
-                        // Botón agregar predeterminada
-                        Spacer(modifier = Modifier.height(8.dp))
-                        AddTaskButton(
-                            label   = "Agregar tarea predeterminada",
-                            onClick = onAddPredeterminedTask
-                        )
+                        if (isCreator) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            AddTaskButton(
+                                label = "Agregar tarea predeterminada",
+                                onClick = onAddPredeterminedTask
+                            )
+                        }
                     }
 
                     // Tareas no predeterminadas

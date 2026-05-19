@@ -4,22 +4,34 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.entity.RoomEntityNew
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class RoomViewModel(private val repository: AppRepository): ViewModel(){
 
 
-    val rooms: StateFlow<List<RoomEntityNew>> = repository.allRoomsNew
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    private val _currentHomeId = MutableStateFlow<String?>(null)
+
+    fun setHomeId(homeId: String) {
+        _currentHomeId.value = homeId
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val rooms: StateFlow<List<RoomEntityNew>> = _currentHomeId
+        .flatMapLatest { homeId ->
+            if (homeId != null)
+                repository.allRoomsNew.map { it.filter { r -> r.homeId == homeId } }
+            else
+                repository.allRoomsNew
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun addRoom(room: RoomEntityNew) {
         viewModelScope.launch {

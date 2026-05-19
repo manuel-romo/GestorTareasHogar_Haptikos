@@ -185,21 +185,19 @@ fun HomeContent(
             userIsCreator = userIsCreator
         )
 
+        DaySelector(
+            selectedDay = currentFilter.selectedDay,
+            onDaySelected = { dia ->
+                onFilterChange(currentFilter.copy(selectedDay = dia))
+            }
+        )
+
         LazyColumn(
             state = listState,
             modifier = Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
         ) {
-            item {
-                DaySelector(
-                    selectedDay = currentFilter.selectedDay,
-                    onDaySelected = { dia ->
-                        onFilterChange(currentFilter.copy(selectedDay = dia))
-                    }
-                )
-            }
-
             if (tareasPendientes.isNotEmpty()) {
                 item { SectionTitle("PENDIENTES (${tareasPendientes.size})") }
             }

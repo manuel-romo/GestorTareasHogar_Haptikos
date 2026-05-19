@@ -43,6 +43,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +62,15 @@ import haptikos.gestortareashogar_haptikos.ui.enums.RecurrenceType
 import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
 import haptikos.gestortareashogar_haptikos.ui.enums.TurnMode
 import haptikos.gestortareashogar_haptikos.ui.theme.BlackGray
+import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
+import haptikos.gestortareashogar_haptikos.ui.theme.LightGray
+import haptikos.gestortareashogar_haptikos.ui.theme.LightPurple
+import haptikos.gestortareashogar_haptikos.ui.theme.MediumDarkGray
+import haptikos.gestortareashogar_haptikos.ui.theme.Orange
+import haptikos.gestortareashogar_haptikos.ui.theme.Purple
+import haptikos.gestortareashogar_haptikos.ui.theme.SilverGray
+import haptikos.gestortareashogar_haptikos.ui.theme.White
+import haptikos.gestortareashogar_haptikos.ui.theme.YellowGreen
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.MemberViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
@@ -267,79 +277,59 @@ fun FormatTaskContent(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TaskTopAppBar(
-    isEditing: Boolean = false,
-    roomInfo: RoomEntityNew? = null,
-    onReturn:() -> Unit
-) {
+fun TaskTopAppBar(isEditing: Boolean = false, roomInfo: RoomEntityNew? = null, onReturn: () -> Unit) {
     if (roomInfo != null) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.primary)
-                .padding(top = 16.dp, bottom = 24.dp)
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(BrightOrange, Orange)
+                    )
+                )
+                .padding(top = 24.dp, bottom = 24.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = 20.dp)
             ) {
                 IconButton(
                     onClick = { onReturn() },
                     modifier = Modifier
                         .size(32.dp)
-                        .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f), shape = CircleShape)
+                        .background(White.copy(alpha = 0.2f), CircleShape)
                 ) {
-                    Icon(painterResource(id = R.drawable.ic_back), "Atrás", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
+                    Icon(painterResource(id = R.drawable.ic_back), "Atrás", tint = White, modifier = Modifier.size(16.dp))
                 }
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(20.dp))
                 Text(
                     text = if (isEditing) "Editar tarea" else "Nueva tarea",
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = White,
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp
                 )
             }
-
             Spacer(modifier = Modifier.height(24.dp))
-
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
                 shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)
+                color = White.copy(alpha = 0.2f)
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(MaterialTheme.colorScheme.surface, CircleShape),
+                        modifier = Modifier.size(40.dp).background(White, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(text = roomInfo.icon, fontSize = 20.sp)
                     }
-
                     Spacer(modifier = Modifier.width(12.dp))
-
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Habitación", color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f), fontSize = 12.sp)
-                        Text(roomInfo.name, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("Habitación", color = White.copy(alpha = 0.8f), fontSize = 12.sp)
+                        Text(roomInfo.name, color = White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
-
-                    Surface(
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(20.dp)
-                    ) {
-                        Text(
-                            text = "Predeterminada",
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                        )
+                    Surface(color = White.copy(alpha = 0.3f), shape = RoundedCornerShape(20.dp)) {
+                        Text("Predeterminada", color = White, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp))
                     }
                 }
             }
@@ -347,11 +337,7 @@ fun TaskTopAppBar(
     } else {
         TopAppBar(
             title = {
-                Text(
-                    text = if (isEditing) "Editar tarea" else "Nueva tarea",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp
-                )
+                Text(if (isEditing) "Editar tarea" else "Nueva tarea", fontWeight = FontWeight.Bold, fontSize = 20.sp)
             },
             navigationIcon = {
                 IconButton(
@@ -359,19 +345,18 @@ fun TaskTopAppBar(
                     modifier = Modifier
                         .padding(start = 20.dp)
                         .size(32.dp)
-                        .background(MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f), shape = CircleShape)
+                        .background(White.copy(alpha = 0.2f), CircleShape)
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_back),
-                        contentDescription = "Atrás",
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Icon(painterResource(id = R.drawable.ic_back), "Atrás", modifier = Modifier.size(16.dp))
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                navigationIconContentColor = MaterialTheme.colorScheme.onPrimary
+                containerColor = Color.Transparent,
+                titleContentColor = White,
+                navigationIconContentColor = White
+            ),
+            modifier = Modifier.background(
+                brush = Brush.verticalGradient(colors = listOf(BrightOrange, Orange))
             )
         )
     }
@@ -423,26 +408,30 @@ fun TaskBottomBar(
 fun BasicInfoSection(name: String, onNameChange: (String) -> Unit, desc: String, onDescChange: (String) -> Unit) {
     FormLabel(text = "NOMBRE DE LA TAREA *", iconRes = R.drawable.ic_t_text)
     OutlinedTextField(
-        value = name, onValueChange = onNameChange, placeholder = { Text("Nombre de la tarea", color = MaterialTheme.colorScheme.outline) },
-        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp), shape = RoundedCornerShape(12.dp),
+        value = name, onValueChange = onNameChange,
+        placeholder = { Text("Nombre de la tarea", color = MediumDarkGray) },
+        modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-            focusedContainerColor = MaterialTheme.colorScheme.surface
+            focusedBorderColor = BrightOrange,
+            unfocusedBorderColor = SilverGray,
+            focusedContainerColor = White,
+            unfocusedContainerColor = LightGray
         ),
         singleLine = true
     )
 
     FormLabel(text = "DESCRIPCIÓN BREVE", iconRes = R.drawable.ic_lines)
     OutlinedTextField(
-        value = desc, onValueChange = onDescChange, placeholder = { Text("Descripción de la tarea", color = MaterialTheme.colorScheme.outline) },
-        modifier = Modifier.fillMaxWidth().height(120.dp).padding(bottom = 24.dp), shape = RoundedCornerShape(12.dp),
+        value = desc, onValueChange = onDescChange,
+        placeholder = { Text("Descripción de la tarea", color = MediumDarkGray) },
+        modifier = Modifier.fillMaxWidth().height(120.dp).padding(bottom = 24.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = MaterialTheme.colorScheme.primary,
-            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-            focusedContainerColor = MaterialTheme.colorScheme.surface
+            focusedBorderColor = BrightOrange,
+            unfocusedBorderColor = SilverGray,
+            focusedContainerColor = White,
+            unfocusedContainerColor = LightGray
         ),
         maxLines = 4
     )
@@ -472,8 +461,8 @@ fun ScopeSection(
         Surface(
             modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp).clickable { onOpenRoomMenu() },
             shape = RoundedCornerShape(16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+            color = LightGray,
+            border = BorderStroke(1.dp, SilverGray)
         ) {
             Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(
@@ -505,19 +494,26 @@ fun ScheduleSection(selectedDay: SuggestedDay, selectedRecurrence: RecurrenceTyp
     Surface(
         modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
         shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
+        color = LightGray,
+        border = BorderStroke(1.dp, SilverGray)
     ) {
         Column {
-            // Nota: Aquí asumo que ScheduleOptionRow acepta colores por parámetro.
-            // Si no, puedes cambiarlos también a MaterialTheme internamente.
-            ScheduleOptionRow(iconBgColor = Color(0xFFFFF0E0), iconColor = Color(0xFFFF9800), iconRes = R.drawable.ic_calendar, title = "Día sugerido", value = selectedDay.displayName, valuePrefix = "${selectedDay.icon} ", onClick = onOpenDayMenu)
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
-            ScheduleOptionRow(iconBgColor = Color(0xFFF3E5F5), iconColor = Color(0xFF9C27B0), iconRes = R.drawable.ic_recurrency, title = "Recurrencia", value = selectedRecurrence.displayName, valuePrefix = "${selectedRecurrence.icon} ", onClick = onOpenRecurrenceMenu)
+            ScheduleOptionRow(
+                iconBgColor = Color(0xFFFFF0E0), iconColor = BrightOrange,
+                iconRes = R.drawable.ic_calendar, title = "Día sugerido",
+                value = selectedDay.displayName, valuePrefix = "${selectedDay.icon} ",
+                onClick = onOpenDayMenu
+            )
+            HorizontalDivider(color = SilverGray, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+            ScheduleOptionRow(
+                iconBgColor = LightPurple, iconColor = Purple,
+                iconRes = R.drawable.ic_recurrency, title = "Recurrencia",
+                value = selectedRecurrence.displayName, valuePrefix = "${selectedRecurrence.icon} ",
+                onClick = onOpenRecurrenceMenu
+            )
         }
     }
 }
-
 
 @Composable
 fun SectionTitle(title: String, paddingBottom: androidx.compose.ui.unit.Dp = 12.dp) {
@@ -558,20 +554,33 @@ fun FormLabel(text: String, iconRes: Int) {
 
 @Composable
 fun PrioritySection(selectedPriority: PriorityLevel, onPriorityChange: (PriorityLevel) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         SectionTitle("PRIORIDAD", paddingBottom = 0.dp)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(painterResource(id = R.drawable.ic_star), contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(12.dp))
+            Icon(painterResource(id = R.drawable.ic_star), null, tint = YellowGreen, modifier = Modifier.size(12.dp))
             Spacer(modifier = Modifier.width(4.dp))
-            Text("Afecta los puntos ganados", color = BlackGray, fontSize = 12.sp)
+            Text("Afecta los puntos ganados", color = MediumDarkGray, fontSize = 12.sp)
         }
     }
-    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
         PriorityLevel.values().forEach { priority ->
-            PriorityCard(priority = priority, isSelected = selectedPriority == priority, onClick = { onPriorityChange(priority) }, modifier = Modifier.weight(1f))
+            PriorityCard(
+                priority = priority,
+                isSelected = selectedPriority == priority,
+                onClick = { onPriorityChange(priority) },
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }
+
 
 
 @Composable

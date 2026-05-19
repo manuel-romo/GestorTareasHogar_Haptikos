@@ -49,6 +49,7 @@ interface TaskApi {
         val homeId: String,
         val predetermined: Boolean,
         val memberIds: List<String>,
+        val pausedUntil: Long? = null,
         val instances: List<TaskInstanceApi.TaskInstanceNetworkDto> = emptyList()
     )
 

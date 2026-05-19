@@ -16,6 +16,8 @@ import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.BarChartData
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.HomeStatsUiState
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.MemberStatsItem
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.RoomStatsItem
+import haptikos.gestortareashogar_haptikos.ui.screens.rewards.BadgeItem
+import haptikos.gestortareashogar_haptikos.ui.screens.rewards.ChallengeItem
 import haptikos.gestortareashogar_haptikos.ui.screens.rewards.RankingMemberItem
 import haptikos.gestortareashogar_haptikos.ui.screens.rewards.RewardsUiState
 import haptikos.gestortareashogar_haptikos.ui.screens.userStats.ChartPoint
@@ -435,8 +437,21 @@ class TaskInstanceViewModel(
 
         RewardsUiState(
             totalPoints = userPoints,
-            dailyProgress = calculateDailyProgress(completedInstances), // Basado en tu lógica de stats
-            rankingList = ranking
+            dailyProgress = calculateDailyProgress(completedInstances),
+            rankingList = ranking,
+            badges = listOf(
+                BadgeItem("Primer logro", "⭐", isUnlocked = true, dateUnlocked = "May 2026"),
+                BadgeItem("7 días seguidos", "🔥", isUnlocked = true, dateUnlocked = "May 2026"),
+                BadgeItem("10 tareas", "✅", isUnlocked = false),
+                BadgeItem("Invitador", "👥", isUnlocked = false),
+                BadgeItem("Perfeccionista", "💎", isUnlocked = false),
+                BadgeItem("Madrugador", "🌅", isUnlocked = false)
+            ),
+            challenges = listOf(
+                ChallengeItem("Completa 5 tareas", "Completa 5 tareas esta semana", 3, 5, 25, "🎯"),
+                ChallengeItem("Racha de 3 días", "Completa tareas 3 días seguidos", 2, 3, 15, "🔥"),
+                ChallengeItem("Todo el día", "Completa todas las tareas de un día", 0, 1, 25, "⚡")
+            )
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RewardsUiState())
 

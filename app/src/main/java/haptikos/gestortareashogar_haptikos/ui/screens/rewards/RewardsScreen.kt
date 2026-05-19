@@ -43,18 +43,34 @@ import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkText
+import haptikos.gestortareashogar_haptikos.ui.theme.DeepOrange
+import haptikos.gestortareashogar_haptikos.ui.theme.LightAmber
+import haptikos.gestortareashogar_haptikos.ui.theme.LightYellow
+import haptikos.gestortareashogar_haptikos.ui.theme.MediumDarkGray
+import haptikos.gestortareashogar_haptikos.ui.theme.White
+import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 
 @Composable
 fun RewardsScreen(
     taskInstanceViewModel: TaskInstanceViewModel,
+    homeViewModel: HomeViewModel,
     onBackClick: () -> Unit
 ) {
     val rewardsState by taskInstanceViewModel.rewardsState.collectAsState()
     val tasks by taskInstanceViewModel.tasks.collectAsState()
+    val selectedHome by homeViewModel.selectedHome.collectAsState()
+
+    LaunchedEffect(selectedHome?.id) {
+        taskInstanceViewModel.setSelectedHome(selectedHome?.id)
+    }
 
     //Variable para controlar la pestaña seleccionada
     var selectedTab by remember { mutableStateOf("Resumen") }
@@ -180,32 +196,13 @@ fun RewardEarningRow(
 
 //Función composable extra para crear una card con información
 @Composable
-fun InfoCard(
-    title: String,
-    iconId: Int,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = Color.White,
-        shape = RoundedCornerShape(24.dp),
-        shadowElevation = 2.dp
-    ) {
+fun InfoCard(title: String, iconId: Int, content: @Composable ColumnScope.() -> Unit) {
+    Surface(modifier = Modifier.fillMaxWidth(), color = White, shape = RoundedCornerShape(24.dp), shadowElevation = 2.dp) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    painter = painterResource(id = iconId),
-                    contentDescription = null,
-                    tint = Color(0xFFFF9800),
-                    modifier = Modifier.size(20.dp)
-                )
+                Icon(painterResource(id = iconId), null, tint = BrightOrange, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = title,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = Color.Black
-                )
+                Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = DarkText)
             }
             Spacer(modifier = Modifier.height(16.dp))
             content()
@@ -215,39 +212,24 @@ fun InfoCard(
 
 //Función composable para el selector de pestañas
 @Composable
-fun RewardsTabSelector(
-    selectedTab: String,
-    onTabSelected: (String) -> Unit
-) {
+fun RewardsTabSelector(selectedTab: String, onTabSelected: (String) -> Unit) {
     val tabs = listOf("Resumen", "Insignias", "Ranking", "Retos")
-
     LazyRow(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
         contentPadding = PaddingValues(horizontal = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         items(tabs) { tab ->
             val isSelected = tab == selectedTab
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable() { onTabSelected(tab) }
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onTabSelected(tab) }) {
                 Text(
                     text = tab,
-                    color = if (isSelected) Color(0xFFFF6D00) else Color.Gray,
+                    color = if (isSelected) BrightOrange else MediumDarkGray,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     fontSize = 15.sp
                 )
                 if (isSelected) {
-                    Box(
-                        modifier = Modifier
-                            .padding(top = 4.dp)
-                            .width(16.dp)
-                            .height(3.dp)
-                            .background(Color(0xFFFF6D00), CircleShape)
-                    )
+                    Box(modifier = Modifier.padding(top = 4.dp).width(16.dp).height(3.dp).background(BrightOrange, CircleShape))
                 }
             }
         }
@@ -323,27 +305,14 @@ fun RankingContent(rankingList: List<RankingMemberItem>) {
         //Banner informativo superior
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            color = Color(0xFFFFF3E0),
+            color = LightYellow,
             shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, Color(0xFFFFE0B2))
+            border = BorderStroke(1.dp, LightAmber)
         ) {
-            Row(
-                modifier = Modifier.padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_home),
-                    contentDescription = null,
-                    tint = Color(0xFFFF9800),
-                    modifier = Modifier.size(18.dp)
-                )
+            Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(painterResource(id = R.drawable.ic_home), null, tint = BrightOrange, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    "Ranking mensual del hogar",
-                    fontSize = 13.sp,
-                    color = Color(0xFFE65100),
-                    fontWeight = FontWeight.Medium
-                )
+                Text("Ranking mensual del hogar", fontSize = 13.sp, color = DeepOrange, fontWeight = FontWeight.Medium)
             }
         }
 
@@ -441,7 +410,7 @@ fun RankingContent(rankingList: List<RankingMemberItem>) {
 fun ChallengesContent(challengeList: List<ChallengeItem>) {
     Column {
         Surface(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
             color = Color(0xFF7E57C2),
             shape = RoundedCornerShape(20.dp)
         ) {
@@ -625,7 +594,7 @@ fun RankingRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (isMe) Color(0xFFFFF8E1) else Color.Transparent)
+            .background(if (isMe) LightYellow else Color.Transparent)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -685,7 +654,14 @@ fun BadgeCard(name: String, date: String?, icon: String, isUnlocked: Boolean, mo
 
 @Composable
 fun SectionBadgeTitle(title: String) {
-    SectionBadgeTitle(title)
+    Text(
+        text = title,
+        color = MediumDarkGray,
+        fontSize = 11.sp,
+        fontWeight = FontWeight.Bold,
+        letterSpacing = 1.sp,
+        modifier = Modifier.padding(vertical = 8.dp)
+    )
 }
 
 //Preview de la pantalla de recompensas

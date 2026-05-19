@@ -17,96 +17,38 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
+import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
+import haptikos.gestortareashogar_haptikos.ui.theme.Orange
+import haptikos.gestortareashogar_haptikos.ui.theme.White
 
 @Composable
-fun HomeStatsHeader(
-    homeName: String = "Mi Casa",
-    percentage: String = "85",
-    onBackClick: () -> Unit
-) {
+fun HomeStatsHeader(homeName: String = "Mi Casa", percentage: String = "85", onBackClick: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(210.dp)
-            .background(
-                Brush.verticalGradient(
-                    listOf(Color(0xFFFF9800), Color(0xFFFF6D00))
-                )
-            )
+            .background(Brush.verticalGradient(listOf(BrightOrange, Orange)))
             .padding(horizontal = 24.dp)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center
-        ) {
-            // --- Fila Superior ---
+        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
             Row(
-                modifier = Modifier
-                    .clickable { onBackClick() }
-                    .padding(top = 8.dp),
+                modifier = Modifier.clickable { onBackClick() }.padding(top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_home_orange),
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(22.dp)
-                )
+                Icon(painterResource(id = R.drawable.ic_home_orange), null, tint = White, modifier = Modifier.size(22.dp))
                 Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = homeName,
-                    color = Color.White,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Medium
-                )
+                Text(homeName, color = White, fontSize = 17.sp, fontWeight = FontWeight.Medium)
             }
-
             Spacer(modifier = Modifier.height(35.dp))
-
-            // --- Fila Inferior ---
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Bottom
-            ) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                 Column {
-                    Text(
-                        text = "Estadísticas",
-                        color = Color.White,
-                        fontSize = 24.sp,
-                        fontWeight = FontWeight.Bold,
-                        lineHeight = 36.sp
-                    )
-                    Text(
-                        text = "Rendimiento del hogar",
-                        color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 13.sp
-                    )
+                    Text("Estadísticas", color = White, fontSize = 24.sp, fontWeight = FontWeight.Bold, lineHeight = 36.sp)
+                    Text("Rendimiento del hogar", color = White.copy(alpha = 0.9f), fontSize = 13.sp)
                 }
-
-                // Tarjeta de Porcentaje
-                Surface(
-                    color = Color.White.copy(alpha = 0.22f),
-                    shape = RoundedCornerShape(24.dp),
-                    modifier = Modifier.size(width = 115.dp, height = 80.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.Center,
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "$percentage%",
-                            color = Color.White,
-                            fontSize = 36.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            lineHeight = 38.sp
-                        )
-                        Text(
-                            text = "completado",
-                            color = Color.White.copy(alpha = 0.9f),
-                            fontSize = 13.sp
-                        )
+                Surface(color = White.copy(alpha = 0.22f), shape = RoundedCornerShape(24.dp), modifier = Modifier.size(width = 115.dp, height = 80.dp)) {
+                    Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("$percentage%", color = White, fontSize = 36.sp, fontWeight = FontWeight.ExtraBold, lineHeight = 38.sp)
+                        Text("completado", color = White.copy(alpha = 0.9f), fontSize = 13.sp)
                     }
                 }
             }

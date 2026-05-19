@@ -64,6 +64,12 @@ class SyncRepository(
     suspend fun syncAll(userId: String) {
         syncPendingItems()
         syncHomes(userId)
+        
+        val homes = homeDao.getAllHomes().first()
+        homes.forEach { home ->
+            syncRoomsForHome(home.id)
+            syncTasksForHome(home.id)
+        }
     }
 
     suspend fun syncPendingItems() {
@@ -76,43 +82,60 @@ class SyncRepository(
 
     private suspend fun syncPendingHomes() {
         val pendingHomes = homeDao.getAllHomes().first().filter { !it.isSynced }
-        Log.d("SYNC", "Hogares pendientes: ${pendingHomes.size}")
 
         pendingHomes.forEach { home ->
             try {
-                // Obtención local de creador
                 val creatorMember = memberDao.getCreatorByHomeId(home.id)
-
                 val currentUserId = dataStore.userIdFlow.first()
-                val currentUserName = dataStore.usernameFlow.first()
 
-                val request = HomeApi.CreateHomeRequest(
-                    id = home.id,
-                    name = home.name,
-                    description = home.description,
-                    isPrivate = home.isPrivate,
-                    creatorId = creatorMember?.userId?.takeIf { it.isNotEmpty() } ?: currentUserId,
-                    creatorName = creatorMember?.name ?: currentUserName,
-                    creatorLastName = creatorMember?.lastName ?: "",
-                    creatorColorHex = creatorMember?.colorHex ?: "#9E9E9E",
-                    creatorMemberId = creatorMember?.id ?: "",
-                    invitedUsers = emptyList()
+                // See intenta actualizar primero
+                val updateResponse = RetrofitClient.getHomeApi(dataStore).updateHome(
+                    home.id,
+                    HomeApi.UpdateHomeRequest(
+                        name = home.name,
+                        description = home.description,
+                        isPrivate = home.isPrivate,
+                        editPermission = home.editPermission.name,
+                        notifyTaskReminders = home.notifyTaskReminders,
+                        notifyTaskCompleted = home.notifyTaskCompleted,
+                        notifyNewMembers = home.notifyNewMembers,
+                        notifyAllMembers = home.notifyAllMembers,
+                        forceSettings = home.forceSettings
+                    )
                 )
 
-                val response = RetrofitClient.getHomeApi(dataStore).createHome(request)
-
-                if (response.isSuccessful) {
-                    val inviteCode = response.body()?.inviteCode
-                    homeDao.updateInviteCodeAndSync(home.id, inviteCode, isSynced = true)
-                    memberDao.markMembersAsSynced(home.id)
-                    Log.d("SYNC", "¡Hogar sincronizado con éxito! Código: $inviteCode")
-                } else {
-                    Log.e("SYNC", "Error HTTP: ${response.code()} - ${response.errorBody()?.string()}")
+                if (updateResponse.isSuccessful) {
+                    homeDao.updateInviteCodeAndSync(home.id, home.inviteCode, isSynced = true)
+                    Log.d("SYNC", "Hogar actualizado: ${home.name}")
+                    return@forEach
                 }
 
+                // Si no existe, se crea
+                if (updateResponse.code() == 404) {
+                    val currentUserName = dataStore.usernameFlow.first()
+                    val createResponse = RetrofitClient.getHomeApi(dataStore).createHome(
+                        HomeApi.CreateHomeRequest(
+                            id = home.id,
+                            name = home.name,
+                            description = home.description,
+                            isPrivate = home.isPrivate,
+                            creatorId = creatorMember?.userId?.takeIf { it.isNotEmpty() } ?: currentUserId,
+                            creatorName = creatorMember?.name ?: currentUserName,
+                            creatorLastName = creatorMember?.lastName ?: "",
+                            creatorColorHex = creatorMember?.colorHex ?: "#9E9E9E",
+                            creatorMemberId = creatorMember?.id ?: "",
+                            invitedUsers = emptyList()
+                        )
+                    )
+                    if (createResponse.isSuccessful) {
+                        val inviteCode = createResponse.body()?.inviteCode
+                        homeDao.updateInviteCodeAndSync(home.id, inviteCode, isSynced = true)
+                        memberDao.markMembersAsSynced(home.id)
+                        Log.d("SYNC", "Hogar creado: ${home.name}")
+                    }
+                }
             } catch (e: Exception) {
-                e.printStackTrace()
-                Log.e("SYNC", "Error crítico al sincronizar: ${e.message}")
+                Log.e("SYNC", "Error sincronizando hogar: ${e.message}")
             }
         }
     }
@@ -257,24 +280,41 @@ class SyncRepository(
                 val homes = response.body() ?: return
                 appDatabase.withTransaction {
                     homes.forEach { homeDto ->
-                        homeDao.insertHome(
-                            HomeEntityNew(
-                                id = homeDto.id,
-                                name = homeDto.name,
-                                description = homeDto.description,
-                                isPrivate = homeDto.isPrivate,
-                                inviteCode = homeDto.inviteCode,
-                                editPermission = HomePermission.valueOf(
-                                    homeDto.editPermission ?: "CREATOR_ONLY"
-                                ),
-                                notifyTaskReminders = homeDto.notifyTaskReminders,
-                                notifyTaskCompleted = homeDto.notifyTaskCompleted,
-                                notifyNewMembers = homeDto.notifyNewMembers,
-                                notifyAllMembers = homeDto.notifyAllMembers,
-                                forceSettings = homeDto.forceSettings,
-                                isSynced = true
+                        val existing = homeDao.getHomeById(homeDto.id)
+                        if (existing != null) {
+                            homeDao.updateHome(
+                                existing.copy(
+                                    name = homeDto.name,
+                                    description = homeDto.description,
+                                    isPrivate = homeDto.isPrivate,
+                                    inviteCode = homeDto.inviteCode,
+                                    editPermission = HomePermission.valueOf(homeDto.editPermission ?: "CREATOR_ONLY"),
+                                    notifyTaskReminders = homeDto.notifyTaskReminders,
+                                    notifyTaskCompleted = homeDto.notifyTaskCompleted,
+                                    notifyNewMembers = homeDto.notifyNewMembers,
+                                    notifyAllMembers = homeDto.notifyAllMembers,
+                                    forceSettings = homeDto.forceSettings,
+                                    isSynced = true
+                                )
                             )
-                        )
+                        } else {
+                            homeDao.insertHome(
+                                HomeEntityNew(
+                                    id = homeDto.id,
+                                    name = homeDto.name,
+                                    description = homeDto.description,
+                                    isPrivate = homeDto.isPrivate,
+                                    inviteCode = homeDto.inviteCode,
+                                    editPermission = HomePermission.valueOf(homeDto.editPermission ?: "CREATOR_ONLY"),
+                                    notifyTaskReminders = homeDto.notifyTaskReminders,
+                                    notifyTaskCompleted = homeDto.notifyTaskCompleted,
+                                    notifyNewMembers = homeDto.notifyNewMembers,
+                                    notifyAllMembers = homeDto.notifyAllMembers,
+                                    forceSettings = homeDto.forceSettings,
+                                    isSynced = true
+                                )
+                            )
+                        }
                         homeDto.members.forEach { memberDto ->
                             memberDao.addNew(
                                 MemberEntityNew(
@@ -376,6 +416,7 @@ class SyncRepository(
     suspend fun syncTasksForHome(homeId: String) {
         try {
             syncMembersForHome(homeId)
+            syncRoomsForHome(homeId)
 
             val response = RetrofitClient.getTaskApi(dataStore).getTasksByHome(homeId)
 
@@ -383,13 +424,13 @@ class SyncRepository(
                 val remoteTasks = response.body() ?: return
 
                 appDatabase.withTransaction {
-
+                    // 1. Borrar en orden correcto respetando FKs
                     taskInstanceDao.deleteAllByHomeId(homeId)
-
+                    taskDao.deleteAllMemberJoinsByHomeId(homeId)  // <-- agregar esto
                     taskDao.deleteAllByHomeId(homeId)
 
+                    // 2. Insertar tareas
                     remoteTasks.forEach { dto ->
-
                         taskDao.addTaskNew(
                             TaskEntityNew(
                                 id = dto.id,
@@ -404,7 +445,8 @@ class SyncRepository(
                                 roomId = dto.roomId,
                                 homeId = dto.homeId,
                                 isSynced = true,
-                                isPredetermined = dto.predetermined
+                                isPredetermined = dto.predetermined,
+                                pausedUntil = dto.pausedUntil
                             )
                         )
 

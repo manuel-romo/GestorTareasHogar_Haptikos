@@ -449,6 +449,7 @@ fun AppNavigation(
             composable(Screen.Rewards.route) {
                 RewardsScreen(
                     taskInstanceViewModel = taskInstanceViewModel,
+                    homeViewModel = homeViewModel,
                     onBackClick = { navController.popBackStack() }
                 )
             }

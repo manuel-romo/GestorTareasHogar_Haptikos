@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -27,6 +28,10 @@ import androidx.navigation.NavController
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.ui.components.CustomBottomNavigation
 import haptikos.gestortareashogar_haptikos.ui.screens.rewards.InfoCard
+import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
+import haptikos.gestortareashogar_haptikos.ui.theme.MediumDarkGray
+import haptikos.gestortareashogar_haptikos.ui.theme.SilverGray
+import haptikos.gestortareashogar_haptikos.ui.theme.White
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 
@@ -75,6 +80,11 @@ fun HomeStatsScreen(
     val state by viewModel.homeStatsState.collectAsState()
     val userName by viewModel.userName.collectAsState()
     val canCreateTasks by homeViewModel.isCurrentUserCreatorOrAdmin.collectAsState()
+    val selectedHome by homeViewModel.selectedHome.collectAsState()
+
+    LaunchedEffect(selectedHome?.id) {
+        viewModel.setSelectedHome(selectedHome?.id)
+    }
 
     HomeStatsContent(
         userName = userName,
@@ -175,7 +185,7 @@ fun TimeRangeSelector(selected: String, onSelected: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White, RoundedCornerShape(24.dp))
+            .background(White, RoundedCornerShape(24.dp))
             .padding(4.dp)
     ) {
         options.forEach { text ->
@@ -184,17 +194,12 @@ fun TimeRangeSelector(selected: String, onSelected: (String) -> Unit) {
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(20.dp))
-                    .background(if (isSelected) Color(0xFFFF6D00) else Color.Transparent)
+                    .background(if (isSelected) BrightOrange else Color.Transparent)
                     .clickable { onSelected(text) }
                     .padding(vertical = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = text,
-                    color = if (isSelected) Color.White else Color.Gray,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp
-                )
+                Text(text, color = if (isSelected) White else MediumDarkGray, fontWeight = FontWeight.Bold, fontSize = 14.sp)
             }
         }
     }
@@ -276,10 +281,10 @@ fun PeriodBarChart(data: List<BarChartData>) {
         data.forEachIndexed { index, item ->
             val xPos = (index + 1) * spacingX
             val totalHeight = (item.pending / maxValue) * height
-            drawRoundRect(color = Color(0xFFFF6D00).copy(alpha = 0.3f), topLeft = Offset(xPos - barWidth / 2, height - totalHeight), size = Size(barWidth, totalHeight), cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()))
+            drawRoundRect(color = BrightOrange.copy(alpha = 0.3f), topLeft = Offset(xPos - barWidth / 2, height - totalHeight), size = Size(barWidth, totalHeight), cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()))
 
             val completedHeight = (item.completed / maxValue) * height
-            drawRoundRect(color = Color(0xFFFF6D00), topLeft = Offset(xPos - barWidth / 2, height - completedHeight), size = Size(barWidth, completedHeight), cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()))
+            drawRoundRect(color = BrightOrange, topLeft = Offset(xPos - barWidth / 2, height - completedHeight), size = Size(barWidth, completedHeight), cornerRadius = androidx.compose.ui.geometry.CornerRadius(4.dp.toPx()))
 
             drawContext.canvas.nativeCanvas.drawText(item.label, xPos, height + 20.dp.toPx(), android.graphics.Paint().apply { color = Color.Gray.toArgb(); textSize = 11.sp.toPx(); textAlign = android.graphics.Paint.Align.CENTER })
         }
@@ -332,7 +337,7 @@ fun DistributionProgressItem(label: String, percentage: Int, color: Color) {
             Text(text = "$percentage%", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (percentage > 0 && color != Color(0xFFE0E0E0)) color else Color.Gray)
         }
         Spacer(modifier = Modifier.height(4.dp))
-        LinearProgressIndicator(progress = { percentage.toFloat() / 100f }, modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape), color = color, trackColor = Color(0xFFF0F0F0))
+        LinearProgressIndicator(progress = { percentage.toFloat() / 100f }, modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape), color = BrightOrange, trackColor = SilverGray)
     }
 }
 

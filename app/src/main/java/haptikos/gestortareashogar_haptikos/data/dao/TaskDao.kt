@@ -84,4 +84,12 @@ interface TaskDao {
         updateTaskBaseNew(task)
     }
 
+    @Query("""
+        DELETE FROM task_member_join 
+        WHERE taskId IN (
+            SELECT id FROM task_table_new WHERE homeId = :homeId
+        )
+    """)
+    suspend fun deleteAllMemberJoinsByHomeId(homeId: String)
+
 }

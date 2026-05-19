@@ -134,7 +134,7 @@ class HomeViewModel(
                     )
                 }
 
-                repository.createHomeWithSync(
+                val inviteCode = repository.createHomeWithSync(
                     homeId = generatedHomeId,
                     creatorId = userId,
                     homeName = name,
@@ -146,6 +146,10 @@ class HomeViewModel(
                     invitedUsers = invitedUsersWithIds,
                     defaultInviteColor = "#9E9E9E"
                 )
+
+                if (inviteCode != null) {
+                    _selectedHome.value = tempHome.copy(inviteCode = inviteCode, isSynced = true)
+                }
 
                 onComplete(null)
 
