@@ -260,7 +260,7 @@ fun AppNavigation(
                     onNavigateToJoinHome = { navController.navigate(Screen.JoinHome.route) },
                     onNotificationsClick = { navController.navigate(Screen.Notifications.route) },
                     onRewardsClick = { navController.navigate(Screen.Rewards.route) },
-                    onNavigateToHistory = { navController.navigate(Screen.TaskHistory.route) }
+                    onNavigateToHistory = { navController.navigate("${Screen.TaskHistory.route}?filter=home") }
                 )
             }
 
@@ -441,7 +441,7 @@ fun AppNavigation(
                             popUpTo(0) { inclusive = true }
                         }
                     },
-                    onNavigateToHistory = { navController.navigate(Screen.TaskHistory.route) },
+                    onNavigateToHistory = { navController.navigate("${Screen.TaskHistory.route}?filter=mine") },
                     onNavigateToRewards = { navController.navigate(Screen.Rewards.route) }
                 )
             }
@@ -477,9 +477,19 @@ fun AppNavigation(
                 )
             }
 
-            composable(Screen.TaskHistory.route) {
+            composable(
+                route = "${Screen.TaskHistory.route}?filter={filter}",
+                arguments = listOf(navArgument("filter") {
+                    type = NavType.StringType
+                    defaultValue = "mine"
+                })
+            ) { backStackEntry ->
+                val filter = backStackEntry.arguments?.getString("filter") ?: "mine"
                 TaskHistoryScreen(
                     viewModel = taskInstanceViewModel,
+                    authViewModel = authViewModel,
+                    homeViewModel = homeViewModel,
+                    filter = filter,
                     onBack = { navController.popBackStack() }
                 )
             }

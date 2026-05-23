@@ -80,6 +80,7 @@ fun ProfileScreen(
     val userId by authViewModel.userId.collectAsState()
     val userEmail = "correo@ejemplo.com" // TODO: Conecta el correo real
     val profilePicUrl by profileViewModel.profilePicUrl.collectAsState()
+    val userIsCreator by homeViewModel.isCurrentUserCreator.collectAsState()
 
     // Estados dinámicos
     val allHomes by homeViewModel.allHomes.collectAsState()
@@ -139,6 +140,7 @@ fun ProfileScreen(
     ProfileContent(
         userName = userName,
         userEmail = userEmail,
+        userIsCreator = userIsCreator,
         profilePicUrl = profilePicUrl,
         userHomes = userHomes,
         totalHomesCount = allHomes.size,
@@ -177,6 +179,7 @@ fun ProfileScreen(
 fun ProfileContent(
     userName: String,
     userEmail: String,
+    userIsCreator: Boolean,
     profilePicUrl: String?,
     userHomes: List<ProfileHomeItem>,
     totalHomesCount: Int,
@@ -312,12 +315,16 @@ fun ProfileContent(
 
                 if (selectedHome != null) {
                     if (isConfigForced) {
-                        val mensaje = if (isHomeNotificationsOff) {
-                            "🔒 El administrador ha desactivado todas las notificaciones para este hogar y ha bloqueado los cambios."
-                        } else {
-                            "🔒 El administrador ha impuesto una configuración específica y no puedes modificarla."
+                        val mensaje = when {
+                            userIsCreator && isHomeNotificationsOff ->
+                                "🔒 Has desactivado todas las notificaciones para este hogar."
+                            userIsCreator ->
+                                "🔒 Has impuesto tu configuración a los miembros."
+                            isHomeNotificationsOff ->
+                                "🔒 El creador ha desactivado todas las notificaciones para este hogar."
+                            else ->
+                                "🔒 El creador ha impuesto una configuración específica y no puedes modificarla."
                         }
-
                         Text(
                             text = mensaje,
                             color = Color.Gray,

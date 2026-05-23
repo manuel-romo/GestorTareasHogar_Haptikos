@@ -80,6 +80,7 @@ fun HomeScreen(
     val hasAdminPermissions by homeViewModel.isCurrentUserCreatorOrAdmin.collectAsState()
 
     val userIsCreator by homeViewModel.isCurrentUserCreator.collectAsState()
+    val userId by authViewModel.userId.collectAsState()
 
     LaunchedEffect(selectedHome?.id) {
         taskInstanceViewModel.setSelectedHome(selectedHome?.id)
@@ -90,6 +91,7 @@ fun HomeScreen(
         stats = stats,
         currentFilter = currentFilter,
         userName = userName,
+        userId = userId,
         hasAdminPermissions = hasAdminPermissions,
         onFilterChange = { nuevoFiltro -> taskInstanceViewModel.updateFilter(nuevoFiltro) },
         searchQuery = searchQuery,
@@ -99,8 +101,8 @@ fun HomeScreen(
         onSearchQueryChange = { nuevaBusqueda -> taskInstanceViewModel.updateSearchQuery(nuevaBusqueda) },
         onSettingsClick = onSettingsClick,
         onTaskClick = onTaskClick,
-        onStatusClick = { taskInstance ->
-            taskInstanceViewModel.toggleTaskStatus(taskInstance)
+        onStatusClick = { taskInstanceWithDetails ->
+            taskInstanceViewModel.toggleTaskStatus(taskInstanceWithDetails)
         },
         onDeleteClick = onDeleteClick,
         onNavigateToCreateHome = onNavigateToCreateHome,
@@ -120,6 +122,7 @@ fun HomeContent(
     stats: DashboardStats,
     currentFilter: TaskFilter,
     userName: String,
+    userId: String,
     hasAdminPermissions: Boolean,
     onFilterChange: (TaskFilter) -> Unit,
     searchQuery: String,
@@ -129,7 +132,7 @@ fun HomeContent(
     selectedHome: HomeEntityNew?,
     onHomeSelected: (HomeEntityNew) -> Unit,
     onTaskClick: (String) -> Unit,
-    onStatusClick: (TaskInstanceEntityNew) -> Unit,
+    onStatusClick: (TaskInstanceWithDetails) -> Unit,
     onDeleteClick: (TaskInstanceEntityNew) -> Unit,
     onNavigateToCreateHome:() -> Unit,
     onNavigateToJoinHome: () -> Unit,
@@ -243,10 +246,12 @@ fun HomeContent(
                 }
             } else {
                 items(tareasPendientes) { task ->
+                    val canToggle = task.assignedMembers.any { it.userId == userId } || userIsCreator
                     TaskCard(
                         taskInstance = task,
+                        canToggleStatus = canToggle,
                         onClick = { onTaskClick(task.taskInstance.id) },
-                        onStatusClick = { onStatusClick(task.taskInstance) },
+                        onStatusClick = { onStatusClick(task) },
                         onDeleteClick = { onDeleteClick(task.taskInstance) }
                     )
                 }
@@ -272,10 +277,12 @@ fun HomeContent(
                     }
                 }
                 items(tareasCompletadas) { task ->
+                    val canToggle = task.assignedMembers.any { it.userId == userId } || userIsCreator
                     TaskCard(
                         taskInstance = task,
                         onClick = { onTaskClick(task.taskInstance.id) },
-                        onStatusClick = { onStatusClick(task.taskInstance) },
+                        onStatusClick = { onStatusClick(task) },
+                        canToggleStatus = canToggle,
                         onDeleteClick = { onDeleteClick(task.taskInstance) }
                     )
                 }

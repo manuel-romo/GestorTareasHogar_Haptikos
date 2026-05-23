@@ -78,11 +78,15 @@ fun MembersSection(
     var memberToEdit by remember { mutableStateOf<MemberEntityNew?>(null) }
     var memberToDelete by remember { mutableStateOf<MemberEntityNew?>(null) }
 
+    val memberIds = remember(members) { members.map { it.member.id } }
+
+    val taskCounts by remember(memberIds) {
+        memberViewModel.getCompletedTaskCountsForMembers(memberIds)
+    }.collectAsState(initial = emptyMap())
+
     Column {
         SectionTitleHeader(icon = R.drawable.ic_users, title = "MIEMBROS DEL HOGAR")
-
         Spacer(modifier = Modifier.height(8.dp))
-
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = White),
@@ -90,20 +94,15 @@ fun MembersSection(
             shape = RoundedCornerShape(16.dp)
         ) {
             Column {
-
                 members.forEachIndexed { index, model ->
-
-                    val taskCount by memberViewModel.getCompletedTaskCountForMember(model.member.id).collectAsState(initial = 0)
-
                     MemberItem(
                         member = model.member,
-                        taskCount = taskCount,
+                        taskCount = taskCounts[model.member.id] ?: 0,
                         isCurrentUser = model.isCurrentUser,
                         isCreator = isCreator,
                         onEditClick = { memberToEdit = model.member },
                         onDeleteClick = { memberToDelete = model.member }
                     )
-
                     if (index < members.size - 1) {
                         HorizontalDivider(color = WhiteGray, modifier = Modifier.padding(horizontal = 16.dp))
                     }

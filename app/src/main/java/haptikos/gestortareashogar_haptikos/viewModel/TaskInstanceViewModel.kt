@@ -35,6 +35,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import haptikos.gestortareashogar_haptikos.ui.screens.userStats.UserStatsUiState
 import haptikos.gestortareashogar_haptikos.ui.screens.userStats.HomeStatsItem
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
@@ -68,6 +70,19 @@ class TaskInstanceViewModel(
     val instanceDeleteError = _instanceDeleteError.asStateFlow()
 
     private val _selectedHomeId = MutableStateFlow<String?>(null)
+
+    private val _currentInstanceId = MutableStateFlow<String?>(null)
+
+    val currentInstance: StateFlow<TaskInstanceWithDetails?> = _currentInstanceId
+        .flatMapLatest { id ->
+            if (id == null) flowOf(null)
+            else repository.getInstanceWithDetailsByIdFlow(id)
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    fun setCurrentInstance(instanceId: String) {
+        _currentInstanceId.value = instanceId
+    }
 
     fun setSelectedHome(homeId: String?) {
         _selectedHomeId.value = homeId
@@ -162,12 +177,20 @@ class TaskInstanceViewModel(
         }
     }
 
-    fun toggleTaskStatus(taskInstance: TaskInstanceEntityNew) {
+    fun toggleTaskStatus(taskInstance: TaskInstanceWithDetails) {
         viewModelScope.launch {
-            if (taskInstance.state == TaskState.COMPLETED) {
-                repository.markTaskAsPending(taskInstance)
+            val userId = dataStore.userIdFlow.first()
+            val isAssigned = taskInstance.assignedMembers.any { it.userId == userId }
+            val isCreator = taskInstance.taskDetails.members.any {
+                it.userId == userId && it.role == MemberRole.CREATOR
+            }
+
+            if (!isAssigned && !isCreator) return@launch
+
+            if (taskInstance.taskInstance.state == TaskState.COMPLETED) {
+                repository.markTaskAsPending(taskInstance.taskInstance)
             } else {
-                repository.markTaskAsCompleted(taskInstance)
+                repository.markTaskAsCompleted(taskInstance.taskInstance)
             }
         }
     }

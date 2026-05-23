@@ -108,4 +108,8 @@ interface TaskInstanceDao {
     """)
     suspend fun deleteAllByHomeId(homeId: String)
 
+    @Transaction
+    @Query("SELECT * FROM task_instance_table_new WHERE id = :instanceId")
+    fun getInstanceWithDetailsByIdFlow(instanceId: String): Flow<TaskInstanceWithDetails?>
+
 }

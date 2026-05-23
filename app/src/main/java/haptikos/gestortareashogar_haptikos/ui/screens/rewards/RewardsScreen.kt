@@ -42,20 +42,30 @@ import androidx.compose.ui.unit.sp
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkAmber
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkBlue
 import haptikos.gestortareashogar_haptikos.ui.theme.DarkText
 import haptikos.gestortareashogar_haptikos.ui.theme.DeepOrange
 import haptikos.gestortareashogar_haptikos.ui.theme.LightAmber
+import haptikos.gestortareashogar_haptikos.ui.theme.LightBlue
 import haptikos.gestortareashogar_haptikos.ui.theme.LightYellow
 import haptikos.gestortareashogar_haptikos.ui.theme.MediumDarkGray
+import haptikos.gestortareashogar_haptikos.ui.theme.Purple
+import haptikos.gestortareashogar_haptikos.ui.theme.SilverGray
 import haptikos.gestortareashogar_haptikos.ui.theme.White
+import haptikos.gestortareashogar_haptikos.ui.theme.Yellow
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 
 @Composable
@@ -72,94 +82,62 @@ fun RewardsScreen(
         taskInstanceViewModel.setSelectedHome(selectedHome?.id)
     }
 
-    //Variable para controlar la pestaña seleccionada
     var selectedTab by remember { mutableStateOf("Resumen") }
-
-    //Filtro para las tareas completadas para la sección de "Puntos recientes"
     val completedTasks = tasks.filter { it.taskInstance.state == TaskState.COMPLETED }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color(0xFFF7F9FA))
-            .verticalScroll(rememberScrollState())
-    ) {
-        //Header con puntos del usuario
-        RewardsHeader(
-            points = rewardsState.totalPoints,
-            progress = rewardsState.dailyProgress,
-            onBackClick = onBackClick
-        )
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = paddingValues.calculateBottomPadding())
+        ) {
+            RewardsHeader(
+                points = rewardsState.totalPoints,
+                progress = rewardsState.dailyProgress,
+                onBackClick = onBackClick
+            )
+            RewardsTabSelector(selectedTab = selectedTab, onTabSelected = { selectedTab = it })
 
-        //Selector de secciones
-        RewardsTabSelector(
-            selectedTab = selectedTab,
-            onTabSelected = { selectedTab = it }
-        )
-
-        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
-            if (selectedTab == "Resumen") {
-                InfoCard(title = "¿Cómo ganar puntos?", iconId = R.drawable.ic_bolt) {
-                    RewardEarningRow(
-                        "Tarea completada",
-                        "+10 pts",
-                        Color(0xFFE8F5E9),
-                        Color(0xFF4CAF50)
-                    )
-                    RewardEarningRow(
-                        "Tarea de alta prioridad",
-                        "+5 pts",
-                        Color(0xFFFFF3E0),
-                        Color(0xFFFF9800)
-                    )
-                    RewardEarningRow(
-                        "Completar el día entero",
-                        "+25 pts",
-                        Color(0xFFFFF9C4),
-                        Color(0xFFFBC02D)
-                    )
-                    RewardEarningRow(
-                        "Racha semanal (7 días)",
-                        "+25 pts",
-                        Color(0xFFFFEBEE),
-                        Color(0xFFE91E63)
-                    )
-                    RewardEarningRow(
-                        "Invitar un miembro",
-                        "+15 pts",
-                        Color(0xFFE3F2FD),
-                        Color(0xFF2196F3)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                //Sección del historial
-                InfoCard(title = "Puntos recientes", iconId = R.drawable.ic_star) {
-                    if (completedTasks.isEmpty()) {
-                        Text("Aún no has completado tareas hoy", color = Color.Gray, fontSize = 14.sp)
-                    } else {
-                        completedTasks.take(5).forEach { taskWithDetails ->
-                            RecentPointRow(
-                                title = taskWithDetails.taskDetails.task.title,
-                                points = "+${taskWithDetails.taskDetails.task.points}",
-                                iconId = R.drawable.ic_check_circle
-                            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp)
+            ) {
+                when (selectedTab) {
+                    "Resumen" -> {
+                        InfoCard(title = "¿Cómo ganar puntos?", iconId = R.drawable.ic_bolt) {
+                            RewardEarningRow("Tarea completada", "+10 pts", MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.tertiary)
+                            RewardEarningRow("Tarea de alta prioridad", "+5 pts", LightYellow, DarkAmber)
+                            RewardEarningRow("Completar el día entero", "+25 pts", LightYellow, Yellow)
+                            RewardEarningRow("Racha semanal (7 días)", "+25 pts", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.error)
+                            RewardEarningRow("Invitar un miembro", "+15 pts", LightBlue, DarkBlue)
+                        }
+                        Spacer(modifier = Modifier.height(20.dp))
+                        InfoCard(title = "Puntos recientes", iconId = R.drawable.ic_star) {
+                            if (completedTasks.isEmpty()) {
+                                Text("Aún no has completado tareas hoy", color = MediumDarkGray, fontSize = 14.sp)
+                            } else {
+                                completedTasks.take(5).forEach { taskWithDetails ->
+                                    RecentPointRow(
+                                        title = taskWithDetails.taskDetails.task.title,
+                                        points = "+${taskWithDetails.taskDetails.task.points}",
+                                        iconId = R.drawable.ic_check_circle
+                                    )
+                                }
+                            }
                         }
                     }
+                    "Insignias" -> BadgesContent(badgeList = rewardsState.badges)
+                    "Ranking" -> RankingContent(rankingList = rewardsState.rankingList)
+                    "Retos" -> ChallengesContent(challengeList = rewardsState.challenges)
                 }
-            } else if (selectedTab == "Insignias") {
-                //Sección de Insignias integrada
-                BadgesContent(badgeList = rewardsState.badges)
-            } else if (selectedTab == "Ranking") {
-                //Sección de Ranking integrada
-                RankingContent(rankingList = rewardsState.rankingList)
-            } else if (selectedTab == "Retos") {
-                //Sección de Retos integrada
-                ChallengesContent(challengeList = rewardsState.challenges)
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
-        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
@@ -221,15 +199,21 @@ fun RewardsTabSelector(selectedTab: String, onTabSelected: (String) -> Unit) {
     ) {
         items(tabs) { tab ->
             val isSelected = tab == selectedTab
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { onTabSelected(tab) }) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) { onTabSelected(tab) }
+            ) {
                 Text(
                     text = tab,
-                    color = if (isSelected) BrightOrange else MediumDarkGray,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MediumDarkGray,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                     fontSize = 15.sp
                 )
                 if (isSelected) {
-                    Box(modifier = Modifier.padding(top = 4.dp).width(16.dp).height(3.dp).background(BrightOrange, CircleShape))
+                    Box(modifier = Modifier.padding(top = 4.dp).width(16.dp).height(3.dp).background(MaterialTheme.colorScheme.primary, CircleShape))
                 }
             }
         }
@@ -244,11 +228,11 @@ fun RecentPointRow(title: String, points: String, iconId: Int) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(painterResource(iconId), null, tint = Color(0xFF4CAF50), modifier = Modifier.size(24.dp))
+            Icon(painterResource(iconId), null, tint = MaterialTheme.colorScheme.tertiary, modifier = Modifier.size(24.dp))
             Spacer(Modifier.width(12.dp))
-            Text(title, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+            Text(title, fontSize = 15.sp, fontWeight = FontWeight.Medium, color = DarkText)
         }
-        Text(points, color = Color(0xFFFF9800), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        Text(points, color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold, fontSize = 16.sp)
     }
 }
 
@@ -454,12 +438,10 @@ fun ChallengeCard(
     isCompleted: Boolean = false
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        color = if (isCompleted) Color(0xFFE8F5E9) else Color.White,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        color = if (isCompleted) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(24.dp),
-        border = BorderStroke(1.dp, Color(0xFFEEEEEE))
+        border = BorderStroke(1.dp, SilverGray)
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
@@ -489,51 +471,29 @@ fun ChallengeCard(
                 }
                 Text(
                     text = if (isCompleted) "$reward pts ✓" else "$reward ⭐",
-                    color = if (isCompleted) Color(0xFF4CAF50) else Color(0xFFFFB300),
+                    color = if (isCompleted) MaterialTheme.colorScheme.tertiary else DarkAmber,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = description,
-                color = Color.Gray,
-                fontSize = 13.sp,
-                lineHeight = 18.sp
-            )
-
+            Text(text = description, color = MediumDarkGray, fontSize = 13.sp, lineHeight = 18.sp)
             if (!isCompleted) {
                 Spacer(modifier = Modifier.height(16.dp))
-
-                //Barra de progreso y texto de conteo
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     LinearProgressIndicator(
                         progress = { progress / total },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(8.dp)
-                            .clip(CircleShape),
-                        color = Color(0xFF7E57C2),
-                        trackColor = Color(0xFFF0F0F0)
+                        modifier = Modifier.weight(1f).height(8.dp).clip(CircleShape),
+                        color = Purple,
+                        trackColor = SilverGray
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "${progress.toInt()}/${total.toInt()}",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Gray
-                    )
+                    Text("${progress.toInt()}/${total.toInt()}", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MediumDarkGray)
                 }
-
                 if (timeLeft.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = timeLeft,
-                        fontSize = 11.sp,
-                        color = Color.LightGray
-                    )
+                    Text(text = timeLeft, fontSize = 11.sp, color = MediumDarkGray)
                 }
             }
         }

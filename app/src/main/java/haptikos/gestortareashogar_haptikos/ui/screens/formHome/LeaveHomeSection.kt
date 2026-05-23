@@ -17,6 +17,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -27,11 +31,28 @@ import haptikos.gestortareashogar_haptikos.R
 
 @Composable
 fun LeaveHomeSection(onLeaveClick: () -> Unit) {
+    var showConfirmation by remember { mutableStateOf(false) }
+
+    if (showConfirmation) {
+        ConfirmDeleteBottomSheet(
+            title = "¿Abandonar el hogar?",
+            description = "Dejarás de ver las tareas y perderás tus puntos acumulados. Esta acción no se puede deshacer.",
+            iconRes = R.drawable.ic_logout,
+            cancelButtonText = "Cancelar",
+            confirmButtonText = "Abandonar",
+            onDismissRequest = { showConfirmation = false },
+            onConfirmDelete = {
+                showConfirmation = false
+                onLeaveClick()
+            }
+        )
+    }
+
     Column {
         SectionTitleHeader(icon = R.drawable.ic_logout, title = "SALIR DEL HOGAR")
 
         Card(
-            onClick = onLeaveClick,
+            onClick = { showConfirmation = true },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 12.dp),

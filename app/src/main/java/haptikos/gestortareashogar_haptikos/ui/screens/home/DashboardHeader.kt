@@ -270,8 +270,22 @@ fun DashboardHeader(
                             ) {
                                 Box(contentAlignment = Alignment.Center) { Icon(painterResource(id = R.drawable.ic_trophy), contentDescription = "Logros", tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp)) }
                             }
-                            Surface(color = MaterialTheme.colorScheme.secondaryContainer, shape = CircleShape, modifier = Modifier.align(Alignment.TopEnd).offset(x = 8.dp, y = (-4).dp).defaultMinSize(minWidth = 20.dp, minHeight = 20.dp)) {
-                                Box(contentAlignment = Alignment.Center) { Text(text = userPoints.toString(), fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.onSurface) }
+                            Surface(
+                                color = MaterialTheme.colorScheme.secondaryContainer,
+                                shape = CircleShape,
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 8.dp, y = (-4).dp)
+                                    .size(20.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = if (userPoints > 999) "999+" else userPoints.toString(),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                }
                             }
                         }
                     }

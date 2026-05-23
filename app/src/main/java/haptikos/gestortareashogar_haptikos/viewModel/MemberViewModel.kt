@@ -7,6 +7,7 @@ import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -85,6 +86,16 @@ class MemberViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+    }
+
+    fun getCompletedTaskCountsForMembers(memberIds: List<String>): Flow<Map<String, Int>> {
+        return combine(
+            memberIds.map { id ->
+                getCompletedTaskCountForMember(id).map { count -> id to count }
+            }
+        ) { pairs ->
+            pairs.toMap()
+        }
     }
 
 }

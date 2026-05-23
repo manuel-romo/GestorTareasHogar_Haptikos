@@ -285,16 +285,15 @@ class SyncRepository(
                             homeDao.updateHome(
                                 existing.copy(
                                     name = homeDto.name,
-                                    description = homeDto.description,
-                                    isPrivate = homeDto.isPrivate,
                                     inviteCode = homeDto.inviteCode,
                                     editPermission = HomePermission.valueOf(homeDto.editPermission ?: "CREATOR_ONLY"),
-                                    notifyTaskReminders = homeDto.notifyTaskReminders,
-                                    notifyTaskCompleted = homeDto.notifyTaskCompleted,
-                                    notifyNewMembers = homeDto.notifyNewMembers,
-                                    notifyAllMembers = homeDto.notifyAllMembers,
-                                    forceSettings = homeDto.forceSettings,
-                                    isSynced = true
+                                    // Si el hogar local tiene cambios pendientes, mantiene sus valores.
+                                    notifyTaskReminders = if (!existing.isSynced) existing.notifyTaskReminders else homeDto.notifyTaskReminders,
+                                    notifyTaskCompleted = if (!existing.isSynced) existing.notifyTaskCompleted else homeDto.notifyTaskCompleted,
+                                    notifyNewMembers = if (!existing.isSynced) existing.notifyNewMembers else homeDto.notifyNewMembers,
+                                    notifyAllMembers = if (!existing.isSynced) existing.notifyAllMembers else homeDto.notifyAllMembers,
+                                    forceSettings = if (!existing.isSynced) existing.forceSettings else homeDto.forceSettings,
+                                    isSynced = existing.isSynced
                                 )
                             )
                         } else {
@@ -305,7 +304,7 @@ class SyncRepository(
                                     description = homeDto.description,
                                     isPrivate = homeDto.isPrivate,
                                     inviteCode = homeDto.inviteCode,
-                                    editPermission = HomePermission.valueOf(homeDto.editPermission ?: "CREATOR_ONLY"),
+                                    editPermission = HomePermission.valueOf(homeDto.editPermission ?: HomePermission.CREATOR_ONLY.name),
                                     notifyTaskReminders = homeDto.notifyTaskReminders,
                                     notifyTaskCompleted = homeDto.notifyTaskCompleted,
                                     notifyNewMembers = homeDto.notifyNewMembers,
@@ -370,6 +369,7 @@ class SyncRepository(
                     userId = currentUserId
                 )
                 val response = RetrofitClient.getTaskInstanceApi(dataStore).createTaskInstance(request)
+                Log.d("SYNC", "completeInstance response: ${response.code()} body: ${response.errorBody()?.string()}")
                 if (response.isSuccessful) {
                     taskInstanceDao.updateSyncStatus(instance.id, isSynced = true)
                 }
@@ -429,12 +429,15 @@ class SyncRepository(
             if (response.isSuccessful) {
                 val remoteTasks = response.body() ?: return
 
+                // Se guardan las instancias pendientes antes de borrar
+                val pendingInstances = taskInstanceDao.getAllNew().first()
+                    .filter { !it.isSynced }
+
                 appDatabase.withTransaction {
                     taskInstanceDao.deleteAllByHomeId(homeId)
                     taskDao.deleteAllByHomeId(homeId)
 
                     remoteTasks.forEach { dto ->
-
                         taskDao.addTaskNew(
                             TaskEntityNew(
                                 id = dto.id,
@@ -460,16 +463,17 @@ class SyncRepository(
                             )
                         }
 
-
                         dto.instances.forEach { inst ->
+                            // Si hay instancias locales pendientes de sincronizar, se preservan
+                            val pendingLocal = pendingInstances.find { it.id == inst.id }
                             taskInstanceDao.insertInstanceWithAssignedMembers(
                                 TaskInstanceEntityNew(
                                     id = inst.id,
                                     taskId = inst.taskId,
                                     dueDate = inst.dueDate,
-                                    state = TaskState.valueOf(inst.state),
-                                    completedAt = inst.completedAt,
-                                    isSynced = true
+                                    state = pendingLocal?.state ?: TaskState.valueOf(inst.state),
+                                    completedAt = pendingLocal?.completedAt ?: inst.completedAt,
+                                    isSynced = pendingLocal == null
                                 ),
                                 inst.memberIds
                             )

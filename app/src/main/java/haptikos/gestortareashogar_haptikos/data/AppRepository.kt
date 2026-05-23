@@ -51,6 +51,7 @@ class AppRepository(
     val allMembersNew: Flow<List<MemberEntityNew>> = memberDao.getAllNew()
     val allRoomsNew: Flow<List<RoomEntityNew>> = roomDao.getAllNew()
     val allInstancesWithDetails: Flow<List<TaskInstanceWithDetails>> = taskInstanceDao.getAllInstancesWithDetails()
+
     val allTasksWithDetails: Flow<List<TaskWithDetails>> = taskDao.getAllTasksWithDetails()
     val allHomes: Flow<List<HomeEntityNew>> = homeDao.getAllHomes()
 
@@ -156,6 +157,10 @@ class AppRepository(
         return taskInstanceDao.getInstanceWithDetailsById(instanceId)
     }
 
+    fun getInstanceWithDetailsByIdFlow(instanceId: String): Flow<TaskInstanceWithDetails?> {
+        return taskInstanceDao.getInstanceWithDetailsByIdFlow(instanceId)
+    }
+
     fun getFilteredInstances(
         homeId: String?,
         status: TaskState?,
@@ -203,7 +208,6 @@ class AppRepository(
     suspend fun updateHome(home: HomeEntityNew) {
         val homeToSave = home.copy(isSynced = false)
         homeDao.updateHome(homeToSave)
-        syncHomeNow(home)
     }
 
     suspend fun deleteHomeById(homeId: String) = homeDao.deleteHomeById(homeId)
@@ -535,7 +539,9 @@ class AppRepository(
     // Abandonar hogar ---------------------------------------------------------------------
     suspend fun leaveHomeWithSync(homeId: String, userId: String): Boolean {
         return try {
+            Log.d("LEAVE", "Llamando leaveHome homeId=$homeId userId=$userId")
             val response = RetrofitClient.getHomeApi(dataStore).leaveHome(homeId, userId)
+            Log.d("LEAVE", "Response: ${response.code()}")
 
             if (response.isSuccessful) {
                 appDatabase.withTransaction {

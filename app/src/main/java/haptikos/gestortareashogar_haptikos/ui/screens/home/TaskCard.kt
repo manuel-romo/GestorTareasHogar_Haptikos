@@ -43,6 +43,7 @@ fun TaskCard(
     taskInstance: TaskInstanceWithDetails,
     onClick: () -> Unit,
     onStatusClick: () -> Unit,
+    canToggleStatus: Boolean,
     onDeleteClick: () -> Unit
 ) {
 
@@ -63,33 +64,34 @@ fun TaskCard(
         ) {
 
             // Círculo estado
-            Box(
-                modifier = Modifier
-                    .padding(top = 2.dp)
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .clickable { onStatusClick() }
-                    .border(
-                        width = 2.dp,
-                        color = when {
-                            isCompleted -> MaterialTheme.colorScheme.tertiary
-                            else -> MaterialTheme.colorScheme.outlineVariant
-                        },
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isCompleted) {
-                    Icon(
-                        painterResource(id = R.drawable.ic_check),
-                        contentDescription = "Completada",
-                        tint = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.size(16.dp)
-                    )
+            if (canToggleStatus) {
+                Box(
+                    modifier = Modifier
+                        .padding(top = 2.dp)
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .clickable { onStatusClick() }
+                        .border(
+                            width = 2.dp,
+                            color = when {
+                                isCompleted -> MaterialTheme.colorScheme.tertiary
+                                else -> MaterialTheme.colorScheme.outlineVariant
+                            },
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isCompleted) {
+                        Icon(
+                            painterResource(id = R.drawable.ic_check),
+                            contentDescription = "Completada",
+                            tint = MaterialTheme.colorScheme.tertiary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
+                Spacer(Modifier.width(16.dp))
             }
-
-            Spacer(Modifier.width(16.dp))
 
             // Textos y pastillas
             Column(Modifier.weight(1f)) {

@@ -58,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.data.entity.TaskEntityNew
+import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.ui.components.BiometricAuthBottomSheet
 import haptikos.gestortareashogar_haptikos.ui.components.FeedbackBottomSheet
 import haptikos.gestortareashogar_haptikos.ui.components.GenericMultiSelectionBottomSheet
@@ -85,7 +86,7 @@ fun TaskDetailScreen(
     authViewModel: AuthViewModel,
     onBack: () -> Unit
 ) {
-    var instanceDetails by remember { mutableStateOf<TaskInstanceWithDetails?>(null) }
+    val details by viewModel.currentInstance.collectAsState()
     val context = LocalContext.current
     val fragmentActivity = context.findFragmentActivity()
 
@@ -99,21 +100,29 @@ fun TaskDetailScreen(
     var selectedMembers by remember { mutableStateOf<Set<MemberEntityNew>>(emptySet()) }
     var menuExpanded by remember { mutableStateOf(false) }
 
-    // Estado de scroll para animación de contracción
     val scrollState = rememberScrollState()
     val isCollapsed by remember {
         derivedStateOf { scrollState.value > 80 }
     }
 
     LaunchedEffect(instanceId) {
-        instanceDetails = viewModel.getInstanceWithDetailsById(instanceId)
-        instanceDetails?.let {
+        viewModel.setCurrentInstance(instanceId)
+    }
+
+    LaunchedEffect(details) {
+        details?.let {
             selectedMembers = it.assignedMembers.toSet()
             viewModel.checkEditPermission(it, allHomes, userId)
         }
     }
 
-    val details = instanceDetails ?: return
+    val instance = details ?: return
+
+    val isAssigned = instance.assignedMembers.any { it.userId == userId }
+    val isCreatorOfHome = instance.taskDetails.members.any {
+        it.userId == userId && it.role == MemberRole.CREATOR
+    }
+    val canToggleStatus = isAssigned || isCreatorOfHome
 
     if (showMemberSheet) {
         GenericMultiSelectionBottomSheet(
@@ -121,14 +130,14 @@ fun TaskDetailScreen(
             onDismissRequest = { showMemberSheet = false },
             title = "Asignar miembros",
             description = "Selecciona quién realiza esta tarea esta semana",
-            items = details.taskDetails.members,
+            items = instance.taskDetails.members,
             selectedItems = selectedMembers,
             onItemToggled = { member ->
                 selectedMembers = if (selectedMembers.contains(member))
                     selectedMembers - member else selectedMembers + member
             },
             onConfirm = {
-                viewModel.updateInstanceMembers(details.taskInstance.id, selectedMembers.map { it.id })
+                viewModel.updateInstanceMembers(instance.taskInstance.id, selectedMembers.map { it.id })
                 showMemberSheet = false
             },
             itemBgColorHex = { it.colorHex },
@@ -140,7 +149,7 @@ fun TaskDetailScreen(
         BiometricAuthBottomSheet(
             title = "Eliminar tarea",
             description = "Debes autenticarte para continuar.",
-            warningText = "Se eliminará \"${details.taskDetails.task.title}\" de esta semana.",
+            warningText = "Se eliminará \"${instance.taskDetails.task.title}\" de esta semana.",
             onDismissRequest = { viewModel.cancelInstanceDeletion() },
             onAuthenticateClick = {
                 if (fragmentActivity != null) {
@@ -148,7 +157,7 @@ fun TaskDetailScreen(
                         context = fragmentActivity,
                         title = "Eliminar tarea",
                         subtitle = "Confirma tu identidad",
-                        onSuccess = { viewModel.confirmInstanceDeletion(details.taskInstance, onBack) },
+                        onSuccess = { viewModel.confirmInstanceDeletion(instance.taskInstance, onBack) },
                         onFailed = { viewModel.showInstanceDeleteError("Huella no reconocida") },
                         onError = { viewModel.showInstanceDeleteError(it ?: "Error desconocido") }
                     )
@@ -169,42 +178,37 @@ fun TaskDetailScreen(
     Scaffold(
         bottomBar = {
             BottomActionArea {
-                if (details.taskInstance.state != TaskState.COMPLETED) {
-                    Button(
-                        onClick = {
-                            viewModel.markTaskAsCompleted(details.taskInstance)
-                            instanceDetails = details.copy(
-                                taskInstance = details.taskInstance.copy(state = TaskState.COMPLETED)
-                            )
-                            onBack()
-                        },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Green)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(painterResource(R.drawable.ic_check_circle), null, tint = White, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Marcar como completada", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White)
+                if (canToggleStatus) {
+                    if (instance.taskInstance.state != TaskState.COMPLETED) {
+                        Button(
+                            onClick = {
+                                viewModel.markTaskAsCompleted(instance.taskInstance)
+                            },
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Green)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(painterResource(R.drawable.ic_check_circle), null, tint = White, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Marcar como completada", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = White)
+                            }
                         }
-                    }
-                } else {
-                    OutlinedButton(
-                        onClick = {
-                            viewModel.markTaskAsPending(details.taskInstance)
-                            instanceDetails = details.copy(
-                                taskInstance = details.taskInstance.copy(state = TaskState.PENDING)
-                            )
-                        },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MediumDarkGray),
-                        border = BorderStroke(1.dp, SilverGray)
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(painterResource(R.drawable.ic_refresh), null, modifier = Modifier.size(18.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text("Reactivar tarea", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    } else {
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.markTaskAsPending(instance.taskInstance)
+                            },
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MediumDarkGray),
+                            border = BorderStroke(1.dp, SilverGray)
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(painterResource(R.drawable.ic_refresh), null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Reactivar tarea", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            }
                         }
                     }
                 }
@@ -219,8 +223,8 @@ fun TaskDetailScreen(
         ) {
             // Header con animación de contracción
             TaskDetailHeader(
-                task = details.taskDetails.task,
-                state = details.taskInstance.state,
+                task = instance.taskDetails.task,
+                state = instance.taskInstance.state,
                 isCollapsed = isCollapsed,
                 canEdit = canEdit,
                 menuExpanded = menuExpanded,
@@ -236,14 +240,14 @@ fun TaskDetailScreen(
                         modifier = Modifier.weight(1f),
                         iconId = R.drawable.ic_calendar,
                         label = "Día sugerido",
-                        value = details.taskDetails.task.suggestedDay.name.lowercase().replaceFirstChar { it.uppercase() },
+                        value = instance.taskDetails.task.suggestedDay.name.lowercase().replaceFirstChar { it.uppercase() },
                         iconColor = BrightOrange
                     )
                     InfoCard(
                         modifier = Modifier.weight(1f),
                         iconId = R.drawable.ic_location,
                         label = "Habitación",
-                        value = details.taskDetails.room?.name ?: "General",
+                        value = instance.taskDetails.room?.name ?: "General",
                         iconColor = DarkBlue
                     )
                 }
@@ -253,14 +257,14 @@ fun TaskDetailScreen(
                         modifier = Modifier.weight(1f),
                         iconId = R.drawable.ic_refresh,
                         label = "Recurrencia",
-                        value = "${details.taskDetails.task.recurrence.icon} ${details.taskDetails.task.recurrence.displayName}",
+                        value = "${instance.taskDetails.task.recurrence.icon} ${instance.taskDetails.task.recurrence.displayName}",
                         iconColor = Purple
                     )
                     InfoCard(
                         modifier = Modifier.weight(1f),
                         iconId = R.drawable.ic_clock,
                         label = "Estado",
-                        value = when (details.taskInstance.state) {
+                        value = when (instance.taskInstance.state) {
                             TaskState.PENDING -> "Pendiente"
                             TaskState.COMPLETED -> "Completada"
                         },
@@ -269,14 +273,14 @@ fun TaskDetailScreen(
                 }
                 Spacer(Modifier.height(24.dp))
                 RewardSection(
-                    basePoints = details.taskDetails.task.points,
-                    priorityBonus = details.taskDetails.task.priority.points,
-                    priorityName = details.taskDetails.task.priority.title.lowercase()
+                    basePoints = instance.taskDetails.task.points,
+                    priorityBonus = instance.taskDetails.task.priority.points,
+                    priorityName = instance.taskDetails.task.priority.title.lowercase()
                 )
                 Spacer(Modifier.height(24.dp))
-                MembersSection(details.assignedMembers)
+                MembersSection(instance.assignedMembers)
                 Spacer(Modifier.height(24.dp))
-                DescriptionSection(details.taskDetails.task.description)
+                DescriptionSection(instance.taskDetails.task.description)
                 Spacer(modifier = Modifier.height(32.dp))
             }
         }
