@@ -56,4 +56,21 @@ interface MemberDao {
     @Query("DELETE FROM member_table_new WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<String>): Int
 
+    @Query("""
+        UPDATE member_table_new SET
+            name = :name,
+            lastName = :lastName,
+            colorHex = :colorHex,
+            role = :role,
+            status = :status,
+            profilePicUrl = :profilePicUrl,
+            isSynced = :isSynced
+        WHERE id = :id
+    """)
+    suspend fun updateMember(
+        id: String, name: String, lastName: String,
+        colorHex: String, role: String, status: String,
+        profilePicUrl: String?, isSynced: Boolean
+    ): Int
+
 }

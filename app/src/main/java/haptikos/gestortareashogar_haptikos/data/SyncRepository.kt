@@ -316,7 +316,7 @@ class SyncRepository(
                             )
                         }
                         homeDto.members.forEach { memberDto ->
-                            memberDao.addNew(
+                            upsertMember(
                                 MemberEntityNew(
                                     id = memberDto.id,
                                     userId = memberDto.userId,
@@ -401,7 +401,7 @@ class SyncRepository(
 
                 appDatabase.withTransaction {
                     localMembers.forEach { member ->
-                        memberDao.addNew(member)
+                        upsertMember(member)
                     }
                     // Elimina solo los que el servidor ya no devuelve
                     val remoteIds = localMembers.map { it.id }.toSet()
@@ -530,6 +530,23 @@ class SyncRepository(
     suspend fun deleteHomeLocally(homeId: String) {
         appDatabase.withTransaction {
             homeDao.deleteHomeById(homeId)
+        }
+    }
+
+    private suspend fun upsertMember(member: MemberEntityNew) {
+        val updated = memberDao.updateMember(
+            id = member.id,
+            name = member.name,
+            lastName = member.lastName,
+            colorHex = member.colorHex,
+            role = member.role.name,
+            status = member.status.name,
+            profilePicUrl = member.profilePicUrl,
+            isSynced = member.isSynced
+        )
+        // Si no actualizó ninguna fila, el miembro no existía, se inserta sin replace
+        if (updated == 0) {
+            memberDao.addNew(member)
         }
     }
 
