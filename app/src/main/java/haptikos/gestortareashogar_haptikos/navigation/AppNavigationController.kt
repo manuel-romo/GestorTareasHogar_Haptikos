@@ -249,7 +249,6 @@ fun AppNavigation(
                     notificationViewModel = notificationViewModel,
                     onSettingsClick = { navController.navigate(Screen.HomeConfiguration.route) },
                     onTaskClick = { instanceId -> navController.navigate("${Screen.TaskDetail.route}/$instanceId") },
-                    onStatusClick = { taskInstanceViewModel.markTaskAsCompleted(it) },
                     onDeleteClick = { taskInstanceViewModel.deleteTaskInstance(it) },
                     onNavigateToCreateHome = { navController.navigate(Screen.CreateHomeStep1.route) },
                     onNavigateToJoinHome = { navController.navigate(Screen.JoinHome.route) },

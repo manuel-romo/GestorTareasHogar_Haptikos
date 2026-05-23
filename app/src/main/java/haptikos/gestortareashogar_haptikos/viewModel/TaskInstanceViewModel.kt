@@ -99,10 +99,7 @@ class TaskInstanceViewModel(
 
     fun markTaskAsCompleted(taskInstance: TaskInstanceEntityNew) {
         viewModelScope.launch {
-            repository.updateTaskInstance(
-                taskInstance.copy(state = TaskState.COMPLETED, isSynced = false)
-            )
-            repository.syncPendingInstances()
+            repository.markTaskAsCompleted(taskInstance)
         }
     }
 
@@ -154,13 +151,24 @@ class TaskInstanceViewModel(
     }
 
     fun markTaskAsPending(taskInstance: TaskInstanceEntityNew) {
-        val updatedTask = taskInstance.copy(state = TaskState.PENDING)
-        updateTask(updatedTask)
+        viewModelScope.launch {
+            repository.markTaskAsPending(taskInstance)
+        }
     }
 
     fun deleteTaskInstance(taskInstance: TaskInstanceEntityNew) {
         viewModelScope.launch {
             repository.deleteTaskInstance(taskInstance)
+        }
+    }
+
+    fun toggleTaskStatus(taskInstance: TaskInstanceEntityNew) {
+        viewModelScope.launch {
+            if (taskInstance.state == TaskState.COMPLETED) {
+                repository.markTaskAsPending(taskInstance)
+            } else {
+                repository.markTaskAsCompleted(taskInstance)
+            }
         }
     }
 

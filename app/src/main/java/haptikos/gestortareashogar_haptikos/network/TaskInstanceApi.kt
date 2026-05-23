@@ -31,7 +31,7 @@ interface TaskInstanceApi {
     @POST("/api/tasks/instances")
     suspend fun createTaskInstance(@Body request: CreateTaskInstanceRequest): Response<Void>
 
-    @PATCH("/api/tasks/instances/{instanceId}/complete")
+    @PATCH("/api/tasks/{instanceId}/complete")
     suspend fun completeInstance(
         @Path("instanceId") instanceId: String,
         @Query("userId") userId: String,

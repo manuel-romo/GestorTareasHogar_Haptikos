@@ -1,6 +1,7 @@
 package haptikos.gestortareashogar_haptikos.viewModel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
@@ -10,7 +11,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -43,12 +46,11 @@ class SyncViewModel(
             ) { connected, pending ->
                 connected && pending
             }
-                .distinctUntilChanged()
-                .collect { shouldSync ->
-                    if (shouldSync) {
-                        delay(700)
-                        syncRepository.syncPendingItems()
-                    }
+                .filter { it }
+                .debounce(700)
+                .collect {
+                    Log.d("SYNC_VM", "Disparando syncPendingItems")
+                    syncRepository.syncPendingItems()
                 }
         }
     }

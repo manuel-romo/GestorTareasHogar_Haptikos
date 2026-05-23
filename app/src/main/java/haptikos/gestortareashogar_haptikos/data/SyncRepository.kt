@@ -341,10 +341,12 @@ class SyncRepository(
 
     private suspend fun syncPendingTaskInstances() {
         val pendingInstances = taskInstanceDao.getAllNew().first().filter { !it.isSynced }
+        Log.d("SYNC_VM", "Instancias pendientes: ${pendingInstances.size}")
 
         val currentUserId = dataStore.userIdFlow.first()
 
         pendingInstances.forEach { instance ->
+            Log.d("SYNC_VM", "Instancia: ${instance.id} state=${instance.state} isSynced=${instance.isSynced}")
             try {
                 if (instance.state == TaskState.COMPLETED) {
                     val response = RetrofitClient.getTaskInstanceApi(dataStore).completeInstance(

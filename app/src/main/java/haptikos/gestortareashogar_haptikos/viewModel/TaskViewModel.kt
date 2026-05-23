@@ -98,13 +98,6 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
         }
     }
 
-    fun markTaskAsCompleted(taskInstance: TaskInstanceEntityNew) {
-        viewModelScope.launch {
-            repository.completeTaskInstance(taskInstance)
-        }
-    }
-
-
     // Estados para pausa
     private val _taskToPause = MutableStateFlow<TaskEntityNew?>(null)
     val taskToPause = _taskToPause.asStateFlow()

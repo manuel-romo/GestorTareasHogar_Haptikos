@@ -55,7 +55,6 @@ fun HomeScreen(
     notificationViewModel: NotificationViewModel,
     onSettingsClick:() -> Unit,
     onTaskClick: (String) -> Unit,
-    onStatusClick: (TaskInstanceEntityNew) -> Unit,
     onDeleteClick: (TaskInstanceEntityNew) -> Unit,
     onNavigateToCreateHome:() -> Unit,
     onNavigateToJoinHome: () -> Unit,
@@ -100,7 +99,9 @@ fun HomeScreen(
         onSearchQueryChange = { nuevaBusqueda -> taskInstanceViewModel.updateSearchQuery(nuevaBusqueda) },
         onSettingsClick = onSettingsClick,
         onTaskClick = onTaskClick,
-        onStatusClick = onStatusClick,
+        onStatusClick = { taskInstance ->
+            taskInstanceViewModel.toggleTaskStatus(taskInstance)
+        },
         onDeleteClick = onDeleteClick,
         onNavigateToCreateHome = onNavigateToCreateHome,
         onNavigateToJoinHome = onNavigateToJoinHome,

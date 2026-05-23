@@ -36,6 +36,7 @@ import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.ui.components.MemberAvatar
 import haptikos.gestortareashogar_haptikos.utils.getDayName
 import haptikos.gestortareashogar_haptikos.utils.parseHexColor
+import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 
 @Composable
 fun TaskCard(

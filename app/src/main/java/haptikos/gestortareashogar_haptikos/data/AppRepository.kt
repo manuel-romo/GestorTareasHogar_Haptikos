@@ -513,11 +513,20 @@ class AppRepository(
     }
 
     // Completar instancia de tarea -----------------------------------------------------
-    suspend fun completeTaskInstance(taskInstance: TaskInstanceEntityNew) {
+    suspend fun markTaskAsCompleted(taskInstance: TaskInstanceEntityNew) {
+        val updated = taskInstance.copy(
+            state = TaskState.COMPLETED,
+            completedAt = System.currentTimeMillis(),
+            isSynced = false
+        )
+        taskInstanceDao.update(updated)
+    }
+
+    suspend fun markTaskAsPending(taskInstance: TaskInstanceEntityNew) {
         taskInstanceDao.update(
             taskInstance.copy(
-                state = TaskState.COMPLETED,
-                completedAt = System.currentTimeMillis(),
+                state = TaskState.PENDING,
+                completedAt = null,
                 isSynced = false
             )
         )
