@@ -86,31 +86,29 @@ fun CustomBottomNavigation(
         )
 
         // Centro
-        NavigationBarItem(
-            icon = { Spacer(modifier = Modifier.size(24.dp)) },
-            label = {
-                if (hasCenterFab) {
+        if (hasCenterFab) {
+            NavigationBarItem(
+                icon = { Spacer(modifier = Modifier.size(24.dp)) },
+                label = {
                     Text(
                         "Agregar",
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium
                     )
-                } else {
-                    Spacer(Modifier.height(0.dp))
-                }
-            },
-            selected = false,
-            onClick = { },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color.Transparent,
-                unselectedIconColor = Color.Transparent,
-                indicatorColor = Color.Transparent,
-                selectedTextColor = Color.Transparent,
-                unselectedTextColor = Color.Transparent
-            ),
-            interactionSource = remember { MutableInteractionSource() },
-            enabled = hasCenterFab
-        )
+                },
+                selected = false,
+                onClick = { },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color.Transparent,
+                    unselectedIconColor = Color.Transparent,
+                    indicatorColor = Color.Transparent,
+                    selectedTextColor = Color.Transparent,
+                    unselectedTextColor = Color.Transparent
+                ),
+                interactionSource = remember { MutableInteractionSource() }
+            )
+        }
+
 
         // Mis Stats
         NavigationBarItem(

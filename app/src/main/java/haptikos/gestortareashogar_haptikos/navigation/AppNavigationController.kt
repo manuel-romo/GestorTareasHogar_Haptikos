@@ -49,6 +49,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import haptikos.gestortareashogar_haptikos.R
+import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.ui.components.CustomBottomNavigation
 import haptikos.gestortareashogar_haptikos.ui.screens.createHome.CreateHomeStep1Screen
@@ -124,8 +125,13 @@ fun AppNavigation(
     val currentMember = allMembers.find {
         it.homeId == selectedHome?.id && it.userId == userId
     }
-    val canCreateTasks = currentMember?.role == MemberRole.CREATOR ||
-            currentMember?.role == MemberRole.ADMIN
+    val canCreateTasks = when (selectedHome?.editPermission) {
+        HomePermission.ALL_MEMBERS -> currentMember != null // cualquier miembro
+        HomePermission.ADMINS -> currentMember?.role == MemberRole.CREATOR ||
+                currentMember?.role == MemberRole.ADMIN
+        HomePermission.CREATOR_ONLY -> currentMember?.role == MemberRole.CREATOR
+        null -> false
+    }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
