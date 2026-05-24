@@ -50,4 +50,7 @@ interface EarnedPointsDao {
     """)
     suspend fun getHighPriorityCountForWeek(userId: String, weekStart: Long, weekEnd: Long): Int
 
+    @Query("DELETE FROM earned_points")
+    suspend fun deleteAll()
+
 }

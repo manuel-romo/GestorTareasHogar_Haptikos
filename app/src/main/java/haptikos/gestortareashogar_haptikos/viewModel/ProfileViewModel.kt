@@ -101,11 +101,10 @@ class ProfileViewModel(
     }
 
     // Actualizar notificaciones de usuario
-    fun updateNotificationPreference(type: String, isEnabled: Boolean) {
+    fun updateNotificationPreference(type: String, isEnabled: Boolean, homeId: String?) {
         viewModelScope.launch {
             // Guardado local
             dataStore.saveNotificationPreference(type, isEnabled)
-
             // Intento de sincronización
             try {
                 val currentUserId = dataStore.userIdFlow.first()
@@ -113,7 +112,8 @@ class ProfileViewModel(
                 val success = repository.updateUserNotificationSettings(
                     userId = currentUserId,
                     type = type,
-                    isEnabled = isEnabled
+                    isEnabled = isEnabled,
+                    homeId = homeId
                 )
 
                 if (!success) {

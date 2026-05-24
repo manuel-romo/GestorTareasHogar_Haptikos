@@ -9,6 +9,7 @@ import haptikos.gestortareashogar_haptikos.data.AuthRepository
 import haptikos.gestortareashogar_haptikos.data.BiometricCredentialManager
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
 import haptikos.gestortareashogar_haptikos.data.SyncRepository
+import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
 import haptikos.gestortareashogar_haptikos.data.enumerators.UserGender
 import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import haptikos.gestortareashogar_haptikos.utils.FcmUtils
@@ -30,7 +31,8 @@ class AuthViewModel(
     private val authRepository: AuthRepository,
     private val syncRepository: SyncRepository,
     private val dataStore: DataStoreManager,
-    private val biometricCredentialManager: BiometricCredentialManager
+    private val biometricCredentialManager: BiometricCredentialManager,
+    private val database: TaskDatabase
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -228,7 +230,8 @@ class AuthViewModel(
     // Logout — NO toca las credenciales biométricas
     fun logout() {
         viewModelScope.launch {
-            dataStore.logout() // solo borra token/sesión, huella sigue guardada
+            database.clearAllData()
+            dataStore.logout()
         }
     }
 

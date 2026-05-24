@@ -30,4 +30,7 @@ interface RoomDao {
     @Query("DELETE FROM room_table_new WHERE homeId = :homeId")
     suspend fun deleteAllByHomeId(homeId: String)
 
+    @Query("DELETE FROM room_table_new")
+    suspend fun deleteAll()
+
 }

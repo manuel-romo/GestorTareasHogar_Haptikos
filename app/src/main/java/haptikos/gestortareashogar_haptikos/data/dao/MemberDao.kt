@@ -76,4 +76,7 @@ interface MemberDao {
     @Query("SELECT * FROM member_table_new WHERE homeId = :homeId")
     suspend fun getMembersByHomeId(homeId: String): List<MemberEntityNew>
 
+    @Query("DELETE FROM member_table_new")
+    suspend fun deleteAll()
+
 }

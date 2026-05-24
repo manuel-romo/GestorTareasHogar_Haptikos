@@ -29,5 +29,7 @@ interface HomeDao {
     @Query("DELETE FROM home_table_new WHERE id = :homeId")
     suspend fun deleteHomeById(homeId: String)
 
+    @Query("DELETE FROM home_table_new")
+    suspend fun deleteAll()
 
 }

@@ -44,7 +44,8 @@ fun TaskCard(
     onClick: () -> Unit,
     onStatusClick: () -> Unit,
     canToggleStatus: Boolean,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    canReactivate: Boolean
 ) {
 
     val isCompleted = taskInstance.taskInstance.state == TaskState.COMPLETED
@@ -70,7 +71,7 @@ fun TaskCard(
                         .padding(top = 2.dp)
                         .size(28.dp)
                         .clip(CircleShape)
-                        .clickable { onStatusClick() }
+                        .clickable(enabled = !isCompleted || canReactivate) { onStatusClick() }
                         .border(
                             width = 2.dp,
                             color = when {

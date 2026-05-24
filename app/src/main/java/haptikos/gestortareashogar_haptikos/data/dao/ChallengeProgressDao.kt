@@ -45,4 +45,8 @@ interface ChallengeProgressDao {
 
     @Query("DELETE FROM challenge_progress WHERE userId = :userId AND weekId != :currentWeekId")
     suspend fun deleteOldProgress(userId: String, currentWeekId: String)
+
+    @Query("DELETE FROM challenge_progress")
+    suspend fun deleteAll()
+
 }

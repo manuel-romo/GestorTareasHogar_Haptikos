@@ -82,6 +82,10 @@ class AppRepository(
 
         val dueDate = getNextDueDate(task.suggestedDay, task.recurrence)
 
+        // Se verifica que no esté duplicada la instancia
+        val existing = taskInstanceDao.getPendingInstanceForTaskAndDate(task.id, dueDate)
+        if (existing != null) return
+
         val assignedMemberIds = if (task.workMode == WorkMode.SPLIT && memberIds.isNotEmpty()) {
             val index = task.lastMemberIndex % memberIds.size
             listOf(memberIds[index])
@@ -114,11 +118,10 @@ class AppRepository(
 
             val shouldGenerate = if (lastInstance == null) {
                 true
+            } else if (lastInstance.state == TaskState.PENDING) {
+                false
             } else {
-                val nextDue = getNextDueDateAfter(
-                    lastInstance.dueDate, task.recurrence, task.suggestedDay
-                )
-                nextDue <= now
+                lastInstance.dueDate <= now
             }
 
             if (shouldGenerate) {
@@ -129,6 +132,10 @@ class AppRepository(
                         lastInstance.dueDate, task.recurrence, task.suggestedDay
                     )
                 }
+
+                // Se verifica que no esté duplicada la instancia
+                val existing = taskInstanceDao.getPendingInstanceForTaskAndDate(task.id, dueDate)
+                if (existing != null) return@forEach
 
                 val memberIds = taskDao.getMemberIdsForTask(task.id)
 
@@ -177,7 +184,9 @@ class AppRepository(
     // Operaciones de instancias
     suspend fun updateTaskInstance(taskInstance: TaskInstanceEntityNew) = taskInstanceDao.update(taskInstance)
 
-    suspend fun deleteTaskInstance(taskInstance: TaskInstanceEntityNew) = taskInstanceDao.delete(taskInstance)
+    suspend fun hideTaskInstance(taskInstance: TaskInstanceEntityNew) {
+        taskInstanceDao.update(taskInstance.copy(isHidden = true))
+    }
 
     suspend fun getTaskInstanceById(instanceId: String): TaskInstanceEntityNew? = taskInstanceDao.getById(instanceId)
 
@@ -390,16 +399,14 @@ class AppRepository(
     }
 
     // Actualización de notificaciones de usuario --------------------------------------
-    suspend fun updateUserNotificationSettings(userId: String, type: String, isEnabled: Boolean): Boolean {
+    suspend fun updateUserNotificationSettings(userId: String, homeId: String?, type: String, isEnabled: Boolean): Boolean {
         return try {
-            // Solo se envía la configuración de modificación modificada
             val request = when (type) {
-                "reminders" -> UserApi.UpdateUserRequest(notifyTaskReminders = isEnabled)
-                "completed" -> UserApi.UpdateUserRequest(notifyTaskCompleted = isEnabled)
-                "newMembers" -> UserApi.UpdateUserRequest(notifyNewMembers = isEnabled)
+                "reminders" -> UserApi.UpdateUserRequest(notifyTaskReminders = isEnabled, homeId = homeId)
+                "completed" -> UserApi.UpdateUserRequest(notifyTaskCompleted = isEnabled, homeId = homeId)
+                "newMembers" -> UserApi.UpdateUserRequest(notifyNewMembers = isEnabled, homeId = homeId)
                 else -> return false
             }
-
             val response = RetrofitClient.getUserApi(dataStore).updateUser(userId, request)
             response.isSuccessful
         } catch (e: Exception) {
@@ -552,9 +559,18 @@ class AppRepository(
             isSynced = false
         )
         taskInstanceDao.update(updated)
+        generatePendingInstances()
+
     }
 
-    suspend fun markTaskAsPending(taskInstance: TaskInstanceEntityNew) {
+    suspend fun markTaskAsPending(taskInstance: TaskInstanceEntityNew): Boolean {
+        val hasNewerPending = taskInstanceDao.hasNewerPendingInstance(
+            taskId = taskInstance.taskId,
+            afterDate = taskInstance.dueDate
+        )
+
+        if (hasNewerPending) return false
+
         taskInstanceDao.update(
             taskInstance.copy(
                 state = TaskState.PENDING,
@@ -562,6 +578,11 @@ class AppRepository(
                 isSynced = false
             )
         )
+        return true
+    }
+
+    suspend fun hasNewerPendingInstance(taskId: String, afterDate: Long): Boolean {
+        return taskInstanceDao.hasNewerPendingInstance(taskId, afterDate)
     }
 
     // Abandonar hogar ---------------------------------------------------------------------

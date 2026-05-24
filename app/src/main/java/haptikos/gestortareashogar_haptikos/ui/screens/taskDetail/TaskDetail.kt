@@ -75,6 +75,7 @@ import haptikos.gestortareashogar_haptikos.ui.theme.SilverGray
 import haptikos.gestortareashogar_haptikos.ui.theme.White
 import haptikos.gestortareashogar_haptikos.utils.authenticateWithBiometric
 import haptikos.gestortareashogar_haptikos.utils.findFragmentActivity
+import haptikos.gestortareashogar_haptikos.utils.getRelativeDateString
 import haptikos.gestortareashogar_haptikos.viewModel.AuthViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 
@@ -99,6 +100,8 @@ fun TaskDetailScreen(
     var showMemberSheet by remember { mutableStateOf(false) }
     var selectedMembers by remember { mutableStateOf<Set<MemberEntityNew>>(emptySet()) }
     var menuExpanded by remember { mutableStateOf(false) }
+
+    val canReactivate by viewModel.canReactivateCurrentInstance.collectAsState()
 
     val scrollState = rememberScrollState()
     val isCollapsed by remember {
@@ -202,7 +205,8 @@ fun TaskDetailScreen(
                             modifier = Modifier.fillMaxWidth().height(56.dp),
                             shape = RoundedCornerShape(16.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = MediumDarkGray),
-                            border = BorderStroke(1.dp, SilverGray)
+                            border = BorderStroke(1.dp, SilverGray),
+                            enabled = canReactivate
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(painterResource(R.drawable.ic_refresh), null, modifier = Modifier.size(18.dp))
@@ -239,8 +243,8 @@ fun TaskDetailScreen(
                     InfoCard(
                         modifier = Modifier.weight(1f),
                         iconId = R.drawable.ic_calendar,
-                        label = "Día sugerido",
-                        value = instance.taskDetails.task.suggestedDay.name.lowercase().replaceFirstChar { it.uppercase() },
+                        label = "Fecha",
+                        value = getRelativeDateString(instance.taskInstance.dueDate),
                         iconColor = BrightOrange
                     )
                     InfoCard(

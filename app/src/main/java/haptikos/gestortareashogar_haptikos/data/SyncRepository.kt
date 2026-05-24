@@ -450,9 +450,15 @@ class SyncRepository(
             if (response.isSuccessful) {
                 val remoteTasks = response.body() ?: return
 
-                // Se guardan las instancias pendientes antes de borrar
+                // Guardar instancias pendientes de sincronizar
                 val pendingInstances = taskInstanceDao.getAllNew().first()
                     .filter { !it.isSynced }
+
+                // Guardar isHidden ANTES de borrar
+                val hiddenInstanceIds = taskInstanceDao.getAllNew().first()
+                    .filter { it.isHidden }
+                    .map { it.id }
+                    .toSet()
 
                 appDatabase.withTransaction {
                     taskInstanceDao.deleteAllByHomeId(homeId)
@@ -485,8 +491,8 @@ class SyncRepository(
                         }
 
                         dto.instances.forEach { inst ->
-                            // Si hay instancias locales pendientes de sincronizar, se preservan
                             val pendingLocal = pendingInstances.find { it.id == inst.id }
+
                             taskInstanceDao.insertInstanceWithAssignedMembers(
                                 TaskInstanceEntityNew(
                                     id = inst.id,
@@ -494,7 +500,8 @@ class SyncRepository(
                                     dueDate = inst.dueDate,
                                     state = pendingLocal?.state ?: TaskState.valueOf(inst.state),
                                     completedAt = pendingLocal?.completedAt ?: inst.completedAt,
-                                    isSynced = pendingLocal == null
+                                    isSynced = pendingLocal == null,
+                                    isHidden = hiddenInstanceIds.contains(inst.id)
                                 ),
                                 inst.memberIds
                             )

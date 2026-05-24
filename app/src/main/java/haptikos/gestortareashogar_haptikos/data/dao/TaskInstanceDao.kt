@@ -63,8 +63,9 @@ interface TaskInstanceDao {
     AND (:status IS NULL OR ti.state = :status)
     AND t.title LIKE '%' || :searchQuery || '%'
     AND (:memberName IS NULL OR m.name = :memberName)
+    AND ti.isHidden = 0
     ORDER BY ti.dueDate ASC
-    """)
+""")
     fun getFilteredInstances(
         homeId: String?,
         status: TaskState?,
@@ -111,5 +112,17 @@ interface TaskInstanceDao {
     @Transaction
     @Query("SELECT * FROM task_instance_table_new WHERE id = :instanceId")
     fun getInstanceWithDetailsByIdFlow(instanceId: String): Flow<TaskInstanceWithDetails?>
+
+    @Query("DELETE FROM task_instance_table_new")
+    suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) > 0 FROM task_instance_table_new WHERE taskId = :taskId AND state = 'PENDING' AND dueDate > :afterDate")
+    suspend fun hasNewerPendingInstance(taskId: String, afterDate: Long): Boolean
+
+    @Query("SELECT * FROM task_instance_table_new WHERE taskId = :taskId AND dueDate = :dueDate AND state = 'PENDING' LIMIT 1")
+    suspend fun getPendingInstanceForTaskAndDate(taskId: String, dueDate: Long): TaskInstanceEntityNew?
+
+    @Query("SELECT * FROM task_instance_table_new WHERE id = :id")
+    suspend fun getInstanceById(id: String): TaskInstanceEntityNew?
 
 }

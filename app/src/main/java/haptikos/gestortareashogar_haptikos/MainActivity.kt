@@ -113,7 +113,7 @@ class MainActivity : FragmentActivity() {
 
         val authRepository by lazy { AuthRepository() }
 
-        val authViewModel: AuthViewModel by viewModels { AuthViewModelFactory(authRepository, syncRepository, dataStoreManager, biometricCredentialManager) }
+        val authViewModel: AuthViewModel by viewModels { AuthViewModelFactory(authRepository, syncRepository, dataStoreManager, biometricCredentialManager, database) }
         val taskViewModel: TaskViewModel by viewModels { TaskViewModelFactory(repository) }
         val taskInstanceViewModel: TaskInstanceViewModel by viewModels { TaskInstanceViewModelFactory(repository, dataStoreManager) }
         val roomViewModel: RoomViewModel by viewModels { RoomViewModelFactory(repository) }
@@ -160,10 +160,11 @@ class AuthViewModelFactory(
     private val authRepository: AuthRepository,
     private val syncRepository: SyncRepository,
     private val dataStore: DataStoreManager,
-    private val biometricCredentialManager: BiometricCredentialManager
+    private val biometricCredentialManager: BiometricCredentialManager,
+    private val database: TaskDatabase
 ): ViewModelProvider.Factory {
     override fun <T: ViewModel> create(modelClass: Class<T>): T {
-        return AuthViewModel(authRepository, syncRepository, dataStore, biometricCredentialManager) as T
+        return AuthViewModel(authRepository, syncRepository, dataStore, biometricCredentialManager, database) as T
     }
 }
 

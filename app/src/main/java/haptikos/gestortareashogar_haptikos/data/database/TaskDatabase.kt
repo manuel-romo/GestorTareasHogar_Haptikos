@@ -82,4 +82,16 @@ abstract class TaskDatabase : RoomDatabase() {
             }
         }
     }
+
+    suspend fun clearAllData() {
+        taskDao().deleteAll()
+        taskInstanceDao().deleteAll()
+        memberDao().deleteAll()
+        roomDao().deleteAll()
+        homeDao().deleteAll()
+        notificationDao().deleteAll()
+        challengeProgressDao().deleteAll()
+        earnedPointsDao().deleteAll()
+    }
+
 }

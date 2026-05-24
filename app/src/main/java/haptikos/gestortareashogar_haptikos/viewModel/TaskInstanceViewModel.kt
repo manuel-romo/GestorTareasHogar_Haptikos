@@ -40,6 +40,7 @@ import haptikos.gestortareashogar_haptikos.ui.screens.userStats.HomeStatsItem
 import haptikos.gestortareashogar_haptikos.utils.RewardsUtils
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.mapLatest
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
@@ -176,7 +177,7 @@ class TaskInstanceViewModel(
 
     fun deleteTaskInstance(taskInstance: TaskInstanceEntityNew) {
         viewModelScope.launch {
-            repository.deleteTaskInstance(taskInstance)
+            repository.hideTaskInstance(taskInstance)
         }
     }
 
@@ -389,7 +390,7 @@ class TaskInstanceViewModel(
     fun confirmInstanceDeletion(instance: TaskInstanceEntityNew, onBack: () -> Unit) {
         viewModelScope.launch {
             try {
-                repository.deleteTaskInstance(instance)
+                repository.hideTaskInstance(instance)
                 _isDeletingInstance.value = false
                 onBack()
             } catch (e: Exception) {
@@ -525,4 +526,33 @@ class TaskInstanceViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = ""
         )
+
+
+    val canReactivateCurrentInstance: StateFlow<Boolean> = currentInstance.mapLatest { instance ->
+        if (instance == null) return@mapLatest false
+        val taskId = instance.taskInstance.taskId
+        val dueDate = instance.taskInstance.dueDate
+        !repository.hasNewerPendingInstance(taskId, dueDate)
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = true
+    )
+
+    val reactivatableInstanceIds: StateFlow<Set<String>> = tasks.mapLatest { list ->
+        list.filter { it.taskInstance.state == TaskState.COMPLETED }
+            .filter { instance ->
+                !repository.hasNewerPendingInstance(
+                    instance.taskInstance.taskId,
+                    instance.taskInstance.dueDate
+                )
+            }
+            .map { it.taskInstance.id }
+            .toSet()
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptySet()
+    )
+
 }

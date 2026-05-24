@@ -81,6 +81,7 @@ fun HomeScreen(
     val hasAdminPermissions by homeViewModel.isCurrentUserCreatorOrAdmin.collectAsState()
     val userIsCreator by homeViewModel.isCurrentUserCreator.collectAsState()
     val userId by authViewModel.userId.collectAsState()
+    val reactivatableIds by taskInstanceViewModel.reactivatableInstanceIds.collectAsState()
 
     LaunchedEffect(selectedHome?.id) {
         taskInstanceViewModel.setSelectedHome(selectedHome?.id)
@@ -121,7 +122,8 @@ fun HomeScreen(
         isOffline = isOffline,
         hasNotifications = hasNotifications,
         userIsCreator = userIsCreator,
-        onNavigateToHistory = onNavigateToHistory
+        onNavigateToHistory = onNavigateToHistory,
+        reactivatableIds = reactivatableIds
     )
 }
 
@@ -152,7 +154,8 @@ fun HomeContent(
     isOffline: Boolean,
     hasNotifications: Boolean,
     userIsCreator: Boolean,
-    onNavigateToHistory: () -> Unit
+    onNavigateToHistory: () -> Unit,
+    reactivatableIds: Set<String>
 ) {
     val tareasPendientes = tasks.filter { it.taskInstance.state == TaskState.PENDING }
     val tareasCompletadas = tasks.filter { it.taskInstance.state == TaskState.COMPLETED }
@@ -248,9 +251,10 @@ fun HomeContent(
                         val canToggle = task.assignedMembers.any { it.userId == userId } || userIsCreator
                         TaskCard(
                             taskInstance = task,
-                            canToggleStatus = canToggle,
                             onClick = { onTaskClick(task.taskInstance.id) },
                             onStatusClick = { onStatusClick(task) },
+                            canToggleStatus = canToggle,
+                            canReactivate = true,
                             onDeleteClick = { onDeleteClick(task.taskInstance) }
                         )
                     }
@@ -280,7 +284,8 @@ fun HomeContent(
                             onClick = { onTaskClick(task.taskInstance.id) },
                             onStatusClick = { onStatusClick(task) },
                             canToggleStatus = canToggle,
-                            onDeleteClick = { onDeleteClick(task.taskInstance) }
+                            onDeleteClick = { onDeleteClick(task.taskInstance) },
+                            canReactivate = reactivatableIds.contains(task.taskInstance.id)
                         )
                     }
                 }

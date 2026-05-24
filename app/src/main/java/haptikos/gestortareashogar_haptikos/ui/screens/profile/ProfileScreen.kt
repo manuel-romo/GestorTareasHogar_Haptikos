@@ -162,13 +162,13 @@ fun ProfileScreen(
         userNewMembersPref = userNewMembersPref,
         isUploadingPhoto = isUploadingPhoto,
         onRemindersChange = { newValue ->
-            profileViewModel.updateNotificationPreference("reminders", newValue)
+            profileViewModel.updateNotificationPreference("reminders", newValue, selectedHome?.id)
         },
         onCompletedChange = { newValue ->
-            profileViewModel.updateNotificationPreference("completed", newValue)
+            profileViewModel.updateNotificationPreference("completed", newValue, selectedHome?.id)
         },
         onNewMembersChange = { newValue ->
-            profileViewModel.updateNotificationPreference("newMembers", newValue)
+            profileViewModel.updateNotificationPreference("newMembers", newValue, selectedHome?.id)
         },
         onNavigateToHistory = onNavigateToHistory,
         onNavigateToRewards = onNavigateToRewards

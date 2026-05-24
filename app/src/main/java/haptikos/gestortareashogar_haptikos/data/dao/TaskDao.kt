@@ -95,4 +95,7 @@ interface TaskDao {
     @Query("DELETE FROM task_member_join WHERE taskId = :taskId")
     suspend fun deleteTaskMemberJoinsForTask(taskId: String)
 
+    @Query("DELETE FROM task_table_new")
+    suspend fun deleteAll()
+
 }

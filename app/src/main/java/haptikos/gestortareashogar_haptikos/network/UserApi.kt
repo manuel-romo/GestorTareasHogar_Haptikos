@@ -23,7 +23,8 @@ interface UserApi {
         val name: String? = null,
         val notifyTaskReminders: Boolean? = null,
         val notifyTaskCompleted: Boolean? = null,
-        val notifyNewMembers: Boolean? = null
+        val notifyNewMembers: Boolean? = null,
+        val homeId: String? = null
     )
 
     // Actualización global
