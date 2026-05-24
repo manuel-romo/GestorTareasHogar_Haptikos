@@ -3,6 +3,7 @@ package haptikos.gestortareashogar_haptikos.network
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Path
 
@@ -31,9 +32,21 @@ interface MemberApi {
         val profilePicUrl: String?
     )
 
+    data class UpdateRoleRequest(
+        val role: String,
+        val actorUserId: String
+    )
+
     @POST("api/members")
     suspend fun createMember(@Body request: CreateMemberRequest): Response<Unit>
 
     @GET("api/members/home/{homeId}")
     suspend fun getMembersByHome(@Path("homeId") homeId: String): Response<List<MemberDto>>
+
+    @PATCH("api/members/{memberId}/role")
+    suspend fun updateMemberRole(
+        @Path("memberId") memberId: String,
+        @Body request: UpdateRoleRequest
+    ): Response<Unit>
+
 }

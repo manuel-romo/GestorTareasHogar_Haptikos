@@ -2,12 +2,16 @@ package haptikos.gestortareashogar_haptikos.data
 
 import android.util.Log
 import androidx.room.withTransaction
+import haptikos.gestortareashogar_haptikos.data.dao.ChallengeProgressDao
+import haptikos.gestortareashogar_haptikos.data.dao.EarnedPointsDao
 import haptikos.gestortareashogar_haptikos.data.dao.HomeDao
 import haptikos.gestortareashogar_haptikos.data.dao.MemberDao
 import haptikos.gestortareashogar_haptikos.data.dao.RoomDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskInstanceDao
 import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
+import haptikos.gestortareashogar_haptikos.data.entity.ChallengeProgressEntity
+import haptikos.gestortareashogar_haptikos.data.entity.EarnedPointsEntity
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberStatus
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
@@ -18,12 +22,14 @@ import haptikos.gestortareashogar_haptikos.data.entity.TaskEntityNew
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.data.entity.TaskWithDetails
+import haptikos.gestortareashogar_haptikos.data.enumerators.ChallengeType
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.network.HomeApi
 import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import haptikos.gestortareashogar_haptikos.network.RoomApi
 import haptikos.gestortareashogar_haptikos.network.TaskApi
 import haptikos.gestortareashogar_haptikos.network.UserApi
+import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
 import haptikos.gestortareashogar_haptikos.utils.getNextDueDate
 import haptikos.gestortareashogar_haptikos.utils.getNextDueDateAfter
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
@@ -41,6 +47,8 @@ class AppRepository(
     private val memberDao: MemberDao,
     private val roomDao: RoomDao,
     private val homeDao: HomeDao,
+    private val challengeProgressDao: ChallengeProgressDao,
+    private val earnedPointsDao: EarnedPointsDao,
     private val appDatabase: TaskDatabase,
     private val dataStore: DataStoreManager
 ) {
@@ -70,10 +78,16 @@ class AppRepository(
     }
 
     suspend fun generateInstanceForTask(task: TaskEntityNew, memberIds: List<String>) {
-        // No se genera si la tarea está pausada
         if (task.pausedUntil != null && task.pausedUntil > System.currentTimeMillis()) return
 
         val dueDate = getNextDueDate(task.suggestedDay, task.recurrence)
+
+        val assignedMemberIds = if (task.workMode == WorkMode.SPLIT && memberIds.isNotEmpty()) {
+            val index = task.lastMemberIndex % memberIds.size
+            listOf(memberIds[index])
+        } else {
+            memberIds
+        }
 
         val instance = TaskInstanceEntityNew(
             taskId = task.id,
@@ -81,7 +95,12 @@ class AppRepository(
             state = TaskState.PENDING
         )
 
-        taskInstanceDao.insertInstanceWithAssignedMembers(instance, memberIds)
+        taskInstanceDao.insertInstanceWithAssignedMembers(instance, assignedMemberIds)
+
+        if (task.workMode == WorkMode.SPLIT && memberIds.isNotEmpty()) {
+            val nextIndex = (task.lastMemberIndex + 1) % memberIds.size
+            taskDao.updateTaskOnly(task.copy(lastMemberIndex = nextIndex, isSynced = false))
+        }
     }
 
     suspend fun generatePendingInstances() {
@@ -89,13 +108,10 @@ class AppRepository(
         val now = System.currentTimeMillis()
 
         allTasks.forEach { task ->
-            // Se pasa si está pausada
             if (task.pausedUntil != null && task.pausedUntil > now) return@forEach
 
-            // Se obtiene la última instancia de esta tarea
             val lastInstance = taskInstanceDao.getLastInstanceForTask(task.id)
 
-            // Si nunca ha tenido instancia
             val shouldGenerate = if (lastInstance == null) {
                 true
             } else {
@@ -114,15 +130,27 @@ class AppRepository(
                     )
                 }
 
-                // Obtener miembros de la tarea base
                 val memberIds = taskDao.getMemberIdsForTask(task.id)
+
+                val assignedMemberIds = if (task.workMode == WorkMode.SPLIT && memberIds.isNotEmpty()) {
+                    val index = task.lastMemberIndex % memberIds.size
+                    listOf(memberIds[index])
+                } else {
+                    memberIds
+                }
 
                 val instance = TaskInstanceEntityNew(
                     taskId = task.id,
                     dueDate = dueDate,
                     state = TaskState.PENDING
                 )
-                taskInstanceDao.insertInstanceWithAssignedMembers(instance, memberIds)
+
+                taskInstanceDao.insertInstanceWithAssignedMembers(instance, assignedMemberIds)
+
+                if (task.workMode == WorkMode.SPLIT && memberIds.isNotEmpty()) {
+                    val nextIndex = (task.lastMemberIndex + 1) % memberIds.size
+                    taskDao.updateTaskOnly(task.copy(lastMemberIndex = nextIndex, isSynced = false))
+                }
             }
         }
     }
@@ -708,5 +736,72 @@ class AppRepository(
             false
         }
     }
+
+
+
+    // Challenges
+
+    suspend fun awardChallengePoints(progressId: String) {
+        val progress = challengeProgressDao.getById(progressId) ?: return
+        if (!progress.pointsAwarded) {
+            challengeProgressDao.update(progress.copy(pointsAwarded = true))
+        }
+    }
+
+    suspend fun getChallengeByTypeAndWeek(
+        userId: String,
+        homeId: String,
+        challengeType: ChallengeType,
+        weekId: String
+    ): ChallengeProgressEntity? =
+        challengeProgressDao.getByTypeAndWeek(userId, homeId, challengeType, weekId)
+
+    suspend fun getChallengeProgressForWeek(
+        userId: String,
+        homeId: String,
+        weekId: String
+    ): List<ChallengeProgressEntity> =
+        challengeProgressDao.getProgressForWeekSuspend(userId, homeId, weekId)
+
+    suspend fun upsertChallengeProgress(progress: ChallengeProgressEntity) {
+        val existing = challengeProgressDao.getByTypeAndWeek(
+            userId = progress.userId,
+            homeId = progress.homeId,
+            challengeType = progress.challengeType,
+            weekId = progress.weekId
+        )
+        if (existing == null) {
+            challengeProgressDao.insert(progress)
+        } else {
+            challengeProgressDao.update(existing.copy(
+                currentProgress = progress.currentProgress,
+                isCompleted = progress.isCompleted,
+                pointsAwarded = if (existing.pointsAwarded) true else progress.pointsAwarded,
+                completedAt = progress.completedAt ?: existing.completedAt
+            ))
+        }
+    }
+
+    suspend fun getTotalEarnedPoints(userId: String): Int =
+        earnedPointsDao.getTotalPoints(userId)
+
+    suspend fun getEarnedPointsPerMember(homeId: String?): List<Pair<String, Int>> =
+        earnedPointsDao.getPointsPerMember(homeId).map { it.userId to it.total }
+
+    suspend fun insertEarnedPoints(entry: EarnedPointsEntity) =
+        earnedPointsDao.insert(entry)
+
+    suspend fun getAllMembersForHome(homeId: String?): List<MemberEntityNew> =
+        if (homeId != null) memberDao.getMembersByHomeId(homeId)
+        else memberDao.getAllNew().first()
+
+    suspend fun removeEarnedPoints(instanceId: String) =
+        earnedPointsDao.deleteByInstanceId(instanceId)
+
+    suspend fun getEarnedCountForWeek(userId: String, weekStart: Long, weekEnd: Long): Int =
+        earnedPointsDao.getCountForWeek(userId, weekStart, weekEnd)
+
+    suspend fun getHighPriorityCountForWeek(userId: String, weekStart: Long, weekEnd: Long): Int =
+        earnedPointsDao.getHighPriorityCountForWeek(userId, weekStart, weekEnd)
 
 }

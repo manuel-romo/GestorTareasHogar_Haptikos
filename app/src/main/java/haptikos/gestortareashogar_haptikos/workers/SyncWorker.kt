@@ -38,6 +38,8 @@ class SyncWorker(
             memberDao = db.memberDao(),
             taskDao = db.taskDao(),
             taskInstanceDao = db.taskInstanceDao(),
+            challengeProgressDao = db.challengeProgressDao(),
+            earnedPointsDao = db.earnedPointsDao(),
             roomDao = db.roomDao()
         )
 

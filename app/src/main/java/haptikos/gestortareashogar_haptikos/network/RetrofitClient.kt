@@ -70,4 +70,10 @@ object RetrofitClient {
         return getAuthenticatedRetrofit(dataStore).create(SyncApi::class.java)
     }
 
+    // Retos
+    fun getChallengeApi(dataStore: DataStoreManager): ChallengeProgressApi =
+        getAuthenticatedRetrofit(dataStore).create(ChallengeProgressApi::class.java)
+
+    fun getEarnedPointsApi(dataStore: DataStoreManager): EarnedPointsApi =
+        getAuthenticatedRetrofit(dataStore).create(EarnedPointsApi::class.java)
 }

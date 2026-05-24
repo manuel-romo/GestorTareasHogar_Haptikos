@@ -11,25 +11,22 @@ fun getNextDueDate(suggestedDay: SuggestedDay, recurrence: RecurrenceType): Long
 
     return when (recurrence) {
         RecurrenceType.DIARIO -> {
-            // Hoy
             calendar.startOfDay().timeInMillis
         }
         RecurrenceType.SEMANAL -> {
-            // El día sugerido de esta semana o el próximo si ya pasó
             val daysUntilTarget = (targetDay - today + 7) % 7
-            calendar.add(Calendar.DAY_OF_YEAR, daysUntilTarget)
+            calendar.add(Calendar.DAY_OF_YEAR, if (daysUntilTarget == 0) 7 else daysUntilTarget)
             calendar.startOfDay().timeInMillis
         }
         RecurrenceType.QUINCENAL -> {
-            val daysUntilTarget = (targetDay - today + 7) % 7
-            calendar.add(Calendar.DAY_OF_YEAR, daysUntilTarget)
+            calendar.add(Calendar.DAY_OF_MONTH, 15)
             calendar.startOfDay().timeInMillis
         }
         RecurrenceType.MENSUAL -> {
-            calendar.set(Calendar.DAY_OF_WEEK, targetDay)
-            if (calendar.timeInMillis < System.currentTimeMillis()) {
-                calendar.add(Calendar.MONTH, 1)
-            }
+            val targetDayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
+            calendar.add(Calendar.MONTH, 1)
+            val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+            calendar.set(Calendar.DAY_OF_MONTH, minOf(targetDayOfMonth, maxDay))
             calendar.startOfDay().timeInMillis
         }
     }
@@ -49,11 +46,14 @@ fun getNextDueDateAfter(lastDueDate: Long, recurrence: RecurrenceType, suggested
             calendar.startOfDay().timeInMillis
         }
         RecurrenceType.QUINCENAL -> {
-            calendar.add(Calendar.DAY_OF_YEAR, 15)
+            calendar.add(Calendar.DAY_OF_MONTH, 15)
             calendar.startOfDay().timeInMillis
         }
         RecurrenceType.MENSUAL -> {
+            val targetDayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
             calendar.add(Calendar.MONTH, 1)
+            val maxDay = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+            calendar.set(Calendar.DAY_OF_MONTH, minOf(targetDayOfMonth, maxDay))
             calendar.startOfDay().timeInMillis
         }
     }

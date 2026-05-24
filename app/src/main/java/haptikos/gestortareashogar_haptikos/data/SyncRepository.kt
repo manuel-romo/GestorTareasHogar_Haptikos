@@ -2,6 +2,8 @@ package haptikos.gestortareashogar_haptikos.data
 
 import android.util.Log
 import androidx.room.withTransaction
+import haptikos.gestortareashogar_haptikos.data.dao.ChallengeProgressDao
+import haptikos.gestortareashogar_haptikos.data.dao.EarnedPointsDao
 import haptikos.gestortareashogar_haptikos.data.dao.HomeDao
 import haptikos.gestortareashogar_haptikos.data.dao.MemberDao
 import haptikos.gestortareashogar_haptikos.data.dao.RoomDao
@@ -29,6 +31,10 @@ import haptikos.gestortareashogar_haptikos.data.enumerators.PriorityLevel
 import haptikos.gestortareashogar_haptikos.data.entity.RoomEntityNew
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceMemberJoin
 import haptikos.gestortareashogar_haptikos.data.entity.TaskMemberJoin
+import haptikos.gestortareashogar_haptikos.network.ChallengeProgressApi
+import haptikos.gestortareashogar_haptikos.network.ChallengeProgressApi.ChallengeProgressDto
+import haptikos.gestortareashogar_haptikos.network.EarnedPointsApi
+import haptikos.gestortareashogar_haptikos.utils.WeekUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
@@ -40,6 +46,8 @@ class SyncRepository(
     private val memberDao: MemberDao,
     private val taskDao: TaskDao,
     private val taskInstanceDao: TaskInstanceDao,
+    private val challengeProgressDao: ChallengeProgressDao,
+    private val earnedPointsDao: EarnedPointsDao,
     private val roomDao: RoomDao
 ) {
 
@@ -78,6 +86,11 @@ class SyncRepository(
         syncPendingRooms()
         syncPendingTasks()
         syncPendingTaskInstances()
+        val userId = dataStore.userIdFlow.first()
+        val homes = homeDao.getAllHomes().first()
+        homes.forEach { home ->
+            syncChallengeProgress(userId, home.id)
+        }
     }
 
     private suspend fun syncPendingHomes() {
@@ -142,38 +155,46 @@ class SyncRepository(
 
     private suspend fun syncPendingMembers() {
         val pendingMembers = memberDao.getAllNew().first().filter { !it.isSynced }
-
         val syncedHomes = homeDao.getAllHomes().first().filter { it.isSynced }.map { it.id }
 
         pendingMembers.forEach { member ->
-
-            if (syncedHomes.contains(member.homeId)) {
-                try {
-                    Log.d("SYNC", "Subiendo miembro: ${member.name} al hogar ${member.homeId}")
-                    val request = MemberApi.CreateMemberRequest(
-                        id = member.id,
-                        userId = member.userId.ifEmpty { null },
-                        homeId = member.homeId,
-                        name = member.name,
-                        lastName = member.lastName,
-                        colorHex = member.colorHex,
+            if (!syncedHomes.contains(member.homeId)) {
+                Log.d("SYNC", "Pospuesto miembro ${member.id}: hogar no sincronizado")
+                return@forEach
+            }
+            try {
+                // Primero se intenta actualizar el rol
+                val updateResponse = RetrofitClient.getMemberApi(dataStore)
+                    .updateMemberRole(member.id, MemberApi.UpdateRoleRequest(
                         role = member.role.name,
-                        status = member.status.name
-                    )
+                        actorUserId = dataStore.userIdFlow.first() ?: ""
+                    ))
 
-                    val response = RetrofitClient.getMemberApi(dataStore).createMember(request)
-
-                    if (response.isSuccessful) {
-                        memberDao.updateSyncStatus(member.id, isSynced = true)
-                    } else {
-                        Log.d("SYNC", "Error al subir miembro: ${response.code()}")
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    Log.e("SYNC", "Excepción subiendo miembro: ${e.message}")
+                if (updateResponse.isSuccessful) {
+                    memberDao.updateSyncStatus(member.id, isSynced = true)
+                    return@forEach
                 }
-            } else {
-                Log.d("SYNC", "Se pospuso el miembro ${member.id} porque su hogar aún no está sincronizado.")
+
+                // Si no existe se crea
+                if (updateResponse.code() == 404) {
+                    val createResponse = RetrofitClient.getMemberApi(dataStore).createMember(
+                        MemberApi.CreateMemberRequest(
+                            id = member.id,
+                            userId = member.userId.ifEmpty { null },
+                            homeId = member.homeId,
+                            name = member.name,
+                            lastName = member.lastName,
+                            colorHex = member.colorHex,
+                            role = member.role.name,
+                            status = member.status.name
+                        )
+                    )
+                    if (createResponse.isSuccessful) {
+                        memberDao.updateSyncStatus(member.id, isSynced = true)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("SYNC", "Error sincronizando miembro ${member.id}: ${e.message}")
             }
         }
     }
@@ -286,7 +307,7 @@ class SyncRepository(
                                 existing.copy(
                                     name = homeDto.name,
                                     inviteCode = homeDto.inviteCode,
-                                    editPermission = HomePermission.valueOf(homeDto.editPermission ?: "CREATOR_ONLY"),
+                                    editPermission = HomePermission.valueOf(homeDto.editPermission ?: HomePermission.CREATOR_ONLY.name),
                                     // Si el hogar local tiene cambios pendientes, mantiene sus valores.
                                     notifyTaskReminders = if (!existing.isSynced) existing.notifyTaskReminders else homeDto.notifyTaskReminders,
                                     notifyTaskCompleted = if (!existing.isSynced) existing.notifyTaskCompleted else homeDto.notifyTaskCompleted,
@@ -521,6 +542,7 @@ class SyncRepository(
         }
     }
 
+
     suspend fun syncHomeDetails(homeId: String) {
         try {
             val currentUserId = dataStore.userIdFlow.first()
@@ -532,6 +554,57 @@ class SyncRepository(
             Log.e("SYNC", "Error al sincronizar detalles del hogar por FCM", e)
         }
     }
+
+    suspend fun syncChallengeProgress(userId: String, homeId: String) {
+        val weekId = WeekUtils.getCurrentWeekId()
+        val pending = challengeProgressDao.getProgressForWeekSuspend(userId, homeId, weekId)
+            .filter { !it.isSynced }
+
+        pending.forEach { progress ->
+            try {
+                val response = RetrofitClient.getChallengeApi(dataStore).upsert(
+                    ChallengeProgressDto(
+                        id = progress.id,
+                        userId = progress.userId,
+                        homeId = progress.homeId,
+                        challengeType = progress.challengeType.name,
+                        weekId = progress.weekId,
+                        currentProgress = progress.currentProgress,
+                        isCompleted = progress.isCompleted,
+                        pointsAwarded = progress.pointsAwarded,
+                        completedAt = progress.completedAt
+                    )
+                )
+                if (response.isSuccessful) {
+                    challengeProgressDao.markSynced(progress.id)
+                }
+            } catch (e: Exception) {
+                Log.e("SYNC", "Error sincronizando reto: ${e.message}")
+            }
+        }
+    }
+
+    suspend fun syncPendingEarnedPoints() {
+        val pending = earnedPointsDao.getPendingSynced()
+        pending.forEach { entry ->
+            try {
+                val response = RetrofitClient.getEarnedPointsApi(dataStore).save(
+                    EarnedPointsApi.EarnedPointsDto(
+                        entry.instanceId,
+                        entry.userId,
+                        entry.points,
+                        entry.earnedAt
+                    )
+                )
+                if (response.isSuccessful) {
+                    earnedPointsDao.markSynced(entry.instanceId)
+                }
+            } catch (e: Exception) {
+                Log.e("SYNC", "Error sincronizando earned points: ${e.message}")
+            }
+        }
+    }
+
 
     suspend fun deleteHomeLocally(homeId: String) {
         appDatabase.withTransaction {

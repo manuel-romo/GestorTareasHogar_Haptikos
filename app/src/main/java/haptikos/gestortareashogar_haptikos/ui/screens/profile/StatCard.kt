@@ -1,4 +1,4 @@
-package haptikos.gestortareashogar_haptikos.ui.screens.userEdition
+package haptikos.gestortareashogar_haptikos.ui.screens.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column

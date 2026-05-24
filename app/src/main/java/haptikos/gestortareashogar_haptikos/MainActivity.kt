@@ -42,10 +42,17 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import kotlin.getValue
 import android.content.pm.ActivityInfo
+import androidx.core.view.WindowCompat
+import haptikos.gestortareashogar_haptikos.data.BiometricCredentialManager
+import haptikos.gestortareashogar_haptikos.viewModel.RewardViewModel
 
 class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightNavigationBars = true
+        }
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         enableEdgeToEdge()
         val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -54,6 +61,8 @@ class MainActivity : FragmentActivity() {
 
         val dataStoreManager = DataStoreManager(this)
 
+        val biometricCredentialManager = BiometricCredentialManager(this)
+
         val repository by lazy{
             AppRepository(
                 database.taskDao(),
@@ -61,6 +70,8 @@ class MainActivity : FragmentActivity() {
                 database.memberDao(),
                 database.roomDao(),
                 database.homeDao(),
+                database.challengeProgressDao(),
+                database.earnedPointsDao(),
                 database,
                 dataStore = dataStoreManager
 
@@ -94,13 +105,15 @@ class MainActivity : FragmentActivity() {
                 taskDao = database.taskDao(),
                 roomDao = database.roomDao(),
                 memberDao = database.memberDao(),
+                challengeProgressDao = database.challengeProgressDao(),
+                earnedPointsDao = database.earnedPointsDao(),
                 taskInstanceDao = database.taskInstanceDao()
             )
         }
 
         val authRepository by lazy { AuthRepository() }
 
-        val authViewModel: AuthViewModel by viewModels { AuthViewModelFactory(authRepository, syncRepository, dataStoreManager) }
+        val authViewModel: AuthViewModel by viewModels { AuthViewModelFactory(authRepository, syncRepository, dataStoreManager, biometricCredentialManager) }
         val taskViewModel: TaskViewModel by viewModels { TaskViewModelFactory(repository) }
         val taskInstanceViewModel: TaskInstanceViewModel by viewModels { TaskInstanceViewModelFactory(repository, dataStoreManager) }
         val roomViewModel: RoomViewModel by viewModels { RoomViewModelFactory(repository) }
@@ -109,6 +122,7 @@ class MainActivity : FragmentActivity() {
         val profileViewModel: ProfileViewModel by viewModels { ProfileViewModelFactory(repository, dataStoreManager) }
         val syncViewModel: SyncViewModel by viewModels { SyncViewModelFactory(application, syncRepository) }
         val notificationViewModel: NotificationViewModel by viewModels { NotificationViewModelFactory(database.notificationDao()) }
+        val rewardViewModel: RewardViewModel by viewModels { RewardViewModelFactory(repository, dataStoreManager) }
 
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
             Log.d("FCM_TOKEN", "Token: $token")
@@ -133,20 +147,23 @@ class MainActivity : FragmentActivity() {
                     homeViewModel = homeViewModel,
                     profileViewModel = profileViewModel,
                     syncViewModel = syncViewModel,
-                    notificationViewModel = notificationViewModel
+                    notificationViewModel = notificationViewModel,
+                    rewardViewModel = rewardViewModel
                 )
             }
         }
+
     }
 }
 
 class AuthViewModelFactory(
     private val authRepository: AuthRepository,
     private val syncRepository: SyncRepository,
-    private val dataStore: DataStoreManager
+    private val dataStore: DataStoreManager,
+    private val biometricCredentialManager: BiometricCredentialManager
 ): ViewModelProvider.Factory {
     override fun <T: ViewModel> create(modelClass: Class<T>): T {
-        return AuthViewModel(authRepository, syncRepository, dataStore) as T
+        return AuthViewModel(authRepository, syncRepository, dataStore, biometricCredentialManager) as T
     }
 }
 
@@ -211,5 +228,14 @@ class NotificationViewModelFactory(
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return NotificationViewModel(notificationDao) as T
+    }
+}
+
+class RewardViewModelFactory(
+    private val repository: AppRepository,
+    private val dataStore: DataStoreManager
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return RewardViewModel(repository, dataStore) as T
     }
 }

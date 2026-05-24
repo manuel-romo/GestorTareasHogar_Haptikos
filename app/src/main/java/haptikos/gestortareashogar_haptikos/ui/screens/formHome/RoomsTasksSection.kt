@@ -57,6 +57,7 @@ import haptikos.gestortareashogar_haptikos.ui.components.FeedbackBottomSheet
 import haptikos.gestortareashogar_haptikos.ui.components.MemberAvatar
 import haptikos.gestortareashogar_haptikos.ui.enums.RecurrenceType
 import haptikos.gestortareashogar_haptikos.ui.enums.SuggestedDay
+import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
 import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
 import haptikos.gestortareashogar_haptikos.ui.theme.DarkAmber
 import haptikos.gestortareashogar_haptikos.ui.theme.DarkBlue
@@ -591,7 +592,7 @@ fun TaskItem(
 ) {
     val task = taskDetail.task
     val members = taskDetail.members
-    val isTeam = members.size > 1
+    val isTeam = task.workMode == WorkMode.TEAM && members.size > 1
 
 
     val membersText = members.joinToString(", ") { it.name }.ifEmpty { "Sin asignar" }

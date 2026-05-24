@@ -73,4 +73,7 @@ interface MemberDao {
         profilePicUrl: String?, isSynced: Boolean
     ): Int
 
+    @Query("SELECT * FROM member_table_new WHERE homeId = :homeId")
+    suspend fun getMembersByHomeId(homeId: String): List<MemberEntityNew>
+
 }

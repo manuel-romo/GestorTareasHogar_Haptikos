@@ -1,4 +1,4 @@
-package haptikos.gestortareashogar_haptikos.ui.screens.userEdition
+package haptikos.gestortareashogar_haptikos.ui.screens.profile
 
 data class ProfileHomeItem(
     val id: String,

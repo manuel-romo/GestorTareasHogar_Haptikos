@@ -32,6 +32,7 @@ fun CustomTextField(
     isError: Boolean = false,
     readOnly: Boolean = false,
     modifier: Modifier = Modifier,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -58,7 +59,6 @@ fun CustomTextField(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = TextFieldDefaults.colors(
-
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 errorContainerColor = MaterialTheme.colorScheme.errorContainer,
@@ -66,17 +66,19 @@ fun CustomTextField(
                 errorCursorColor = MaterialTheme.colorScheme.error,
                 focusedIndicatorColor = Color.Transparent,
                 unfocusedIndicatorColor = Color.Transparent,
-
                 focusedLeadingIconColor = MaterialTheme.colorScheme.primary,
                 unfocusedLeadingIconColor = Color.Gray,
                 errorLeadingIconColor = MaterialTheme.colorScheme.error,
                 focusedTrailingIconColor = MaterialTheme.colorScheme.primary,
                 unfocusedTrailingIconColor = Color.Gray,
                 errorTrailingIconColor = MaterialTheme.colorScheme.error
-
             ),
             visualTransformation = if (isPassword && !passwordVisible) PasswordVisualTransformation() else VisualTransformation.None,
-            keyboardOptions = if (isPassword) KeyboardOptions(keyboardType = KeyboardType.Password) else KeyboardOptions.Default
+            keyboardOptions = if (isPassword) {
+                keyboardOptions.copy(keyboardType = KeyboardType.Password)
+            } else {
+                keyboardOptions
+            }
         )
     }
 }

@@ -67,23 +67,40 @@ import haptikos.gestortareashogar_haptikos.ui.theme.SilverGray
 import haptikos.gestortareashogar_haptikos.ui.theme.White
 import haptikos.gestortareashogar_haptikos.ui.theme.Yellow
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.RewardViewModel
+import java.util.Calendar
 
 @Composable
 fun RewardsScreen(
     taskInstanceViewModel: TaskInstanceViewModel,
     homeViewModel: HomeViewModel,
+    rewardViewModel: RewardViewModel,
     onBackClick: () -> Unit
 ) {
-    val rewardsState by taskInstanceViewModel.rewardsState.collectAsState()
+    val rewardsState by rewardViewModel.rewardsState.collectAsState()
     val tasks by taskInstanceViewModel.tasks.collectAsState()
     val selectedHome by homeViewModel.selectedHome.collectAsState()
 
     LaunchedEffect(selectedHome?.id) {
         taskInstanceViewModel.setSelectedHome(selectedHome?.id)
+        rewardViewModel.setSelectedHome(selectedHome?.id)
+    }
+
+
+    val todayStart = remember {
+        Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0);      set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+    }
+    val completedTasks = remember(tasks) {
+        tasks.filter {
+            it.taskInstance.state == TaskState.COMPLETED &&
+                    it.taskInstance.dueDate >= todayStart
+        }
     }
 
     var selectedTab by remember { mutableStateOf("Resumen") }
-    val completedTasks = tasks.filter { it.taskInstance.state == TaskState.COMPLETED }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background

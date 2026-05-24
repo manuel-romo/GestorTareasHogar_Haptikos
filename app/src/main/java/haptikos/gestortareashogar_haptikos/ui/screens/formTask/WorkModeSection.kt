@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
+import haptikos.gestortareashogar_haptikos.ui.enums.RecurrenceType
 import haptikos.gestortareashogar_haptikos.ui.enums.TurnMode
 import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
 import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
@@ -56,6 +57,7 @@ fun WorkModeSection(
     selectedWorkMode: WorkMode, onWorkModeChange: (WorkMode) -> Unit,
     selectedTurnMode: TurnMode, onTurnModeChange: (TurnMode) -> Unit,
     orderedTurns: List<MemberEntityNew>, onShuffleTurns: () -> Unit,
+    selectedRecurrence: RecurrenceType,
     onMoveTurn: (Int, Int) -> Unit
 ) {
     SectionTitle("MODO DE TRABAJO")
@@ -113,6 +115,7 @@ fun WorkModeSection(
                             index = index,
                             member = member,
                             itemsCount = orderedTurns.size,
+                            recurrence = selectedRecurrence,
                             isManual = selectedTurnMode == TurnMode.MANUAL,
                             onMove = onMoveTurn
                         )
@@ -166,6 +169,7 @@ fun ReorderableMemberItem(
     member: MemberEntityNew,
     itemsCount: Int,
     isManual: Boolean,
+    recurrence: RecurrenceType,
     onMove: (Int, Int) -> Unit
 ) {
     val density = LocalDensity.current
@@ -224,7 +228,12 @@ fun ReorderableMemberItem(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "SEMANA ${index + 1}",
+                    text = when (recurrence) {
+                        RecurrenceType.DIARIO -> "DÍA ${index + 1}"
+                        RecurrenceType.SEMANAL -> "SEMANA ${index + 1}"
+                        RecurrenceType.QUINCENAL -> "QUINCENA ${index + 1}"
+                        RecurrenceType.MENSUAL -> "MES ${index + 1}"
+                    },
                     color = BrightOrange,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Black,

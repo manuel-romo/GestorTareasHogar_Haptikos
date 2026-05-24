@@ -34,4 +34,34 @@ class AuthRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun forgotPassword(email: String): Result<Unit> {
+        return try {
+            val response = RetrofitClient.authApi.forgotPassword(
+                AuthApi.ForgotPasswordRequest(email)
+            )
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(HttpException(response))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun resetPassword(token: String, newPassword: String): Result<Unit> {
+        return try {
+            val response = RetrofitClient.authApi.resetPassword(
+                AuthApi.ResetPasswordRequest(token, newPassword)
+            )
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                Result.failure(HttpException(response))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

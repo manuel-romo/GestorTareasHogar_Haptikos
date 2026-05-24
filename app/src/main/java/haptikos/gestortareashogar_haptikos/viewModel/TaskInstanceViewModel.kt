@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
 import haptikos.gestortareashogar_haptikos.data.DataStoreManager
+import haptikos.gestortareashogar_haptikos.data.entity.EarnedPointsEntity
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
@@ -12,6 +13,7 @@ import haptikos.gestortareashogar_haptikos.data.entity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails
+import haptikos.gestortareashogar_haptikos.data.enumerators.PriorityLevel
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.BarChartData
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.HomeStatsUiState
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.MemberStatsItem
@@ -35,6 +37,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import haptikos.gestortareashogar_haptikos.ui.screens.userStats.UserStatsUiState
 import haptikos.gestortareashogar_haptikos.ui.screens.userStats.HomeStatsItem
+import haptikos.gestortareashogar_haptikos.utils.RewardsUtils
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import java.text.SimpleDateFormat
@@ -184,13 +187,25 @@ class TaskInstanceViewModel(
             val isCreator = taskInstance.taskDetails.members.any {
                 it.userId == userId && it.role == MemberRole.CREATOR
             }
-
             if (!isAssigned && !isCreator) return@launch
 
             if (taskInstance.taskInstance.state == TaskState.COMPLETED) {
+                // Desmarcar
                 repository.markTaskAsPending(taskInstance.taskInstance)
+                repository.removeEarnedPoints(taskInstance.taskInstance.id)
             } else {
+                // Marcar
                 repository.markTaskAsCompleted(taskInstance.taskInstance)
+                val points = taskInstance.taskDetails.task.points +
+                        taskInstance.taskDetails.task.priority.points
+                repository.insertEarnedPoints(
+                    EarnedPointsEntity(
+                        instanceId = taskInstance.taskInstance.id,
+                        userId = userId,
+                        points = points,
+                        earnedAt = System.currentTimeMillis()
+                    )
+                )
             }
         }
     }
@@ -210,15 +225,14 @@ class TaskInstanceViewModel(
             instance.assignedMembers.any { it.userId == currentUserId }
         }
 
+        val streakDays = RewardsUtils.calculateStreak(userInstances)
+
         // Filtrar por rango de tiempo
         val filteredInstances = filterInstancesByRange(userInstances, range)
 
         val total = filteredInstances.size
         val completed = filteredInstances.count { it.taskInstance.state == TaskState.COMPLETED }
         val effectiveness = if (total > 0) (completed.toFloat() / total.toFloat() * 100).toInt() else 0
-
-        // Racha calculada sobre todas las instancias del usuario, sin filtro de rango
-        val streakDays = calculateStreak(userInstances)
 
         val trendPoints = calculateTrendPoints(filteredInstances, range)
 
@@ -244,24 +258,24 @@ class TaskInstanceViewModel(
         val comparisonPoints = allHomes.mapIndexed { index, home ->
             val instancesInHome = filteredInstances.filter { it.taskDetails.task.homeId == home.id }
             val cCompleted = instancesInHome.count { it.taskInstance.state == TaskState.COMPLETED }
-            val cPending   = instancesInHome.count { it.taskInstance.state == TaskState.PENDING }
-            val hColor     = homeColors[index % homeColors.size]
+            val cPending = instancesInHome.count { it.taskInstance.state == TaskState.PENDING }
+            val hColor = homeColors[index % homeColors.size]
             HomeComparisonData(
-                homeName       = home.name,
+                homeName = home.name,
                 completedCount = cCompleted,
                 pendingCount   = cPending,
-                color          = hColor,
-                pendingColor   = hColor.copy(alpha = 0.3f)
+                color = hColor,
+                pendingColor = hColor.copy(alpha = 0.3f)
             )
         }
 
         UserStatsUiState(
-            completedCount       = completed,
-            effectiveness        = effectiveness,
-            streakDays           = streakDays,
-            selectedRange        = range,
-            homeStats            = homeStatsList,
-            trendChartPoints     = trendPoints,
+            completedCount = completed,
+            effectiveness = effectiveness,
+            streakDays = streakDays,
+            selectedRange = range,
+            homeStats = homeStatsList,
+            trendChartPoints = trendPoints,
             homeComparisonPoints = comparisonPoints
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), UserStatsUiState())
@@ -281,42 +295,11 @@ class TaskInstanceViewModel(
                 cal.add(Calendar.MONTH, -1)
                 instances.filter { it.taskInstance.dueDate in cal.timeInMillis..now }
             }
-            else -> { // Año
+            else -> {
                 cal.add(Calendar.YEAR, -1)
                 instances.filter { it.taskInstance.dueDate in cal.timeInMillis..now }
             }
         }
-    }
-
-    private fun calculateStreak(instances: List<TaskInstanceWithDetails>): Int {
-        val completedDays = instances
-            .filter { it.taskInstance.state == TaskState.COMPLETED }
-            .map { instance ->
-                Calendar.getInstance().apply {
-                    timeInMillis = instance.taskInstance.dueDate
-                    set(Calendar.HOUR_OF_DAY, 0)
-                    set(Calendar.MINUTE, 0)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }.timeInMillis
-            }
-            .toSortedSet(reverseOrder())
-
-        if (completedDays.isEmpty()) return 0
-
-        val today = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0);      set(Calendar.MILLISECOND, 0)
-        }.timeInMillis
-        val oneDayMs = 24 * 60 * 60 * 1000L
-
-        var checkDay = if (completedDays.contains(today)) today else today - oneDayMs
-        var streak = 0
-        while (completedDays.contains(checkDay)) {
-            streak++
-            checkDay -= oneDayMs
-        }
-        return streak
     }
 
     private fun calculateTrendPoints(
@@ -417,72 +400,6 @@ class TaskInstanceViewModel(
 
     fun showInstanceDeleteError(message: String) {
         _instanceDeleteError.value = message
-    }
-
-    // Rewards
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val rewardsState: StateFlow<RewardsUiState> = combine(
-        repository.allInstancesWithDetails,
-        _selectedHomeId,
-        dataStore.userIdFlow
-    ) { allInstances, homeId, currentUserId ->
-
-        val completedInstances = allInstances.filter {
-            it.taskInstance.state == TaskState.COMPLETED &&
-                    (homeId == null || it.taskDetails.task.homeId == homeId)
-        }
-
-        val userPoints = completedInstances
-            .filter { instance -> instance.assignedMembers.any { it.userId == currentUserId } }
-            .sumOf { it.taskDetails.task.points + it.taskDetails.task.priority.points }
-
-        val memberPointsMap = mutableMapOf<String, Int>()
-        val memberInfoMap   = mutableMapOf<String, MemberEntityNew>()
-
-        completedInstances.forEach { instance ->
-            instance.assignedMembers.forEach { member ->
-                val pts = instance.taskDetails.task.points + instance.taskDetails.task.priority.points
-                memberPointsMap[member.id] = memberPointsMap.getOrDefault(member.id, 0) + pts
-                memberInfoMap[member.id]   = member
-            }
-        }
-
-        val ranking = memberPointsMap.entries
-            .sortedByDescending { it.value }
-            .mapIndexed { index, entry ->
-                val member = memberInfoMap[entry.key]!!
-                RankingMemberItem(
-                    memberId      = member.id,
-                    name          = "${member.name} ${member.lastName}".trim(),
-                    points        = entry.value,
-                    colorHex      = member.colorHex,
-                    position      = index + 1,
-                    isCurrentUser = member.userId == currentUserId
-                )
-            }
-
-        RewardsUiState(
-            totalPoints   = userPoints,
-            dailyProgress = calculateDailyProgress(completedInstances),
-            rankingList   = ranking,
-            badges = listOf(
-                BadgeItem("Primer logro",     "⭐", isUnlocked = true,  dateUnlocked = "May 2026"),
-                BadgeItem("7 días seguidos",  "🔥", isUnlocked = true,  dateUnlocked = "May 2026"),
-                BadgeItem("10 tareas",        "✅", isUnlocked = false),
-                BadgeItem("Invitador",        "👥", isUnlocked = false),
-                BadgeItem("Perfeccionista",   "💎", isUnlocked = false),
-                BadgeItem("Madrugador",       "🌅", isUnlocked = false)
-            ),
-            challenges = listOf(
-                ChallengeItem("Completa 5 tareas",    "Completa 5 tareas esta semana",           3, 5, 25, "🎯"),
-                ChallengeItem("Racha de 3 días",      "Completa tareas 3 días seguidos",         2, 3, 15, "🔥"),
-                ChallengeItem("Todo el día",           "Completa todas las tareas de un día",     0, 1, 25, "⚡")
-            )
-        )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), RewardsUiState())
-
-    private fun calculateDailyProgress(instances: List<TaskInstanceWithDetails>): Float {
-        return if (instances.isNotEmpty()) 0.84f else 0f
     }
 
     // Home stats

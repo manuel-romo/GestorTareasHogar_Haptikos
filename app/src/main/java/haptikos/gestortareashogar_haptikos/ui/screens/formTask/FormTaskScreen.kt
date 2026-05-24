@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.formTask
 
+import android.util.Log
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -114,40 +116,45 @@ fun FormTaskScreen(
         }
     }
 
-    FormatTaskContent(
-        roomList = roomList,
-        memberList = memberList,
-        taskToEdit = taskToEdit,
-        preselectedRoom = preselectedRoom,
-        isPredetermined = isPredetermined,
-        onReturn = onReturn,
-        onSaveTask = { name, desc, room, day, recurrence, priority, workMode, orderedMembers ->
-            if (name.isNotBlank()) {
-                val task = TaskEntityNew(
-                    id = taskToEdit?.task?.id ?: UUID.randomUUID().toString(),
-                    title = name,
-                    description = desc,
-                    roomId = room?.id,
-                    homeId = selectedHome?.id ?: "",
-                    points = priority.points,
-                    priority = priority,
-                    suggestedDay = day,
-                    recurrence = recurrence,
-                    workMode = workMode,
-                    isPredetermined = isPredetermined
-                )
-
-                val memberIds = orderedMembers.map { it.id }
-
-                if (taskToEdit == null) {
-                    taskViewModel.addTaskNew(task, memberIds)
-                } else {
-                    taskViewModel.updateTaskNew(task, memberIds)
-                }
-                onReturn()
-            }
+    // No renderiza el formulario hasta que la habitación esté resuelta
+    if (isPredetermined && roomId != null && preselectedRoom == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
         }
-    )
+    } else {
+        FormatTaskContent(
+            roomList = roomList,
+            memberList = memberList,
+            taskToEdit = taskToEdit,
+            preselectedRoom = preselectedRoom,
+            isPredetermined = isPredetermined,
+            onReturn = onReturn,
+            onSaveTask = { name, desc, room, day, recurrence, priority, workMode, orderedMembers ->
+                if (name.isNotBlank()) {
+                    val task = TaskEntityNew(
+                        id = taskToEdit?.task?.id ?: UUID.randomUUID().toString(),
+                        title = name,
+                        description = desc,
+                        roomId = room?.id,
+                        homeId = selectedHome?.id ?: "",
+                        points = priority.points,
+                        priority = priority,
+                        suggestedDay = day,
+                        recurrence = recurrence,
+                        workMode = workMode,
+                        isPredetermined = isPredetermined
+                    )
+                    val memberIds = orderedMembers.map { it.id }
+                    if (taskToEdit == null) {
+                        taskViewModel.addTaskNew(task, memberIds)
+                    } else {
+                        taskViewModel.updateTaskNew(task, memberIds)
+                    }
+                    onReturn()
+                }
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -161,20 +168,51 @@ fun FormatTaskContent(
     onReturn: () -> Unit,
     onSaveTask: (String, String, RoomEntityNew?, SuggestedDay, RecurrenceType, PriorityLevel, WorkMode, List<MemberEntityNew>) -> Unit
 ) {
-    var taskName by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.title ?: "") }
-    var taskDescription by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.description ?: "") }
-    var selectedPriority by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.priority ?: PriorityLevel.MEDIA) }
-    var selectedDay by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.suggestedDay ?: SuggestedDay.LUNES) }
-    var selectedRecurrence by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.recurrence ?: RecurrenceType.DIARIO) }
-    var selectedMembers by remember(taskToEdit) { mutableStateOf(taskToEdit?.members?.toSet() ?: emptySet()) }
-
-    var selectedRoom by remember(taskToEdit, preselectedRoom) { mutableStateOf(taskToEdit?.room ?: preselectedRoom) }
-    var isRoomScope by remember(taskToEdit, preselectedRoom) { mutableStateOf(taskToEdit?.room != null || preselectedRoom != null) }
-
-    var selectedWorkMode by remember(taskToEdit) { mutableStateOf(taskToEdit?.task?.workMode ?: WorkMode.TEAM) }
-    var selectedTurnMode by remember(taskToEdit) { mutableStateOf(TurnMode.RANDOM) }
+    // Valores por defecto, se sobreescriben si carga una tarea a editar
+    var taskName by remember { mutableStateOf("") }
+    var taskDescription by remember { mutableStateOf("") }
+    var selectedPriority by remember { mutableStateOf(PriorityLevel.MEDIA) }
+    var selectedDay by remember { mutableStateOf(SuggestedDay.LUNES) }
+    var selectedRecurrence by remember { mutableStateOf(RecurrenceType.DIARIO) }
+    var selectedMembers by remember { mutableStateOf<Set<MemberEntityNew>>(emptySet()) }
+    var selectedRoom by remember { mutableStateOf<RoomEntityNew?>(preselectedRoom) }
+    var isRoomScope by remember { mutableStateOf(preselectedRoom != null) }
+    var selectedWorkMode by remember { mutableStateOf(WorkMode.TEAM) }
+    var selectedTurnMode by remember { mutableStateOf(TurnMode.RANDOM) }
 
     val orderedTurns = remember { mutableStateListOf<MemberEntityNew>() }
+
+    LaunchedEffect(preselectedRoom) {
+        if (taskToEdit == null && preselectedRoom != null) {
+            selectedRoom = preselectedRoom
+            isRoomScope = true
+            Log.d("FORM_ROOM", "selectedRoom aplicado: ${selectedRoom?.id}")
+        }
+    }
+
+    LaunchedEffect(taskToEdit) {
+        taskToEdit?.let { task ->
+            Log.d("FORM_TASK", "room=${task.room?.id} roomId=${task.task.roomId}")
+            taskName = task.task.title
+            taskDescription = task.task.description
+            selectedPriority = task.task.priority
+            selectedDay = task.task.suggestedDay
+            selectedRecurrence = task.task.recurrence
+            selectedWorkMode = task.task.workMode
+            selectedMembers = task.members.toSet()
+            selectedRoom = task.room ?: preselectedRoom
+            isRoomScope = task.room != null || preselectedRoom != null
+            orderedTurns.clear()
+            orderedTurns.addAll(task.members)
+        }
+    }
+
+    LaunchedEffect(selectedMembers) {
+        if (taskToEdit == null) {
+            orderedTurns.clear()
+            orderedTurns.addAll(selectedMembers)
+        }
+    }
 
     var showDaySelector by remember { mutableStateOf(false) }
     var showRecurrenceSelector by remember { mutableStateOf(false) }
@@ -188,11 +226,7 @@ fun FormatTaskContent(
         hasName && hasValidRoom && hasMembers
     }
 
-    LaunchedEffect(selectedMembers) {
-        orderedTurns.clear()
-        orderedTurns.addAll(selectedMembers)
-    }
-
+    Log.d("FORM_VALID", "taskName='$taskName' isRoomScope=$isRoomScope selectedRoom=${selectedRoom?.id} members=${selectedMembers.size} isFormValid=$isFormValid")
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -242,6 +276,7 @@ fun FormatTaskContent(
                     selectedTurnMode = selectedTurnMode,
                     onTurnModeChange = { selectedTurnMode = it },
                     orderedTurns = orderedTurns,
+                    selectedRecurrence = selectedRecurrence,
                     onShuffleTurns = { orderedTurns.shuffle() },
                     onMoveTurn = { fromIndex, toIndex ->
                         val item = orderedTurns.removeAt(fromIndex)
@@ -505,22 +540,33 @@ fun ScopeSection(
 }
 
 @Composable
-fun ScheduleSection(selectedDay: SuggestedDay, selectedRecurrence: RecurrenceType, onOpenDayMenu: () -> Unit, onOpenRecurrenceMenu: () -> Unit) {
+fun ScheduleSection(
+    selectedDay: SuggestedDay,
+    selectedRecurrence: RecurrenceType,
+    onOpenDayMenu: () -> Unit,
+    onOpenRecurrenceMenu: () -> Unit
+) {
     SectionTitle("PROGRAMACIÓN")
     Surface(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = LightGray,
         border = BorderStroke(1.dp, SilverGray)
     ) {
         Column {
-            ScheduleOptionRow(
-                iconBgColor = Color(0xFFFFF0E0), iconColor = BrightOrange,
-                iconRes = R.drawable.ic_calendar, title = "Día sugerido",
-                value = selectedDay.displayName, valuePrefix = "${selectedDay.icon} ",
-                onClick = onOpenDayMenu
-            )
-            HorizontalDivider(color = SilverGray, thickness = 1.dp, modifier = Modifier.padding(horizontal = 16.dp))
+            if (selectedRecurrence == RecurrenceType.SEMANAL) {
+                ScheduleOptionRow(
+                    iconBgColor = Color(0xFFFFF0E0), iconColor = BrightOrange,
+                    iconRes = R.drawable.ic_calendar, title = "Día sugerido",
+                    value = selectedDay.displayName, valuePrefix = "${selectedDay.icon} ",
+                    onClick = onOpenDayMenu
+                )
+                HorizontalDivider(
+                    color = SilverGray,
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
             ScheduleOptionRow(
                 iconBgColor = LightPurple, iconColor = Purple,
                 iconRes = R.drawable.ic_recurrency, title = "Recurrencia",
@@ -529,6 +575,20 @@ fun ScheduleSection(selectedDay: SuggestedDay, selectedRecurrence: RecurrenceTyp
             )
         }
     }
+
+    val scheduleHint = when (selectedRecurrence) {
+        RecurrenceType.DIARIO -> "📅 Se generará todos los días"
+        RecurrenceType.SEMANAL -> "📅 Se generará cada ${selectedDay.displayName}"
+        RecurrenceType.QUINCENAL -> "📅 Se generará cada 15 días desde su creación"
+        RecurrenceType.MENSUAL -> "📅 Se generará el mismo día de cada mes"
+    }
+
+    Text(
+        text = scheduleHint,
+        color = MediumDarkGray,
+        fontSize = 12.sp,
+        modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
+    )
 }
 
 @Composable

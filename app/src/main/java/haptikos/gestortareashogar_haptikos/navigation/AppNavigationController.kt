@@ -17,18 +17,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,7 +32,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavType
@@ -48,7 +40,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.ui.components.CustomBottomNavigation
@@ -62,7 +53,7 @@ import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.HomeStatsScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.joinHome.JoinHomeScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.LogInScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.login.SignUpScreen
-import haptikos.gestortareashogar_haptikos.ui.screens.userEdition.ProfileScreen
+import haptikos.gestortareashogar_haptikos.ui.screens.profile.ProfileScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.taskDetail.TaskDetailScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.notifications.NotificationsScreen
 import haptikos.gestortareashogar_haptikos.ui.screens.rewards.RewardsScreen
@@ -78,6 +69,7 @@ import haptikos.gestortareashogar_haptikos.viewModel.RoomViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.ProfileViewModel
+import haptikos.gestortareashogar_haptikos.viewModel.RewardViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.SyncViewModel
 
 sealed class Screen(val route: String) {
@@ -112,7 +104,8 @@ fun AppNavigation(
     homeViewModel: HomeViewModel,
     profileViewModel: ProfileViewModel,
     syncViewModel: SyncViewModel,
-    notificationViewModel: NotificationViewModel
+    notificationViewModel: NotificationViewModel,
+    rewardViewModel: RewardViewModel
 ) {
     val navController = rememberNavController()
 
@@ -253,6 +246,7 @@ fun AppNavigation(
                     authViewModel = authViewModel,
                     syncViewModel = syncViewModel,
                     notificationViewModel = notificationViewModel,
+                    rewardViewModel = rewardViewModel,
                     onSettingsClick = { navController.navigate(Screen.HomeConfiguration.route) },
                     onTaskClick = { instanceId -> navController.navigate("${Screen.TaskDetail.route}/$instanceId") },
                     onDeleteClick = { taskInstanceViewModel.deleteTaskInstance(it) },
@@ -457,6 +451,7 @@ fun AppNavigation(
                 RewardsScreen(
                     taskInstanceViewModel = taskInstanceViewModel,
                     homeViewModel = homeViewModel,
+                    rewardViewModel = rewardViewModel,
                     onBackClick = { navController.popBackStack() }
                 )
             }

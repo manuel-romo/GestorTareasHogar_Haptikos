@@ -104,20 +104,7 @@ fun HomeConfigurationHeader(
                 Text(text = homeName, color = MaterialTheme.colorScheme.onPrimary, fontSize = 20.sp, fontWeight = FontWeight.Bold)
             }
 
-            Surface(
-                color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f),
-                shape = CircleShape,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        painterResource(id = R.drawable.ic_home),
-                        contentDescription = "Inicio",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+            Spacer(modifier = Modifier.size(40.dp))
         }
 
         Spacer(modifier = Modifier.height(middleSpacerHeight))

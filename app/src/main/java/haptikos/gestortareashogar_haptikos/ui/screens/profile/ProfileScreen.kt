@@ -1,4 +1,4 @@
-package haptikos.gestortareashogar_haptikos.ui.screens.userEdition
+package haptikos.gestortareashogar_haptikos.ui.screens.profile
 
 import android.Manifest
 import android.content.Context
@@ -28,6 +28,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -306,14 +307,21 @@ fun ProfileContent(
 
                 // Sección de Notificaciones
                 Spacer(modifier = Modifier.height(16.dp))
-                SectionTitle("NOTIFICACIONES PERSONALES")
-                Spacer(modifier = Modifier.height(16.dp))
-
 
                 val isConfigForced = selectedHome?.forceSettings == true
                 val isHomeNotificationsOff = selectedHome?.notifyAllMembers == false
 
                 if (selectedHome != null) {
+
+                    SectionTitle("NOTIFICACIONES PERSONALES")
+                    Text(
+                        text = "Configuración para ${selectedHome.name}",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 10.dp)
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
                     if (isConfigForced) {
                         val mensaje = when {
                             userIsCreator && isHomeNotificationsOff ->
@@ -336,7 +344,7 @@ fun ProfileContent(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                         shape = RoundedCornerShape(16.dp),
                         border = BorderStroke(1.dp, Color(0xFFF0F0F0))
                     ) {
