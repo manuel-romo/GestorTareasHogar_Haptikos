@@ -58,6 +58,8 @@ class SyncWorker(
                     syncRepository.syncHomeDetails(homeId)
                 "HOME_DELETED" ->
                     syncRepository.deleteHomeLocally(homeId)
+                "SYNC_EARNED_POINTS" ->
+                    syncRepository.syncEarnedPointsForUser(userId)
             }
             Result.success()
         } catch (e: Exception) {

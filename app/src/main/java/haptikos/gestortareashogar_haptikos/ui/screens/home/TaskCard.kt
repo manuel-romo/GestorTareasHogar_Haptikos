@@ -34,6 +34,7 @@ import haptikos.gestortareashogar_haptikos.R
 import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.ui.components.MemberAvatar
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkText
 import haptikos.gestortareashogar_haptikos.utils.getDayName
 import haptikos.gestortareashogar_haptikos.utils.parseHexColor
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
@@ -136,7 +137,7 @@ fun TaskCard(
                                 text = " ${room.name} ",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = if(isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else roomBaseColor,
+                                color = if(isCompleted) MaterialTheme.colorScheme.onSurfaceVariant else DarkText,
                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
@@ -178,7 +179,7 @@ fun TaskCard(
                     // Badge de puntos
                     Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(8.dp)) {
                         Text(
-                            text = " ⭐ +${taskInstance.taskDetails.task.points} ",
+                            text = " ⭐ +${taskInstance.taskDetails.task.points * 2} ",
                             color = MaterialTheme.colorScheme.secondary,
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.sp,

@@ -18,5 +18,6 @@ import androidx.room.ForeignKey
 )
 data class TaskMemberJoin(
     val taskId: String,
-    val memberId: String
+    val memberId: String,
+    val sortOrder: Int = 0
 )

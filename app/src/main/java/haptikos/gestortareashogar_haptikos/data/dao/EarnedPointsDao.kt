@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface EarnedPointsDao {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entry: EarnedPointsEntity)
 
     @Query("SELECT COALESCE(SUM(points), 0) FROM earned_points WHERE userId = :userId")
@@ -52,5 +52,8 @@ interface EarnedPointsDao {
 
     @Query("DELETE FROM earned_points")
     suspend fun deleteAll()
+
+    @Query("SELECT COALESCE(SUM(points), 0) FROM earned_points WHERE userId = :userId")
+    fun getTotalPointsFlow(userId: String): Flow<Int>
 
 }

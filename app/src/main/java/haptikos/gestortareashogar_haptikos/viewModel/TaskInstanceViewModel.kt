@@ -15,6 +15,7 @@ import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceEntityNew
 import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.data.enumerators.PriorityLevel
+import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.BarChartData
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.HomeStatsUiState
 import haptikos.gestortareashogar_haptikos.ui.screens.homeStats.MemberStatsItem
@@ -151,20 +152,23 @@ class TaskInstanceViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val stats: StateFlow<DashboardStats> = repository.allInstancesWithDetails.map { allInstances ->
+    val stats: StateFlow<DashboardStats> = combine(
+        repository.allInstancesWithDetails,
+        dataStore.userIdFlow.flatMapLatest { userId ->
+            if (userId != null) repository.getTotalEarnedPointsFlow(userId)
+            else flowOf(0)
+        }
+    ) { allInstances, userPoints ->
         val total = allInstances.size
         val completed = allInstances.count { it.taskInstance.state == TaskState.COMPLETED }
         val pending = allInstances.count { it.taskInstance.state == TaskState.PENDING }
-        val points = allInstances
-            .filter { it.taskInstance.state == TaskState.COMPLETED }
-            .sumOf { it.taskDetails.task.points + it.taskDetails.task.priority.points }
         val progress = if (total > 0) completed.toFloat() / total.toFloat() else 0f
         DashboardStats(
             pendingTasksCount = pending,
             completedTasksCount = completed,
             totalTasks = total,
             dailyProgress = progress,
-            userPoints = points
+            userPoints = userPoints
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardStats())
 
@@ -210,16 +214,28 @@ class TaskInstanceViewModel(
             } else {
                 // Marcar
                 repository.markTaskAsCompleted(taskInstance.taskInstance)
+                repository.markTaskAsCompleted(taskInstance.taskInstance)
                 val points = taskInstance.taskDetails.task.points +
                         taskInstance.taskDetails.task.priority.points
-                repository.insertEarnedPoints(
-                    EarnedPointsEntity(
-                        instanceId = taskInstance.taskInstance.id,
-                        userId = userId,
-                        points = points,
-                        earnedAt = System.currentTimeMillis()
+                Log.d("TOGGLE_POINTS", "workMode=${taskInstance.taskDetails.task.workMode}")
+                Log.d("TOGGLE_POINTS", "assignedMembers=${taskInstance.assignedMembers.map { "${it.name} userId=${it.userId.take(8)}" }}")
+                val usersToAward = if (taskInstance.taskDetails.task.workMode == WorkMode.TEAM) {
+                    taskInstance.assignedMembers.map { it.userId }
+                } else {
+                    listOf(userId)
+                }
+
+                usersToAward.forEach { assignedUserId ->
+                    Log.d("TOGGLE_POINTS", "insertando puntos para userId=$assignedUserId points=$points")
+                    repository.insertEarnedPoints(
+                        EarnedPointsEntity(
+                            instanceId = taskInstance.taskInstance.id,
+                            userId = assignedUserId,
+                            points = points,
+                            earnedAt = System.currentTimeMillis()
+                        )
                     )
-                )
+                }
             }
         }
     }

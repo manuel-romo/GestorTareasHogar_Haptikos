@@ -165,16 +165,23 @@ class RewardViewModel(
         val weekId = WeekUtils.getCurrentWeekId()
 
         val taskPoints = if (currentUserId.isNotEmpty()) {
-            repository.getTotalEarnedPoints(currentUserId)
+            val pts = repository.getTotalEarnedPoints(currentUserId)
+            Log.d("POINTS_DEBUG", "userId=$currentUserId | earnedPoints=$pts")
+            pts
         } else 0
 
         val challengePoints = if (homeId != null && currentUserId.isNotEmpty()) {
-            repository.getChallengeProgressForWeek(currentUserId, homeId, weekId)
+            val cp = repository.getChallengeProgressForWeek(currentUserId, homeId, weekId)
                 .filter { it.pointsAwarded }
                 .sumOf { it.challengeType.rewardPoints }
+            Log.d("POINTS_DEBUG", "challengePoints=$cp")
+            cp
         } else 0
 
         val totalPoints = taskPoints + challengePoints
+
+        Log.d("POINTS_DEBUG", "totalPoints=$totalPoints")
+
 
         // Ranking
         val earnedPerMember = repository.getEarnedPointsPerMember(homeId)

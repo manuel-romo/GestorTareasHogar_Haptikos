@@ -127,8 +127,9 @@ fun RewardsScreen(
                 when (selectedTab) {
                     "Resumen" -> {
                         InfoCard(title = "¿Cómo ganar puntos?", iconId = R.drawable.ic_bolt) {
-                            RewardEarningRow("Tarea completada", "+10 pts", MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.tertiary)
-                            RewardEarningRow("Tarea de alta prioridad", "+5 pts", LightYellow, DarkAmber)
+                            RewardEarningRow("Tarea prioridad baja", "+14 pts", MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.tertiary)
+                            RewardEarningRow("Tarea prioridad media", "+20 pts", LightYellow, DarkAmber)
+                            RewardEarningRow("Tarea prioridad alta", "+30 pts", LightYellow, Yellow)
                             RewardEarningRow("Completar el día entero", "+25 pts", LightYellow, Yellow)
                             RewardEarningRow("Racha semanal (7 días)", "+25 pts", MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.error)
                             RewardEarningRow("Invitar un miembro", "+15 pts", LightBlue, DarkBlue)
@@ -141,7 +142,7 @@ fun RewardsScreen(
                                 completedTasks.take(5).forEach { taskWithDetails ->
                                     RecentPointRow(
                                         title = taskWithDetails.taskDetails.task.title,
-                                        points = "+${taskWithDetails.taskDetails.task.points}",
+                                        points = "+${taskWithDetails.taskDetails.task.points * 2}",
                                         iconId = R.drawable.ic_check_circle
                                     )
                                 }

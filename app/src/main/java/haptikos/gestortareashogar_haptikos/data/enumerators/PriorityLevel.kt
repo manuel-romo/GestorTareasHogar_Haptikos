@@ -6,7 +6,7 @@ import haptikos.gestortareashogar_haptikos.ui.theme.Red
 import haptikos.gestortareashogar_haptikos.ui.theme.YellowGreen
 
 enum class PriorityLevel(val title: String, val points: Int, val mainColor: Color) {
-    ALTA("Alta", 15, Red),
+    BAJA("Baja", 7, Green),
     MEDIA("Media", 10, YellowGreen),
-    BAJA("Baja", 7, Green)
+    ALTA("Alta", 15, Red)
 }

@@ -10,6 +10,7 @@ import haptikos.gestortareashogar_haptikos.data.dao.RoomDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskDao
 import haptikos.gestortareashogar_haptikos.data.dao.TaskInstanceDao
 import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
+import haptikos.gestortareashogar_haptikos.data.entity.EarnedPointsEntity
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberRole
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberStatus
@@ -75,6 +76,7 @@ class SyncRepository(
         Log.d("SYNC_ALL", "syncPendingItems completado")
         syncHomes(userId)
         Log.d("SYNC_ALL", "syncHomes completado")
+        syncEarnedPointsForUser(userId)
 
         val homes = homeDao.getAllHomes().first()
         Log.d("SYNC_ALL", "Hogares encontrados: ${homes.size}")
@@ -456,15 +458,28 @@ class SyncRepository(
             if (response.isSuccessful) {
                 val remoteTasks = response.body() ?: return
 
-                // Guardar instancias pendientes de sincronizar
+                remoteTasks.forEach { dto ->
+                    Log.d("SYNC_INSTANCES", "Tarea='${dto.title}' | instancias del servidor: ${dto.instances.size}")
+                    dto.instances.forEach { inst ->
+                        Log.d("SYNC_INSTANCES", "  inst=${inst.id.take(6)} state=${inst.state} dueDate=${inst.dueDate}")
+                    }
+                }
+
                 val pendingInstances = taskInstanceDao.getAllNew().first()
                     .filter { !it.isSynced }
 
-                // Guardar isHidden ANTES de borrar
                 val hiddenInstanceIds = taskInstanceDao.getAllNew().first()
                     .filter { it.isHidden }
                     .map { it.id }
                     .toSet()
+
+                val localOrders = mutableMapOf<String, List<String>>()
+                remoteTasks.forEach { dto ->
+                    val localIds = taskDao.getMemberIdsForTask(dto.id)
+                    if (localIds.isNotEmpty()) {
+                        localOrders[dto.id] = localIds
+                    }
+                }
 
                 appDatabase.withTransaction {
                     taskInstanceDao.deleteAllByHomeId(homeId)
@@ -491,12 +506,19 @@ class SyncRepository(
                         )
 
                         if (dto.memberIds.isNotEmpty()) {
+                            val orderedIds = localOrders[dto.id]?.takeIf {
+                                it.toSet() == dto.memberIds.toSet()
+                            } ?: dto.memberIds
+
                             taskDao.addTaskMemberJoin(
-                                dto.memberIds.map { TaskMemberJoin(taskId = dto.id, memberId = it) }
+                                orderedIds.mapIndexed { index, memberId ->
+                                    TaskMemberJoin(taskId = dto.id, memberId = memberId, sortOrder = index)
+                                }
                             )
                         }
 
                         dto.instances.forEach { inst ->
+                            Log.d("SYNC_INST", "inst=${inst.id.take(6)} memberIds=${inst.memberIds}")
                             val pendingLocal = pendingInstances.find { it.id == inst.id }
 
                             taskInstanceDao.insertInstanceWithAssignedMembers(
@@ -597,24 +619,24 @@ class SyncRepository(
         }
     }
 
-    suspend fun syncPendingEarnedPoints() {
-        val pending = earnedPointsDao.getPendingSynced()
-        pending.forEach { entry ->
-            try {
-                val response = RetrofitClient.getEarnedPointsApi(dataStore).save(
-                    EarnedPointsApi.EarnedPointsDto(
-                        entry.instanceId,
-                        entry.userId,
-                        entry.points,
-                        entry.earnedAt
+    suspend fun syncEarnedPointsForUser(userId: String) {
+        try {
+            val response = RetrofitClient.getEarnedPointsApi(dataStore).getByUser(userId)
+            if (response.isSuccessful) {
+                response.body()?.forEach { dto ->
+                    earnedPointsDao.insert(
+                        EarnedPointsEntity(
+                            instanceId = dto.instanceId,
+                            userId = dto.userId,
+                            points = dto.points,
+                            earnedAt = dto.earnedAt,
+                            isSynced = true
+                        )
                     )
-                )
-                if (response.isSuccessful) {
-                    earnedPointsDao.markSynced(entry.instanceId)
                 }
-            } catch (e: Exception) {
-                Log.e("SYNC", "Error sincronizando earned points: ${e.message}")
             }
+        } catch (e: Exception) {
+            Log.e("SYNC", "Error sincronizando earned points: ${e.message}")
         }
     }
 

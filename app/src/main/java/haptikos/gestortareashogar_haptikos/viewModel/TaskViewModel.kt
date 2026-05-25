@@ -136,5 +136,9 @@ class TaskViewModel(private val repository: AppRepository) : ViewModel() {
         }
     }
 
+    suspend fun getMemberIdsOrdered(taskId: String): List<String> {
+        return repository.getMemberIdsForTask(taskId)
+    }
+
 
 }

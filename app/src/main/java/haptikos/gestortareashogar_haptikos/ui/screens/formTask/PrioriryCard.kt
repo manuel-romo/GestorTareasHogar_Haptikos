@@ -91,7 +91,7 @@ fun PriorityCard(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "+${priority.points} pts",
+                    text = "+${priority.points * 2} pts",
                     color = pointsColor,
                     fontSize = 12.sp,
                     fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal

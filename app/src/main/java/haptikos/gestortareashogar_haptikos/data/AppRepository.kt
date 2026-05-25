@@ -24,6 +24,7 @@ import haptikos.gestortareashogar_haptikos.data.entity.TaskInstanceWithDetails
 import haptikos.gestortareashogar_haptikos.data.entity.TaskWithDetails
 import haptikos.gestortareashogar_haptikos.data.enumerators.ChallengeType
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
+import haptikos.gestortareashogar_haptikos.network.EarnedPointsApi
 import haptikos.gestortareashogar_haptikos.network.HomeApi
 import haptikos.gestortareashogar_haptikos.network.RetrofitClient
 import haptikos.gestortareashogar_haptikos.network.RoomApi
@@ -69,6 +70,7 @@ class AppRepository(
 
     suspend fun insertTaskNew(task: TaskEntityNew, memberIds: List<String>) {
 
+        Log.d("GEN_INSTANCE", "insertTaskNew tarea='${task.title}' memberIds=$memberIds")
         // Guardado local
         taskDao.insertTaskWithMembers(task, memberIds)
 
@@ -78,6 +80,8 @@ class AppRepository(
     }
 
     suspend fun generateInstanceForTask(task: TaskEntityNew, memberIds: List<String>) {
+        Log.d("GEN_INSTANCE", "tarea='${task.title}' workMode=${task.workMode} memberIds=$memberIds")
+
         if (task.pausedUntil != null && task.pausedUntil > System.currentTimeMillis()) return
 
         val dueDate = getNextDueDate(task.suggestedDay, task.recurrence)
@@ -93,6 +97,8 @@ class AppRepository(
             memberIds
         }
 
+        Log.d("GEN_INSTANCE", "assignedMemberIds a insertar=$assignedMemberIds")
+
         val instance = TaskInstanceEntityNew(
             taskId = task.id,
             dueDate = dueDate,
@@ -100,6 +106,7 @@ class AppRepository(
         )
 
         taskInstanceDao.insertInstanceWithAssignedMembers(instance, assignedMemberIds)
+        Log.d("GEN_INSTANCE", "instancia insertada id=${instance.id}")
 
         if (task.workMode == WorkMode.SPLIT && memberIds.isNotEmpty()) {
             val nextIndex = (task.lastMemberIndex + 1) % memberIds.size
@@ -108,9 +115,12 @@ class AppRepository(
     }
 
     suspend fun generatePendingInstances() {
-        Log.d("GEN_INSTANCES", "generatePendingInstances llamado")
+        Log.d("GEN_INSTANCES", "=== INICIO generatePendingInstances ===")
+        Log.d("GEN_INSTANCES", "Llamado desde: ${Thread.currentThread().stackTrace.getOrNull(3)}")
+
         val allTasks = taskDao.getAllNew().first()
         val now = System.currentTimeMillis()
+        Log.d("GEN_INSTANCES", "Total tareas: ${allTasks.size}")
 
         allTasks.forEach { task ->
             if (task.pausedUntil != null && task.pausedUntil > now) return@forEach
@@ -125,6 +135,8 @@ class AppRepository(
                 lastInstance.dueDate <= now
             }
 
+            Log.d("GEN_INSTANCES", "Tarea='${task.title}' | lastState=${lastInstance?.state} | lastDueDate=${lastInstance?.dueDate} | now=$now | shouldGenerate=$shouldGenerate")
+
             if (shouldGenerate) {
                 val dueDate = if (lastInstance == null) {
                     getNextDueDate(task.suggestedDay, task.recurrence)
@@ -134,9 +146,16 @@ class AppRepository(
                     )
                 }
 
-                // Se verifica que no esté duplicada la instancia
+                Log.d("GEN_INSTANCES", "Tarea='${task.title}' lastState=${lastInstance?.state} lastDueDate=${lastInstance?.dueDate} shouldGenerate=$shouldGenerate")
                 val existing = taskInstanceDao.getPendingInstanceForTaskAndDate(task.id, dueDate)
-                if (existing != null) return@forEach
+                Log.d("GEN_INSTANCES", ">>> '${task.title}' | dueDate calculado=$dueDate | existing=${existing?.id?.take(6)}")
+
+                if (existing != null) {
+                    Log.d("GEN_INSTANCES", ">>> SKIP '${task.title}' — instancia ya existe")
+                    return@forEach
+                }
+
+                Log.d("GEN_INSTANCES", ">>> GENERANDO instancia para '${task.title}' dueDate=$dueDate")
 
                 val memberIds = taskDao.getMemberIdsForTask(task.id)
 
@@ -154,6 +173,7 @@ class AppRepository(
                 )
 
                 taskInstanceDao.insertInstanceWithAssignedMembers(instance, assignedMemberIds)
+                Log.d("GEN_INSTANCES", ">>> INSERTADA instancia para '${task.title}'")
 
                 if (task.workMode == WorkMode.SPLIT && memberIds.isNotEmpty()) {
                     val nextIndex = (task.lastMemberIndex + 1) % memberIds.size
@@ -161,6 +181,7 @@ class AppRepository(
                 }
             }
         }
+        Log.d("GEN_INSTANCES", "=== generatePendingInstances FIN ===")
     }
 
 
@@ -795,8 +816,23 @@ class AppRepository(
     suspend fun getEarnedPointsPerMember(homeId: String?): List<Pair<String, Int>> =
         earnedPointsDao.getPointsPerMember(homeId).map { it.userId to it.total }
 
-    suspend fun insertEarnedPoints(entry: EarnedPointsEntity) =
-        earnedPointsDao.insert(entry)
+    suspend fun insertEarnedPoints(entry: EarnedPointsEntity) {
+        try {
+            earnedPointsDao.insert(entry)
+            Log.d("EARNED_POINTS", "Insertado: instanceId=${entry.instanceId} userId=${entry.userId} points=${entry.points}")
+            // Subir al servidor inmediatamente
+            RetrofitClient.getEarnedPointsApi(dataStore).save(
+                EarnedPointsApi.EarnedPointsDto(
+                    entry.instanceId,
+                    entry.userId,
+                    entry.points,
+                    entry.earnedAt
+                )
+            )
+        } catch (e: Exception) {
+            Log.e("EARNED_POINTS", "ERROR insertando: ${e.message}")
+        }
+    }
 
     suspend fun getAllMembersForHome(homeId: String?): List<MemberEntityNew> =
         if (homeId != null) memberDao.getMembersByHomeId(homeId)
@@ -810,5 +846,10 @@ class AppRepository(
 
     suspend fun getHighPriorityCountForWeek(userId: String, weekStart: Long, weekEnd: Long): Int =
         earnedPointsDao.getHighPriorityCountForWeek(userId, weekStart, weekEnd)
+
+    suspend fun getMemberIdsForTask(taskId: String): List<String> = taskDao.getMemberIdsForTask(taskId)
+
+    fun getTotalEarnedPointsFlow(userId: String): Flow<Int> =
+        earnedPointsDao.getTotalPointsFlow(userId)
 
 }

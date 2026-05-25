@@ -66,6 +66,7 @@ import haptikos.gestortareashogar_haptikos.ui.enums.WorkMode
 import haptikos.gestortareashogar_haptikos.ui.enums.TurnMode
 import haptikos.gestortareashogar_haptikos.ui.theme.BlackGray
 import haptikos.gestortareashogar_haptikos.ui.theme.BrightOrange
+import haptikos.gestortareashogar_haptikos.ui.theme.DarkGray
 import haptikos.gestortareashogar_haptikos.ui.theme.LightGray
 import haptikos.gestortareashogar_haptikos.ui.theme.LightPurple
 import haptikos.gestortareashogar_haptikos.ui.theme.MediumDarkGray
@@ -103,10 +104,12 @@ fun FormTaskScreen(
 
     var taskToEdit by remember { mutableStateOf<TaskWithDetails?>(null) }
     var preselectedRoom by remember { mutableStateOf<RoomEntityNew?>(null) }
+    var orderedMemberIds by remember { mutableStateOf<List<String>>(emptyList()) }
 
     LaunchedEffect(taskId) {
         if (taskId != null) {
             taskToEdit = taskViewModel.getByIdNew(taskId)
+            orderedMemberIds = taskViewModel.getMemberIdsOrdered(taskId)
         }
     }
 
@@ -116,8 +119,11 @@ fun FormTaskScreen(
         }
     }
 
-    // No renderiza el formulario hasta que la habitación esté resuelta
-    if (isPredetermined && roomId != null && preselectedRoom == null) {
+    if (taskId != null && taskToEdit == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+    } else if (isPredetermined && roomId != null && preselectedRoom == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
@@ -126,6 +132,7 @@ fun FormTaskScreen(
             roomList = roomList,
             memberList = memberList,
             taskToEdit = taskToEdit,
+            orderedMemberIds = orderedMemberIds,
             preselectedRoom = preselectedRoom,
             isPredetermined = isPredetermined,
             onReturn = onReturn,
@@ -163,12 +170,12 @@ fun FormatTaskContent(
     roomList: List<RoomEntityNew>,
     memberList: List<MemberEntityNew>,
     taskToEdit: TaskWithDetails? = null,
+    orderedMemberIds: List<String> = emptyList(),
     preselectedRoom: RoomEntityNew? = null,
     isPredetermined: Boolean = false,
     onReturn: () -> Unit,
     onSaveTask: (String, String, RoomEntityNew?, SuggestedDay, RecurrenceType, PriorityLevel, WorkMode, List<MemberEntityNew>) -> Unit
 ) {
-    // Valores por defecto, se sobreescriben si carga una tarea a editar
     var taskName by remember { mutableStateOf("") }
     var taskDescription by remember { mutableStateOf("") }
     var selectedPriority by remember { mutableStateOf(PriorityLevel.MEDIA) }
@@ -186,24 +193,25 @@ fun FormatTaskContent(
         if (taskToEdit == null && preselectedRoom != null) {
             selectedRoom = preselectedRoom
             isRoomScope = true
-            Log.d("FORM_ROOM", "selectedRoom aplicado: ${selectedRoom?.id}")
         }
     }
 
-    LaunchedEffect(taskToEdit) {
+    LaunchedEffect(taskToEdit, orderedMemberIds) {
         taskToEdit?.let { task ->
-            Log.d("FORM_TASK", "room=${task.room?.id} roomId=${task.task.roomId}")
+            val membersMap = task.members.associateBy { it.id }
+            val sorted = orderedMemberIds.mapNotNull { membersMap[it] }
+
             taskName = task.task.title
             taskDescription = task.task.description
             selectedPriority = task.task.priority
             selectedDay = task.task.suggestedDay
             selectedRecurrence = task.task.recurrence
             selectedWorkMode = task.task.workMode
-            selectedMembers = task.members.toSet()
+            selectedMembers = sorted.toSet()
             selectedRoom = task.room ?: preselectedRoom
             isRoomScope = task.room != null || preselectedRoom != null
             orderedTurns.clear()
-            orderedTurns.addAll(task.members)
+            orderedTurns.addAll(sorted)
         }
     }
 
@@ -226,7 +234,6 @@ fun FormatTaskContent(
         hasName && hasValidRoom && hasMembers
     }
 
-    Log.d("FORM_VALID", "taskName='$taskName' isRoomScope=$isRoomScope selectedRoom=${selectedRoom?.id} members=${selectedMembers.size} isFormValid=$isFormValid")
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
@@ -247,7 +254,6 @@ fun FormatTaskContent(
             )
         }
     ) { paddingValues ->
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -255,7 +261,7 @@ fun FormatTaskContent(
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            BasicInfoSection(taskName, { taskName = it }, taskDescription, { taskDescription = it })
+            BasicInfoSection(taskName, { taskName = it }, taskDescription, { taskDescription = it})
 
             if (!isPredetermined) {
                 ScopeSection(isRoomScope, { isRoomScope = it }, selectedRoom) { showRoomSelector = true }
@@ -460,7 +466,7 @@ fun BasicInfoSection(name: String, onNameChange: (String) -> Unit, desc: String,
     FormLabel(text = "NOMBRE DE LA TAREA *", iconRes = R.drawable.ic_t_text)
     OutlinedTextField(
         value = name, onValueChange = onNameChange,
-        placeholder = { Text("Nombre de la tarea", color = MediumDarkGray) },
+        placeholder = { Text("Nombre de la tarea", color = DarkGray) },
         modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
@@ -475,7 +481,7 @@ fun BasicInfoSection(name: String, onNameChange: (String) -> Unit, desc: String,
     FormLabel(text = "DESCRIPCIÓN BREVE", iconRes = R.drawable.ic_lines)
     OutlinedTextField(
         value = desc, onValueChange = onDescChange,
-        placeholder = { Text("Descripción de la tarea", color = MediumDarkGray) },
+        placeholder = { Text("Descripción de la tarea", color = DarkGray) },
         modifier = Modifier.fillMaxWidth().height(120.dp).padding(bottom = 24.dp),
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(

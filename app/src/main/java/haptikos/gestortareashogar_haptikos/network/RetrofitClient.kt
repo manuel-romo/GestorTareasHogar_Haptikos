@@ -8,8 +8,12 @@ import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.logging.HttpLoggingInterceptor
 
 object RetrofitClient {
-    private const val BASE_URL = "http://192.168.1.67:8080/"
+
+    // Servidor en Railway
     //private const val BASE_URL = "https://gestortareashaptikosservidor-production.up.railway.app/"
+
+    // Servidor en Render
+    private const val BASE_URL = "https://gestor-tareas-haptikos-servidor.onrender.com/"
 
     val authApi: AuthApi by lazy {
         Retrofit.Builder()

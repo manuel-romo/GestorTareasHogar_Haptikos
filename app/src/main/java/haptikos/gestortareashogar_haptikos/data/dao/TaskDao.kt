@@ -35,22 +35,15 @@ interface TaskDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun addTaskMemberJoin(joins: List<TaskMemberJoin>)
 
-    // Guarda la tarea con sus miembros
     @Transaction
     suspend fun insertTaskWithMembers(task: TaskEntityNew, memberIds: List<String>) {
         addTaskNew(task)
-        val joins = memberIds.map { memberId ->
-            TaskMemberJoin(
-                taskId = task.id,
-                memberId = memberId
-            )
+        val joins = memberIds.mapIndexed { index, memberId ->
+            TaskMemberJoin(taskId = task.id, memberId = memberId, sortOrder = index)
         }
-
-        // 3. Insertas las relaciones
         addTaskMemberJoin(joins)
     }
 
-    // Actualiza los datos base de la nueva tarea
     @Update
     suspend fun updateTaskBaseNew(task: TaskEntityNew)
 
@@ -64,8 +57,8 @@ interface TaskDao {
     suspend fun updateTaskWithMembers(task: TaskEntityNew, memberIds: List<String>) {
         updateTaskBaseNew(task)
         deleteMembersForTask(task.id)
-        val newJoins = memberIds.map { memberId ->
-            TaskMemberJoin(taskId = task.id, memberId = memberId)
+        val newJoins = memberIds.mapIndexed { index, memberId ->
+            TaskMemberJoin(taskId = task.id, memberId = memberId, sortOrder = index)
         }
         addTaskMemberJoin(newJoins)
     }
@@ -73,7 +66,7 @@ interface TaskDao {
     @Query("UPDATE task_table_new SET isSynced = :isSynced WHERE id = :taskId")
     suspend fun updateSyncStatus(taskId: String, isSynced: Boolean)
 
-    @Query("SELECT memberId FROM task_member_join WHERE taskId = :taskId")
+    @Query("SELECT memberId FROM task_member_join WHERE taskId = :taskId ORDER BY sortOrder ASC")
     suspend fun getMemberIdsForTask(taskId: String): List<String>
 
     @Query("DELETE FROM task_table_new WHERE homeId = :homeId")
@@ -97,5 +90,4 @@ interface TaskDao {
 
     @Query("DELETE FROM task_table_new")
     suspend fun deleteAll()
-
 }

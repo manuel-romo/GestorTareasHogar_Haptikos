@@ -56,7 +56,7 @@ fun RewardSection(basePoints: Int, priorityBonus: Int, priorityName: String) {
                     Text("RECOMPENSA AL COMPLETAR", fontWeight = FontWeight.ExtraBold, color = DarkAmber, fontSize = 11.sp, letterSpacing = 0.5.sp)
                 }
                 Spacer(Modifier.height(12.dp))
-                Text("• Puntos base: +$basePoints pts", color = DarkText, fontSize = 13.sp)
+                Text("• Puntos por completar: +$basePoints pts", color = DarkText, fontSize = 13.sp)
                 Text("• Bono prioridad $priorityName: +$priorityBonus pts", color = Orange, fontSize = 13.sp)
             }
             Spacer(Modifier.width(16.dp))
