@@ -71,8 +71,6 @@ import haptikos.gestortareashogar_haptikos.utils.parseHexColor
 import haptikos.gestortareashogar_haptikos.viewModel.HomeViewModel
 
 
-
-
 data class InvitedUser(
     val id: String = UUID.randomUUID().toString(),
     val title: String,
@@ -153,7 +151,21 @@ fun CreateHomeStep2Screen(
             }
         },
         onRemoveInvite = { invitedUsers = invitedUsers - it },
-        onSendEmail = { email -> homeViewModel.sendInviteEmail(email) },
+        onSendEmail = { email ->
+            // El correo sea agrega a la lista de invitados
+            val emailInvited = InvitedUser(
+                title = email,
+                subtitle = email,
+                type = InviteType.EMAIL,
+                avatarInitials = "@",
+                avatarColor = Color(0xFFFF8A00)
+            )
+            if (invitedUsers.none { it.subtitle == email }) {
+                invitedUsers = invitedUsers + emailInvited
+            }
+            // Cerrar el sheet mostrando éxito falso
+            homeViewModel.resetInviteEmailState()
+        },
         onResetEmailState = { homeViewModel.resetInviteEmailState() },
         onBack = onBack,
         onCreateClick = {
@@ -513,12 +525,10 @@ fun CreateHomeStep2Content(
         }
     }
 
-    LaunchedEffect(inviteEmailState) {
-        if (inviteEmailState is HomeViewModel.InviteEmailState.Success) {
-            kotlinx.coroutines.delay(1200)
+    LaunchedEffect(invitedUsers.size) {
+        if (invitedUsers.any { it.type == InviteType.EMAIL }) {
             showEmailSheet = false
             emailInput = ""
-            onResetEmailState()
         }
     }
     // Sheet de correo

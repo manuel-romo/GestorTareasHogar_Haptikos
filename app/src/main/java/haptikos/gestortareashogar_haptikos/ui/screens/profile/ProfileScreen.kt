@@ -149,7 +149,6 @@ fun ProfileScreen(
         context = context,
         onLogoutClick = {
             authViewModel.logout()
-            onNavigateToLogin()
         },
         onNameChanged = { newName ->
             profileViewModel.updateUserName(newName)

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -56,11 +57,13 @@ class AuthViewModel(
     private val _passwordResetDone = MutableStateFlow(false)
     val passwordResetDone: StateFlow<Boolean> = _passwordResetDone.asStateFlow()
 
-    val isLoggedIn = dataStore.isLoggedInFlow.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = null
-    )
+    val isLoggedIn = dataStore.isLoggedInFlow
+        .distinctUntilChanged()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
 
     val userName = dataStore.usernameFlow.stateIn(
         scope = viewModelScope,
@@ -227,16 +230,16 @@ class AuthViewModel(
         _errorMessage.value = null
     }
 
-    // Logout — NO toca las credenciales biométricas
+    // Logout
     fun logout() {
         viewModelScope.launch {
+            _isSuccess.value = false
             database.clearAllData()
             dataStore.logout()
         }
     }
 
-    // ── Recuperación de contraseña ──────────────────────────────────────────
-
+    // Recuperación de contraseña
     fun sendPasswordResetCode(email: String) {
         if (email.isBlank() || !Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             _errorMessage.value = "Ingresa un correo válido"

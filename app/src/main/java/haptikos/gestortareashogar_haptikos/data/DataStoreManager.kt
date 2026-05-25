@@ -8,8 +8,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
-
-
 private val Context.dataStore by preferencesDataStore(name = "session_prefs")
 
 class DataStoreManager(private val context: Context) {
@@ -94,6 +92,7 @@ class DataStoreManager(private val context: Context) {
     suspend fun logout() {
         context.dataStore.edit {
             it.clear()
+            it[IS_LOGGED_IN] = false
         }
     }
 }

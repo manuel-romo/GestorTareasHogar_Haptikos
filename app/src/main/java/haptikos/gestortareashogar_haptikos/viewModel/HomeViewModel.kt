@@ -12,6 +12,7 @@ import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
 import haptikos.gestortareashogar_haptikos.data.enumerators.MemberStatus
 import haptikos.gestortareashogar_haptikos.network.HomeApi
+import haptikos.gestortareashogar_haptikos.ui.enums.InviteType
 import haptikos.gestortareashogar_haptikos.ui.screens.createHome.InvitedUser
 import haptikos.gestortareashogar_haptikos.utils.generateUniqueId
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -154,7 +155,7 @@ class HomeViewModel(
                 if (inviteCode != null) {
                     _selectedHome.value = tempHome.copy(inviteCode = inviteCode, isSynced = true)
 
-                    // Se une automaticamente a los usuarios invitados de la lista
+                    // Unir usuarios de la lista
                     invitedUsers
                         .filter { !it.userId.isNullOrEmpty() }
                         .forEach { user ->
@@ -169,6 +170,22 @@ class HomeViewModel(
                                 )
                             } catch (e: Exception) {
                                 Log.e("HOME", "Error uniendo a ${user.title}: ${e.message}")
+                            }
+                        }
+
+                    // Enviar correos a invitados de tipo EMAIL
+                    invitedUsers
+                        .filter { it.type == InviteType.EMAIL }
+                        .forEach { user ->
+                            try {
+                                repository.sendInviteEmail(
+                                    homeId = generatedHomeId,
+                                    email = user.subtitle,
+                                    homeName = name,
+                                    inviteCode = inviteCode
+                                )
+                            } catch (e: Exception) {
+                                Log.e("HOME", "Error enviando correo a ${user.subtitle}: ${e.message}")
                             }
                         }
                 }
