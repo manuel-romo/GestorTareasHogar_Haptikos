@@ -108,6 +108,7 @@ class AppRepository(
     }
 
     suspend fun generatePendingInstances() {
+        Log.d("GEN_INSTANCES", "generatePendingInstances llamado")
         val allTasks = taskDao.getAllNew().first()
         val now = System.currentTimeMillis()
 
@@ -295,28 +296,12 @@ class AppRepository(
             isSynced = false
         )
 
-        val invitedMembers = invitedUsers.map { invite ->
-            MemberEntityNew(
-                id = invite.id,
-                homeId = homeId,
-                userId = "",
-                name = invite.title,
-                lastName = invite.subtitle,
-                colorHex = defaultInviteColor,
-                role = MemberRole.MEMBER,
-                status = MemberStatus.PENDING,
-                isSynced = false
-            )
-        }
-
-        // Guardado local
+        // Solo se guarda el creador localmente
         appDatabase.withTransaction {
             homeDao.insertHome(newHome)
             memberDao.addNew(creatorMember)
-            invitedMembers.forEach { memberDao.addNew(it) }
         }
 
-        // Sincronizar inmediatamente con el servidor
         return try {
             val request = HomeApi.CreateHomeRequest(
                 id = homeId,
@@ -559,6 +544,7 @@ class AppRepository(
             isSynced = false
         )
         taskInstanceDao.update(updated)
+        syncPendingInstances()
         generatePendingInstances()
 
     }

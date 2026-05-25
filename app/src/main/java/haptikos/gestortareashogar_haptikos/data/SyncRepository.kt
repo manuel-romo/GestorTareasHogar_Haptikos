@@ -70,14 +70,20 @@ class SyncRepository(
 
 
     suspend fun syncAll(userId: String) {
+        Log.d("SYNC_ALL", "Iniciando syncAll para userId=$userId")
         syncPendingItems()
+        Log.d("SYNC_ALL", "syncPendingItems completado")
         syncHomes(userId)
-        
+        Log.d("SYNC_ALL", "syncHomes completado")
+
         val homes = homeDao.getAllHomes().first()
+        Log.d("SYNC_ALL", "Hogares encontrados: ${homes.size}")
         homes.forEach { home ->
+            Log.d("SYNC_ALL", "Sincronizando hogar: ${home.id}")
             syncRoomsForHome(home.id)
             syncTasksForHome(home.id)
         }
+        Log.d("SYNC_ALL", "syncAll finalizado")
     }
 
     suspend fun syncPendingItems() {
@@ -342,8 +348,8 @@ class SyncRepository(
                                     userId = memberDto.userId,
                                     homeId = homeDto.id,
                                     name = memberDto.name,
-                                    lastName = memberDto.lastName,
-                                    colorHex = memberDto.colorHex,
+                                    lastName = memberDto.lastName ?: "",
+                                    colorHex = memberDto.colorHex ?: "#9E9E9E",
                                     role = MemberRole.valueOf(memberDto.role),
                                     status = MemberStatus.valueOf(memberDto.status),
                                     profilePicUrl = memberDto.profilePicUrl,

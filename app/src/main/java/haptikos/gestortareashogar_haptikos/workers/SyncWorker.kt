@@ -10,6 +10,7 @@ import haptikos.gestortareashogar_haptikos.data.database.TaskDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 
 class SyncWorker(
@@ -47,8 +48,10 @@ class SyncWorker(
             when (type) {
                 "SYNC_MEMBERS", "NEW_MEMBER", "MEMBER_JOINED" ->
                     syncRepository.syncMembersForHome(homeId)
-                "SYNC_TASKS" ->
+                "SYNC_TASKS" -> {
+                    delay(1500)
                     syncRepository.syncTasksForHome(homeId)
+                }
                 "SYNC_ROOMS" ->
                     syncRepository.syncRoomsForHome(homeId)
                 "SYNC_HOME" ->

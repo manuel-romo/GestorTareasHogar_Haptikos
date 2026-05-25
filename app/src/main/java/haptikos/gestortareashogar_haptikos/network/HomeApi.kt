@@ -28,7 +28,8 @@ interface HomeApi {
     data class InvitedUserDto(
         val id: String,
         val title: String,
-        val subtitle: String
+        val subtitle: String,
+        val userId: String? = null
     )
 
     data class CreateHomeResponse(

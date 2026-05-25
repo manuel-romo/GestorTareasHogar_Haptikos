@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.viewModel
 
+import android.util.Log
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -38,6 +39,8 @@ import kotlinx.coroutines.launch
 import haptikos.gestortareashogar_haptikos.ui.screens.userStats.UserStatsUiState
 import haptikos.gestortareashogar_haptikos.ui.screens.userStats.HomeStatsItem
 import haptikos.gestortareashogar_haptikos.utils.RewardsUtils
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapLatest
@@ -169,17 +172,26 @@ class TaskInstanceViewModel(
         return repository.getTaskInstanceWithDetailsById(instanceId)
     }
 
+    private val _toastMessage = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val toastMessage = _toastMessage.asSharedFlow()
+
     fun markTaskAsPending(taskInstance: TaskInstanceEntityNew) {
         viewModelScope.launch {
-            repository.markTaskAsPending(taskInstance)
+            val success = repository.markTaskAsPending(taskInstance)
+            if (!success) {
+                _toastMessage.tryEmit("No puedes reactivar, ya existe una siguiente instancia pendiente")
+            }
         }
     }
+
 
     fun deleteTaskInstance(taskInstance: TaskInstanceEntityNew) {
         viewModelScope.launch {
             repository.hideTaskInstance(taskInstance)
         }
     }
+
+
 
     fun toggleTaskStatus(taskInstance: TaskInstanceWithDetails) {
         viewModelScope.launch {
@@ -192,7 +204,8 @@ class TaskInstanceViewModel(
 
             if (taskInstance.taskInstance.state == TaskState.COMPLETED) {
                 // Desmarcar
-                repository.markTaskAsPending(taskInstance.taskInstance)
+                val success = repository.markTaskAsPending(taskInstance.taskInstance)
+                if (!success) _toastMessage.tryEmit("No puedes reactivar, ya existe una siguiente instancia pendiente")
                 repository.removeEarnedPoints(taskInstance.taskInstance.id)
             } else {
                 // Marcar
@@ -287,18 +300,30 @@ class TaskInstanceViewModel(
     ): List<TaskInstanceWithDetails> {
         val cal = Calendar.getInstance()
         val now = cal.timeInMillis
+
+        fun dateToCheck(instance: TaskInstanceWithDetails): Long {
+            return if (instance.taskInstance.state == TaskState.COMPLETED) {
+                instance.taskInstance.completedAt ?: instance.taskInstance.dueDate
+            } else {
+                instance.taskInstance.dueDate
+            }
+        }
+
         return when (range) {
             "Semana" -> {
                 cal.add(Calendar.DAY_OF_YEAR, -7)
-                instances.filter { it.taskInstance.dueDate in cal.timeInMillis..now }
+                val weekStart = cal.timeInMillis
+                instances.filter { dateToCheck(it) in weekStart..now }
             }
             "Mes" -> {
                 cal.add(Calendar.MONTH, -1)
-                instances.filter { it.taskInstance.dueDate in cal.timeInMillis..now }
+                val monthStart = cal.timeInMillis
+                instances.filter { dateToCheck(it) in monthStart..now }
             }
             else -> {
                 cal.add(Calendar.YEAR, -1)
-                instances.filter { it.taskInstance.dueDate in cal.timeInMillis..now }
+                val yearStart = cal.timeInMillis
+                instances.filter { dateToCheck(it) in yearStart..now }
             }
         }
     }
@@ -417,14 +442,17 @@ class TaskInstanceViewModel(
         _selectedHomeId,
         _homeStatsRange
     ) { allInstances, homeId, range ->
-
+        Log.d("HOME_STATS", "Instancias: ${allInstances.map { "${it.taskInstance.id.take(6)} state=${it.taskInstance.state} hidden=${it.taskInstance.isHidden}" }}")
         val homeInstances = allInstances.filter { inst ->
             homeId == null || inst.taskDetails.task.homeId == homeId
         }
 
-        val filtered = filterInstancesByRange(homeInstances, range)
-        val completed = filtered.filter { it.taskInstance.state == TaskState.COMPLETED }
-        val pending = filtered.filter { it.taskInstance.state == TaskState.PENDING }
+        val completedFiltered = filterInstancesByRange(homeInstances, range)
+            .filter { it.taskInstance.state == TaskState.COMPLETED }
+        val pendingAll = homeInstances.filter { it.taskInstance.state == TaskState.PENDING }
+        val filtered = completedFiltered + pendingAll
+        val completed = completedFiltered
+        val pending = pendingAll
         val barData = calculateBarChartData(filtered, range)
 
         val memberStats = filtered

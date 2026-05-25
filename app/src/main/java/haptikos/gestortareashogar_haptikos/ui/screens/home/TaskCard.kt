@@ -71,7 +71,7 @@ fun TaskCard(
                         .padding(top = 2.dp)
                         .size(28.dp)
                         .clip(CircleShape)
-                        .clickable(enabled = !isCompleted || canReactivate) { onStatusClick() }
+                        .clickable { onStatusClick() }
                         .border(
                             width = 2.dp,
                             color = when {

@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.viewModel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import haptikos.gestortareashogar_haptikos.data.AppRepository
@@ -9,6 +10,7 @@ import haptikos.gestortareashogar_haptikos.data.helpers.UserSuggestion
 import haptikos.gestortareashogar_haptikos.data.entity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.data.entity.MemberEntityNew
 import haptikos.gestortareashogar_haptikos.data.enumerators.HomePermission
+import haptikos.gestortareashogar_haptikos.data.enumerators.MemberStatus
 import haptikos.gestortareashogar_haptikos.network.HomeApi
 import haptikos.gestortareashogar_haptikos.ui.screens.createHome.InvitedUser
 import haptikos.gestortareashogar_haptikos.utils.generateUniqueId
@@ -131,7 +133,8 @@ class HomeViewModel(
                     HomeApi.InvitedUserDto(
                         id = generateUniqueId(),
                         title = user.title,
-                        subtitle = user.subtitle
+                        subtitle = user.subtitle,
+                        userId = user.userId
                     )
                 }
 
@@ -150,6 +153,24 @@ class HomeViewModel(
 
                 if (inviteCode != null) {
                     _selectedHome.value = tempHome.copy(inviteCode = inviteCode, isSynced = true)
+
+                    // Se une automaticamente a los usuarios invitados de la lista
+                    invitedUsers
+                        .filter { !it.userId.isNullOrEmpty() }
+                        .forEach { user ->
+                            try {
+                                repository.joinHome(
+                                    inviteCode = inviteCode,
+                                    memberId = generateUniqueId(),
+                                    homeId = generatedHomeId,
+                                    userId = user.userId!!,
+                                    name = user.title,
+                                    colorHex = "#9E9E9E"
+                                )
+                            } catch (e: Exception) {
+                                Log.e("HOME", "Error uniendo a ${user.title}: ${e.message}")
+                            }
+                        }
                 }
 
                 onComplete(null)
@@ -259,9 +280,12 @@ class HomeViewModel(
         repository.allMembersNew,
         dataStore.userIdFlow
     ) { members, currentUserId ->
-        // Todos los miembros de todos los hogares excepto el usuario actual
-        members.filter { it.userId != currentUserId && !it.isDeleted }
-            .distinctBy { it.userId }
+        members.filter {
+            it.userId != currentUserId &&
+                    !it.isDeleted &&
+                    it.userId.isNotEmpty() &&
+                    it.status == MemberStatus.ACCEPTED
+        }.distinctBy { it.userId }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _searchQuery = MutableStateFlow("")

@@ -1,6 +1,7 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.home
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +32,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -50,6 +52,7 @@ import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.TaskFilter
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.DashboardStats
 import haptikos.gestortareashogar_haptikos.viewModel.RewardViewModel.ChallengeProgressEvent
+import kotlinx.coroutines.launch
 
 @Composable
 fun HomeScreen(
@@ -90,9 +93,18 @@ fun HomeScreen(
 
     var activeEvents by remember { mutableStateOf<List<ChallengeProgressEvent>>(emptyList()) }
 
+    val context = LocalContext.current
+
     LaunchedEffect(Unit) {
-        rewardViewModel.challengeEvents.collect { events ->
-            activeEvents = events
+        launch {
+            rewardViewModel.challengeEvents.collect { events ->
+                activeEvents = events
+            }
+        }
+        launch {
+            taskInstanceViewModel.toastMessage.collect { message ->
+                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 

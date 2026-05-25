@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.taskDetail
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -116,6 +117,12 @@ fun TaskDetailScreen(
         details?.let {
             selectedMembers = it.assignedMembers.toSet()
             viewModel.checkEditPermission(it, allHomes, userId)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.toastMessage.collect { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 

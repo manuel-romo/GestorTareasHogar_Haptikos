@@ -1,6 +1,7 @@
 package haptikos.gestortareashogar_haptikos.ui.screens.createHome
 
 import android.content.Intent
+import android.graphics.Color.parseColor
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -79,7 +80,8 @@ data class InvitedUser(
     val type: InviteType,
     val avatarInitials: String = "",
     val avatarColor: Color = Color.LightGray,
-    val originalUser: UserSuggestion? = null
+    val originalUser: UserSuggestion? = null,
+    val userId: String? = null
 )
 
 fun UserSuggestion.toInvitedUser(): InvitedUser {
@@ -142,8 +144,9 @@ fun CreateHomeStep2Screen(
                 type = InviteType.APP,
                 avatarInitials = member.name.take(1).uppercase(),
                 avatarColor = try {
-                    Color(android.graphics.Color.parseColor(member.colorHex))
-                } catch (e: Exception) { Color.Gray }
+                    Color(parseColor(member.colorHex))
+                } catch (e: Exception) { Color.Gray },
+                userId = member.userId
             )
             if (invitedUsers.none { it.id == invited.id }) {
                 invitedUsers = invitedUsers + invited
