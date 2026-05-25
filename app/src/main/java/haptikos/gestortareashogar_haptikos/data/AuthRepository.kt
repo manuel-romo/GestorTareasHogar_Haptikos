@@ -1,5 +1,6 @@
 package haptikos.gestortareashogar_haptikos.data
 
+import android.util.Log
 import haptikos.gestortareashogar_haptikos.data.enumerators.UserGender
 import haptikos.gestortareashogar_haptikos.network.AuthApi
 import haptikos.gestortareashogar_haptikos.network.RetrofitClient
@@ -22,6 +23,7 @@ class AuthRepository {
 
     suspend fun signUp(id: String, name: String, gender: UserGender, dob: String, email: String, pass: String): Result<AuthApi.AuthResponse> {
         return try {
+            Log.d("REGISTER", "id=$id name=$name email=$email gender=$gender dob=$dob")
             val response = RetrofitClient.authApi.register(
                 AuthApi.RegisterRequest(id, name, email, pass, gender, dob)
             )

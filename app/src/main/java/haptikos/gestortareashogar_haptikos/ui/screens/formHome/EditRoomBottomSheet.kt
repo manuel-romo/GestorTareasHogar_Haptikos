@@ -112,6 +112,7 @@ fun EditRoomBottomSheet(
             value = roomName,
             onValueChange = { roomName = it },
             modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Ej. Cocina, Sala, Dormitorio...") },
             shape = RoundedCornerShape(12.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 unfocusedBorderColor = LightSilver,
@@ -202,6 +203,7 @@ fun EditRoomBottomSheet(
         // Botón de Guardar
         Button(
             onClick = { onSave(roomName, selectedIcon, selectedColorHex) },
+            enabled = roomName.isNotBlank(),
             modifier = Modifier.fillMaxWidth().height(56.dp),
             colors = ButtonDefaults.buttonColors(containerColor = BrightOrange),
             shape = RoundedCornerShape(16.dp)

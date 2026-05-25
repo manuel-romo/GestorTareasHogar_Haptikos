@@ -57,8 +57,6 @@ import haptikos.gestortareashogar_haptikos.data.enumerators.TaskState
 import haptikos.gestortareashogar_haptikos.data.entity.HomeEntityNew
 import haptikos.gestortareashogar_haptikos.viewModel.TaskInstanceViewModel.TaskFilter
 
-
-
 @Composable
 fun DashboardHeader(
     userName: String,

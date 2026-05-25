@@ -440,14 +440,13 @@ class HomeViewModel(
 
     init {
         viewModelScope.launch {
-            allHomes
-                .filter { it.isNotEmpty() }
-                .first()
-                .let { homes ->
-                    if (_selectedHome.value == null) {
-                        _selectedHome.value = homes.first()
-                    }
+            allHomes.collect { homes ->
+                if (homes.isEmpty()) {
+                    _selectedHome.value = null
+                } else if (_selectedHome.value == null) {
+                    _selectedHome.value = homes.first()
                 }
+            }
         }
     }
 
